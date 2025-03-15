@@ -28,6 +28,8 @@ async function toRetrieveFromS3(examPaperName) {
 //     }
 // }),
 
+// function to ask OCR image output to s3BucketCRUD.js
+
 
 router.get('/', async (req, res) => {
     try{
