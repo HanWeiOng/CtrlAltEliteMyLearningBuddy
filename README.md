@@ -5,9 +5,10 @@ Running Frontend:
 3. In terminal run "npm run dev"
 
 Running Backend:
-1. Navigate to Backend directory
-2. In terminal, run "npm install"
-3. Type "node server.js"
+1. Add .env file to backend folder
+2. Navigate to Backend directory
+3. In terminal, run "npm install"
+4. Type "node server.js"
 
 
 Tech Stack
