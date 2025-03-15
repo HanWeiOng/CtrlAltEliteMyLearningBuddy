@@ -26,7 +26,7 @@ router.push('/upload_images', async (req, res) => {
         res.status(500).json({ message: 'Internal server error. ' + error.message });
 
     }
-},
+}),
 
 
 router.get('/', async (req, res) => {
