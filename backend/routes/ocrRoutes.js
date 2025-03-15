@@ -18,7 +18,7 @@ router.push('/upload_images', async (req, res) => {
         // to upload to s3 bucket with name of exam paper 
         console.log('req.body:', req.body);
         console.log('req.files:', req.files);
-        res.status(200).json({ message: 'Successfully uploaded images.' });
+        res.status(200).json({ message: 'Successfully uploaded images. Hello YZ' });
         // call a function to process the uploaded images - with parameter as the exam paper images
         // toRetrieveFromS3 exam papers images 
     } catch (error) {
