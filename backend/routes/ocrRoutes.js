@@ -11,22 +11,22 @@ async function toRetrieveFromS3(examPaperName) {
     }
 }
 
-router.push('/upload_images', async (req, res) => {
-    try {
-        //req.body contains your images + exam paper name 
-        //check wether exam paper name is already present in db or not
-        // to upload to s3 bucket with name of exam paper 
-        console.log('req.body:', req.body);
-        console.log('req.files:', req.files);
-        res.status(200).json({ message: 'Successfully uploaded images.' });
-        // call a function to process the uploaded images - with parameter as the exam paper images
-        // toRetrieveFromS3 exam papers images 
-    } catch (error) {
-        console.error('Error uploading images:', error);
-        res.status(500).json({ message: 'Internal server error. ' + error.message });
+// router.push('/upload_images', async (req, res) => {
+//     try {
+//         //req.body contains your images + exam paper name 
+//         //check wether exam paper name is already present in db or not
+//         // to upload to s3 bucket with name of exam paper 
+//         console.log('req.body:', req.body);
+//         console.log('req.files:', req.files);
+//         res.status(200).json({ message: 'Successfully uploaded images.' });
+//         // call a function to process the uploaded images - with parameter as the exam paper images
+//         // toRetrieveFromS3 exam papers images 
+//     } catch (error) {
+//         console.error('Error uploading images:', error);
+//         res.status(500).json({ message: 'Internal server error. ' + error.message });
 
-    }
-}),
+//     }
+// }),
 
 
 router.get('/', async (req, res) => {
