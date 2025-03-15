@@ -16,7 +16,8 @@ async function calculateInOfficePercentage(teamId) {
 router.get('/', async (req, res) => {
     try{
         const result = await client.query(`
-            SELECT * FROM abc
+            SELECT * FROM questions
+            where topic_label = "Atomic and Mass Numbers: define proton (atomic) number and nucleon (mass) number"
         `);
         console.log(result.rows)
         res.status(200).json(result.rows)
