@@ -1,5 +1,4 @@
 const express = require('express');
-const client = require('../databasepg');
 const multer = require('multer');
 const router = express.Router();
 const fs = require('fs');
@@ -56,22 +55,42 @@ async function split_image(pdfPath) {
     }
 }
 
-router.post('/split_pdf', upload.single('file'), async (req, res) => {
+router.post('/split_pdf', upload.fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'subject', maxCount: 1 },
+    { name: 'banding', maxCount: 1 },
+    { name: 'level', maxCount: 1 }
+]), async (req, res) => {
     try {
-        if (!req.file) {
+        if (!req.files || !req.files.file) {
             throw new Error('No file uploaded');
         }
 
         // Convert buffer to a temporary file
         const tempFilePath = path.join(__dirname, 'temp.pdf');
-        fs.writeFileSync(tempFilePath, req.file.buffer);
+        fs.writeFileSync(tempFilePath, req.files.file[0].buffer);
 
         const images = await split_image(tempFilePath);
 
         // Delete temp file after processing
         fs.unlinkSync(tempFilePath);
 
-        res.status(200).json({ message: 'Successfully processed PDF.', images });
+        // Extract paper name from the original file name
+        const paperName = req.files.file[0].originalname.replace('.pdf', '');
+
+        // Extract additional data from the request body
+        const subject = req.body.subject;
+        const banding = req.body.banding;
+        const level = req.body.level;
+
+        res.status(200).json({
+            message: 'Successfully processed PDF.',
+            images,
+            paper_name: paperName,
+            subject,
+            banding,
+            level
+        });
     } catch (error) {
         console.error('Error processing PDF:', error);
         res.status(500).json({ message: 'Internal server error: ' + error.message });

@@ -67,29 +67,39 @@ export default function UploadPage() {
 
     const formData = new FormData();
     uploadedFiles.forEach((file) => {
-      formData.append("file", file);
+        formData.append("file", file);
     });
 
+    // Append additional data to the form data
+    formData.append("subject", selectedSubject);
+    formData.append("banding", selectedBanding);
+    formData.append("level", selectedLevel);
+
     try {
-      const response = await fetch("http://localhost:5003/api/ocr/split_pdf", {
-        method: "POST",
-        body: formData,
-      });
+        const response = await fetch("http://localhost:5003/api/ocr/split_pdf", {
+            method: "POST",
+            body: formData,
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to process PDF");
-      }
+        if (!response.ok) {
+            throw new Error("Failed to process PDF");
+        }
 
-      const result = await response.json();
-      setJsonOutput(JSON.stringify(result, null, 2));
-      setSuccessMessage("Process done successfully!"); // Set success message
+        const result = await response.json();
+        console.log("Processed PDF:", result);
+
+        // Set JSON output and success message
+        setJsonOutput(JSON.stringify(result, null, 2));
+        setSuccessMessage(`Process completed! Subject: ${result.subject}, Banding: ${result.banding}, Level: ${result.level}`);
     } catch (error) {
-      console.error("Error processing PDF:", error);
-      setJsonOutput(`Error: ${error}`);
+        console.error("Error processing PDF:", error);
+        setJsonOutput(`Error: ${error.message}`);
     } finally {
-      setIsProcessing(false);
+        setIsProcessing(false);
     }
-  };
+};
+
+
 
   return (
     <div className="container py-8">
