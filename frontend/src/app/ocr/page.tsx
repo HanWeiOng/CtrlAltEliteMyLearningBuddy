@@ -17,6 +17,7 @@ export default function UploadPage() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [jsonOutput, setJsonOutput] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null); // New state for success message
 
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]);
   const [selectedBanding, setSelectedBanding] = useState("");
@@ -62,6 +63,7 @@ export default function UploadPage() {
 
   const processFiles = async () => {
     setIsProcessing(true);
+    setSuccessMessage(null); // Reset success message
 
     const formData = new FormData();
     uploadedFiles.forEach((file) => {
@@ -80,6 +82,7 @@ export default function UploadPage() {
 
       const result = await response.json();
       setJsonOutput(JSON.stringify(result, null, 2));
+      setSuccessMessage("Process done successfully!"); // Set success message
     } catch (error) {
       console.error("Error processing PDF:", error);
       setJsonOutput(`Error: ${error}`);
@@ -121,7 +124,6 @@ export default function UploadPage() {
               </h3>
               <p className="text-muted-foreground mb-6">or</p>
 
-              {/* Fixed Browse File Button */}
               {/* Fixed Browse File Button */}
               <div className="relative inline-block">
                 <label className="rounded-lg bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 font-medium cursor-pointer">
@@ -241,6 +243,10 @@ export default function UploadPage() {
                 >
                   {isProcessing ? "Processing..." : "Process Files"}
                 </button>
+
+                {successMessage && (
+                  <div className="mt-4 text-green-500">{successMessage}</div>
+                )}
               </div>
             )}
           </div>
