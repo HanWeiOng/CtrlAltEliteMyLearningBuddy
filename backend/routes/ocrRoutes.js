@@ -1,62 +1,75 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
-const client = require('../databasepg');
 const fs = require('fs');
-const path = require('path'); // ✅ Ensure this line is present
-const { fromPath } = require("pdf2image");
-const upload = multer({ dest: 'uploads/' });
+const path = require('path');
+const { PDFDocument } = require('pdf-lib');
+const { exec } = require('child_process');
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.get('/test', (req, res) => {
     res.status(200).json({ message: 'Backend is working!' });
 });
 
-
-async function split_image(uploadedPdfPath) {
+async function split_image(pdfPath) {
     try {
-        if (!uploadedPdfPath) {
-            throw new Error("No PDF file provided.");
-        }
-
-        console.log("Processing PDF:", uploadedPdfPath);
-
-        const paperName = path.basename(uploadedPdfPath, path.extname(uploadedPdfPath));
-        const outputDir = path.join(__dirname, "images", paperName);
-
+        const outputDir = path.join(__dirname, 'output_images');
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir, { recursive: true });
         }
 
-        const options = {
-            density: 300,
-            saveFilename: paperName,
-            savePath: outputDir,
-            format: "jpeg",
-            width: 1024,
-            popplerPath: "/usr/local/opt/poppler/bin" // ✅ Ensure correct Poppler path
-        };
+        const pdfBytes = fs.readFileSync(pdfPath);
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const totalPages = pdfDoc.getPageCount();
+        let imagePaths = [];
 
-        const images = await fromPath(uploadedPdfPath, options);
+        for (let i = 0; i < totalPages; i++) {
+            const newPdfDoc = await PDFDocument.create();
+            const [copiedPage] = await newPdfDoc.copyPages(pdfDoc, [i]);
+            newPdfDoc.addPage(copiedPage);
 
-        console.log(`Images saved to ${outputDir}:`, images.map(img => img.page));
-        return { success: true, outputDir, images };
+            const singlePageBytes = await newPdfDoc.save();
+            const singlePagePath = path.join(outputDir, `page_${i + 1}.pdf`);
+            fs.writeFileSync(singlePagePath, singlePageBytes);
+
+            const imageBasePath = path.join(outputDir, `page_${i + 1}`);
+            await new Promise((resolve, reject) => {
+                exec(`pdftoppm -png "${singlePagePath}" "${imageBasePath}"`, (error) => {
+                    if (error) reject(error);
+                    else resolve();
+                });
+            });
+
+            const imagePath = `${imageBasePath}-1.png`;
+            if (fs.existsSync(imagePath)) {
+                imagePaths.push(imagePath);
+            }
+
+            fs.unlinkSync(singlePagePath);
+        }
+
+        return imagePaths;
     } catch (error) {
-        console.error("Error processing PDF:", error);
-        return { success: false, error: error.message };
+        console.error('Error processing PDF:', error);
+        throw error;
     }
 }
 
-
-
-
 router.post('/split_pdf', upload.single('file'), async (req, res) => {
-    console.log('Request body:', req.body); // Log the request body
-    console.log('Uploaded file:', req.file); // Log the uploaded file details
     try {
-        const uploaded_pdf = req.file.filename;
-        const images = await split_image(uploaded_pdf);
+        if (!req.file) {
+            throw new Error('No file uploaded');
+        }
 
-        console.log('Extracted images:', images);
+        // Convert buffer to a temporary file
+        const tempFilePath = path.join(__dirname, 'temp.pdf');
+        fs.writeFileSync(tempFilePath, req.file.buffer);
+
+        const images = await split_image(tempFilePath);
+
+        // Delete temp file after processing
+        fs.unlinkSync(tempFilePath);
+
         res.status(200).json({ message: 'Successfully processed PDF.', images });
     } catch (error) {
         console.error('Error processing PDF:', error);
