@@ -8,7 +8,7 @@ const { exec } = require('child_process');
 const upload = multer({ storage: multer.memoryStorage() });
 const { OcrExecutionMinor } = require('../routes/ocrfunctions'); // Only import this
 const client = require('../databasepg');
-
+const processedDataStore = {}; // In-memory storage for processed PDF data
 
 
 router.post('/processImages', async (req, res) => {
@@ -36,11 +36,6 @@ router.post('/processImages', async (req, res) => {
         res.status(500).json({ message: 'Internal server error. ' + error.message });
     }
 })
-
-
-
-const upload = multer({ storage: multer.memoryStorage() });
-const processedDataStore = {}; // In-memory storage for processed PDF data
 
 
 // Serve images via an API endpoint
