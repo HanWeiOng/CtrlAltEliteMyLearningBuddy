@@ -6,7 +6,7 @@ import Sidebar from "../../components/ui/sidebar";
 import Navbar from "../../components/ui/navbar";
 
 // Dummy MCQ Data
-
+/*
 const staticListOfImages = {
     message: "Successfully processed PDF.",
     images: [
@@ -27,14 +27,24 @@ const staticListOfImages = {
     ],
     paper_name: "AES 2019"
   };
+  */
   
+  const staticListOfImages = {
+    message: "Successfully processed PDF.",
+    images: [
+      "http://localhost:5003/api/ocr/images/page_1-1.png",
+      "http://localhost:5003/api/ocr/images/page_2-1.png",
+      "http://localhost:5003/api/ocr/images/page_13-1.png"
+    ],
+    paper_name: "AES 2019"
+  };
 
 export default function CreateQuizPage() {
 
     const OcrTest = async () => {
         try {
             console.log ("This is the data :", staticListOfImages)
-            const response = await fetch('http://localhost:5000/api/ocr/processImages', {
+            const response = await fetch('http://localhost:5003/api/ocr/processImages', {
                 method: 'POST',
                 headers : { 
                     'Content-Type': 'application/json',  // Specify the content type

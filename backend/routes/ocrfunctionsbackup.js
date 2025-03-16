@@ -114,7 +114,7 @@ const OcrExecutionMinor = async (data) => {
             await process_and_save_json(image_files, input_folder, primary_json_path, model);
             console.log('⏳ Waiting for 60 seconds...');
             
-            //await delay(60000); // Wait 60 seconds
+            await delay(60000); // Wait 60 seconds
             
             //await process_and_save_json(image_files, input_folder, secondary_json_path, model);
 
@@ -181,7 +181,7 @@ async function process_image(image_path, model, model_name, bounding_box_system_
     const image_filename = path.basename(image_path, path.extname(image_path));
 
     // ✅ Load Image
-    const im = await loadImage(image_path);
+    const im = loadImage(image_path);
     console.log("loading image",image_path)
 
     const imageBuffer = fs.readFileSync(image_path);
@@ -223,11 +223,9 @@ async function process_image(image_path, model, model_name, bounding_box_system_
     }
     // ✅ Extract Bounding Box Data
     const bounding_boxes = extract_bounding_boxes(cleaned_boxes);
-    if (!fs.existsSync(img_output_folder)) {
-        fs.mkdirSync(img_output_folder, { recursive: true });
-    }
+
     // ✅ Draw Bounding Boxes & Save Image (if any found)
-    const { extracted_data, processed_image_path } =  await plot_bounding_boxes(image_path, bounding_boxes, image_filename, img_output_folder);
+    const { extracted_data, processed_image_path } =  plot_bounding_boxes(im, bounding_boxes, image_filename, img_output_folder);
 
     
     // 🚀 **Step 2: Call Gemini to Extract Text & Associate Bounding Boxes**
@@ -273,8 +271,8 @@ async function process_image(image_path, model, model_name, bounding_box_system_
 
     // ✅ Create a mapping of question_number → list of cropped_image_paths
     const cropped_image_map = {};
-    console.log("This is the extracted data : ",extracted_data)
-    extracted_data.forEach(item => {
+    console.log("This is the extracted data : ",extracted_questions)
+    extracted_questions.forEach(item => {
         
         const q_number = String(item.question_number || "");
         const label = item.label || "";
@@ -290,9 +288,8 @@ async function process_image(image_path, model, model_name, bounding_box_system_
             });
         }
     });
-    console.log("This is the Cropped_Image_Map : ", cropped_image_map)
 
-    console.log("This is the extracted questions : ",extracted_questions)
+    
 
     // ✅ Assign "N/A" if no image is found for a question
     extracted_questions.forEach(question => {
@@ -395,224 +392,98 @@ function merge_json_files(primary_json_path, secondary_json_path) {
 
 // ✅ Function to Plot Bounding Boxes & Extract Images
 async function plot_bounding_boxes(image_path, bounding_boxes, image_filename, img_output_folder) {
-        // ✅ Ensure output directory exists
-        if (!fs.existsSync(img_output_folder)) {
-            fs.mkdirSync(img_output_folder, { recursive: true });
-        }
-    
-        // ✅ Load the image
-        const img = await loadImage(image_path);
-        const width = img.width;
-        const height = img.height;
-    
-        // ✅ Create a canvas to draw the image
-        const canvas = createCanvas(width, height);
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-    
-        // ✅ Define colors for bounding boxes
-        const colors = [
-            'red', 'green', 'blue', 'yellow', 'orange', 'pink', 'purple',
-            'brown', 'gray', 'beige', 'turquoise', 'cyan', 'magenta',
-            'lime', 'navy', 'maroon', 'teal', 'olive', 'coral', 'lavender', 'violet',
-            'gold', 'silver'
-        ];
-    
-        let extracted_data = [];
-    
-        console.log("🔍 Bounding boxes received:\n", bounding_boxes);
-    
-        // ✅ Iterate over bounding boxes
-        for (let i = 0; i < bounding_boxes.length; i++) {
-            let bounding_box = bounding_boxes[i];
-            if (!["diagram", "graph"].includes(bounding_box.label)) {
-                continue; // Skip non-diagram/graph bounding boxes
-            }
-    
-            // ✅ Assign a unique color for each box
-            let color = colors[i % colors.length];
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 4;
-            ctx.font = '16px Arial';
-            ctx.fillStyle = color;
-    
-            // ✅ Define margin expansion (5% of width & height)
-            let marginX = Math.round(0.05 * width);
-            let marginY = Math.round(0.05 * height);
-    
-            // ✅ Extract and expand bounding box coordinates
-            let absY1 = Math.max(0, Math.round((bounding_box.bounding_box[0] / 1000) * height) - marginY);
-            let absX1 = Math.max(0, Math.round((bounding_box.bounding_box[1] / 1000) * width) - marginX);
-            let absY2 = Math.min(height, Math.round((bounding_box.bounding_box[2] / 1000) * height) + marginY);
-            let absX2 = Math.min(width, Math.round((bounding_box.bounding_box[3] / 1000) * width) + marginX);
-    
-            // ✅ Ensure coordinates are ordered correctly
-            if (absX1 > absX2) [absX1, absX2] = [absX2, absX1];
-            if (absY1 > absY2) [absY1, absY2] = [absY2, absY1];
-    
-            // ✅ Draw the bounding box
-            ctx.strokeRect(absX1, absY1, absX2 - absX1, absY2 - absY1);
-    
-            // ✅ Draw label text
-            ctx.fillText(bounding_box.label, absX1 + 8, absY1 + 20);
-    
-            // ✅ Extract and Save Cropped Image
-            const croppedCanvas = createCanvas(absX2 - absX1, absY2 - absY1);
-            const croppedCtx = croppedCanvas.getContext('2d');
-            croppedCtx.drawImage(img, absX1, absY1, absX2 - absX1, absY2 - absY1, 0, 0, absX2 - absX1, absY2 - absY1);
-    
-            // ✅ Corrected string interpolation with backticks
-            const cropped_filename = `${image_filename}_cropped_${i + 1}.png`;
-            const cropped_path = path.join(img_output_folder, cropped_filename);
-    
-            console.log(`🔹 Saving cropped image at: ${cropped_path}`);
-    
-            // ✅ Save Cropped Image inside the loop
-            await new Promise((resolve, reject) => {
-                const croppedStream = fs.createWriteStream(cropped_path);
-                const croppedPNGStream = croppedCanvas.createPNGStream();
-                croppedPNGStream.pipe(croppedStream);
-                croppedStream.on("finish", () => {
-                    console.log(`✅ Cropped image saved at: ${cropped_path}`);
-                    resolve();
-                });
-                croppedStream.on("error", reject);
-            });
-    
-            // ✅ Store extracted data
-            extracted_data.push({
-                label: bounding_box.label,
-                bounding_box: bounding_box.bounding_box,
-                question_number: bounding_box.question_number,
-                cropped_image_path: cropped_path
-            });
-        }
-    
-        // ✅ Save Processed Image with Bounding Boxes only once after the loop
-        const processed_filename = `${image_filename}_processed.png`;
-        const processed_path = path.join(img_output_folder, processed_filename);
-        console.log(`🔹 Saving processed image at: ${processed_path}`);
 
-    await new Promise((resolve, reject) => {
-        const processedStream = fs.createWriteStream(processed_path);
-        const processedPNGStream = canvas.createPNGStream();
-        processedPNGStream.pipe(processedStream);
-        processedStream.on("finish", () => {
-            console.log(`✅ Processed image saved at: ${processed_path}`);
-            resolve();
+    // ✅ Load the image
+    const img = await loadImage(image_path);
+    const width = img.width;
+    const height = img.height;
+
+    // ✅ Create a canvas to draw the image
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+
+    // ✅ Define colors for bounding boxes
+    const colors = [
+        'red', 'green', 'blue', 'yellow', 'orange', 'pink', 'purple',
+        'brown', 'gray', 'beige', 'turquoise', 'cyan', 'magenta',
+        'lime', 'navy', 'maroon', 'teal', 'olive', 'coral', 'lavender', 'violet',
+        'gold', 'silver'
+    ];
+
+    let extracted_data = [];
+
+    console.log("🔍 Bounding boxes:\n", bounding_boxes);
+
+    // ✅ Iterate over bounding boxes
+    for (let i = 0; i < bounding_boxes.length; i++) {
+        let bounding_box = bounding_boxes[i];
+        if (!["diagram", "graph"].includes(bounding_box.label)) {
+            continue; // Skip non-diagram/graph bounding boxes
+        }
+
+        // ✅ Assign a unique color for each box
+        let color = colors[i % colors.length];
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.font = '16px Arial';
+        ctx.fillStyle = color;
+
+        // ✅ Define margin expansion (5% of width & height)
+        let marginX = Math.round(0.05 * width);
+        let marginY = Math.round(0.05 * height);
+
+        // ✅ Extract and expand bounding box coordinates
+        let absY1 = Math.max(0, Math.round((bounding_box.bounding_box[0] / 1000) * height) - marginY);
+        let absX1 = Math.max(0, Math.round((bounding_box.bounding_box[1] / 1000) * width) - marginX);
+        let absY2 = Math.min(height, Math.round((bounding_box.bounding_box[2] / 1000) * height) + marginY);
+        let absX2 = Math.min(width, Math.round((bounding_box.bounding_box[3] / 1000) * width) + marginX);
+
+        // ✅ Ensure coordinates are ordered correctly
+        if (absX1 > absX2) [absX1, absX2] = [absX2, absX1];
+        if (absY1 > absY2) [absY1, absY2] = [absY2, absY1];
+
+        // ✅ Draw the bounding box
+        ctx.strokeRect(absX1, absY1, absX2 - absX1, absY2 - absY1);
+
+        // ✅ Draw label text
+        ctx.fillText(bounding_box.label, absX1 + 8, absY1 + 20);
+
+        // ✅ Extract and Save Cropped Image
+        const croppedCanvas = createCanvas(absX2 - absX1, absY2 - absY1);
+        const croppedCtx = croppedCanvas.getContext('2d');
+        croppedCtx.drawImage(img, absX1, absY1, absX2 - absX1, absY2 - absY1, 0, 0, absX2 - absX1, absY2 - absY1);
+
+        const cropped_filename = `${image_filename}_cropped_${i + 1}.png`;
+        const cropped_path = path.join(img_output_folder, cropped_filename);
+
+        // ✅ Save the cropped image
+        const croppedStream = fs.createWriteStream(cropped_path);
+        const croppedPNGStream = croppedCanvas.createPNGStream();
+        croppedPNGStream.pipe(croppedStream);
+
+        // ✅ Save extracted data
+        extracted_data.push({
+            label: bounding_box.label,
+            bounding_box: bounding_box.bounding_box,
+            question_number: bounding_box.question_number,
+            cropped_image_path: cropped_path
         });
-        processedStream.on("error", reject);
-    });
+    }
 
-    console.log("✅ Extracted Data from Bounding Boxes:", extracted_data);
+    // ✅ Save Processed Image with Bounding Boxes
+    const processed_filename = `${image_filename}_processed.png`;
+    const processed_path = path.join(img_output_folder, processed_filename);
+
+    // ✅ Save the processed image with bounding boxes
+    const out = fs.createWriteStream(processed_path);
+    const stream = canvas.createPNGStream();
+    stream.pipe(out);
+
+    out.on('finish', () => console.log(`✅ Processed image saved at: ${processed_path}`));
+
     return { extracted_data, processed_path };
 }
-
-//     //
-//     // ✅ Load the image
-//     const img = await loadImage(image_path);
-//     const width = img.width;
-//     const height = img.height;
-
-//     // ✅ Create a canvas to draw the image
-//     const canvas = createCanvas(width, height);
-//     const ctx = canvas.getContext('2d');
-//     ctx.drawImage(img, 0, 0, width, height);
-
-//     // ✅ Define colors for bounding boxes
-//     const colors = [
-//         'red', 'green', 'blue', 'yellow', 'orange', 'pink', 'purple',
-//         'brown', 'gray', 'beige', 'turquoise', 'cyan', 'magenta',
-//         'lime', 'navy', 'maroon', 'teal', 'olive', 'coral', 'lavender', 'violet',
-//         'gold', 'silver'
-//     ];
-
-//     let extracted_data = [];
-
-//     console.log("🔍 Bounding boxes:\n", bounding_boxes);
-
-//     // ✅ Iterate over bounding boxes
-//     for (let i = 0; i < bounding_boxes.length; i++) {
-//         let bounding_box = bounding_boxes[i];
-//         if (!["diagram", "graph"].includes(bounding_box.label)) {
-//             continue; // Skip non-diagram/graph bounding boxes
-//         }
-
-//         // ✅ Assign a unique color for each box
-//         let color = colors[i % colors.length];
-//         ctx.strokeStyle = color;
-//         ctx.lineWidth = 4;
-//         ctx.font = '16px Arial';
-//         ctx.fillStyle = color;
-
-//         // ✅ Define margin expansion (5% of width & height)
-//         let marginX = Math.round(0.05 * width);
-//         let marginY = Math.round(0.05 * height);
-
-//         // ✅ Extract and expand bounding box coordinates
-//         let absY1 = Math.max(0, Math.round((bounding_box.bounding_box[0] / 1000) * height) - marginY);
-//         let absX1 = Math.max(0, Math.round((bounding_box.bounding_box[1] / 1000) * width) - marginX);
-//         let absY2 = Math.min(height, Math.round((bounding_box.bounding_box[2] / 1000) * height) + marginY);
-//         let absX2 = Math.min(width, Math.round((bounding_box.bounding_box[3] / 1000) * width) + marginX);
-
-//         // ✅ Ensure coordinates are ordered correctly
-//         if (absX1 > absX2) [absX1, absX2] = [absX2, absX1];
-//         if (absY1 > absY2) [absY1, absY2] = [absY2, absY1];
-
-//         // ✅ Draw the bounding box
-//         ctx.strokeRect(absX1, absY1, absX2 - absX1, absY2 - absY1);
-
-//         // ✅ Draw label text
-//         ctx.fillText(bounding_box.label, absX1 + 8, absY1 + 20);
-
-//         // ✅ Extract and Save Cropped Image
-//         const croppedCanvas = createCanvas(absX2 - absX1, absY2 - absY1);
-//         const croppedCtx = croppedCanvas.getContext('2d');
-//         croppedCtx.drawImage(img, absX1, absY1, absX2 - absX1, absY2 - absY1, 0, 0, absX2 - absX1, absY2 - absY1);
-
-//         const cropped_filename = `${image_filename}_cropped_${i + 1}.png`;
-//         const cropped_path = path.join(img_output_folder, cropped_filename);
-//         await new Promise((resolve, reject) => {
-//             const croppedStream = fs.createWriteStream(cropped_path);
-//             const croppedPNGStream = croppedCanvas.createPNGStream();
-//             croppedPNGStream.pipe(croppedStream);
-//             croppedStream.on("finish", () => {
-//                 console.log(`✅ Cropped image saved at: ${cropped_path}`);
-//                 resolve();
-//             });
-//             croppedStream.on("error", reject);
-//         });
-//         extracted_data.push({
-//             label: bounding_box.label,
-//             bounding_box: bounding_box.bounding_box,
-//             question_number: bounding_box.question_number,
-//             cropped_image_path: cropped_path
-//         });
-        
-//         const processed_filename = `${image_filename}_processed.png`;
-
-//         const processed_path = path.join(img_output_folder, processed_filename);
-
-//         await new Promise((resolve, reject) => {
-//             const processedStream = fs.createWriteStream(processed_path);
-//             const processedPNGStream = canvas.createPNGStream();
-//             processedPNGStream.pipe(processedStream);
-//             processedStream.on("finish", () => {
-//                 console.log(`✅ Processed image saved at: ${processed_path}`);
-//                 resolve();
-//             });
-//             processedStream.on("error", reject);
-//         });
-
-//         console.log("✅ Extracted Data from Bounding Boxes:", extracted_data);    return { extracted_data, processed_path };
-       
-//     }
-   
-//     out.on('finish', () => console.log(`✅ Processed image saved at: ${processed_path}`));
-//     console.log("This is the extracted data in plot_bounding_boxes :", extracted_data)
-//     return { extracted_data, processed_path };
-// } 
-
 
 function extract_bounding_boxes(bounding_boxes_json) {
     /**
