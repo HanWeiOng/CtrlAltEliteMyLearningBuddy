@@ -5,39 +5,6 @@ const fs = require('fs');
 const path = require('path');
 const { PDFDocument } = require('pdf-lib');
 const { exec } = require('child_process');
-const upload = multer({ storage: multer.memoryStorage() });
-const { OcrExecutionMinor } = require('../routes/ocrfunctions'); // Only import this
-const client = require('../databasepg');
-
-
-
-router.post('/processImages', async (req, res) => {
-    try {
-        console.log('Request received at /processImages');
-        // Handle logic here
-        const { data } = req.body; 
-        const images = data.images
-        console.log("This is the backend",images )
-        console.log("Executing OCRExecutorMajor with images:", images);
-        await OcrExecutionMinor(data);
-        /*
-
-        //req.body contains your images + exam paper name 
-        //check wether exam paper name is already present in db or not
-        // to upload to s3 bucket with name of exam paper 
-        console.log('req.body:', req.body);
-        console.log('req.files:', req.files);
-        res.status(200).json({ message: 'Successfully uploaded images. Hello YZ' });
-        // call a function to process the uploaded images - with parameter as the exam paper images
-        // toRetrieveFromS3 exam papers images 
-        */
-    } catch (error) {
-        console.error('Error uploading images:', error);
-        res.status(500).json({ message: 'Internal server error. ' + error.message });
-    }
-})
-
-
 
 const upload = multer({ storage: multer.memoryStorage() });
 const processedDataStore = {}; // In-memory storage for processed PDF data
@@ -48,7 +15,7 @@ router.use('/images', express.static(path.join(__dirname, 'output_images')));
 
 // Test route
 router.get('/test', (req, res) => {
-    res.status(200).json({ message: 'Backend is working!' });a
+    res.status(200).json({ message: 'Backend is working!' });
 });
 
 // Function to split PDF and convert pages to images
@@ -152,6 +119,7 @@ router.get('/get_processed_data/:paperName', (req, res) => {
 
 
 
+
 async function toRetrieveFromS3(examPaperName) {
     try {
         //include OCR code here
@@ -161,7 +129,24 @@ async function toRetrieveFromS3(examPaperName) {
     }
 }
 
+// router.push('/upload_images', async (req, res) => {
+//     try {
+//         //req.body contains your images + exam paper name 
+//         //check wether exam paper name is already present in db or not
+//         // to upload to s3 bucket with name of exam paper 
+//         console.log('req.body:', req.body);
+//         console.log('req.files:', req.files);
+//         res.status(200).json({ message: 'Successfully uploaded images.' });
+//         // call a function to process the uploaded images - with parameter as the exam paper images
+//         // toRetrieveFromS3 exam papers images 
+//     } catch (error) {
+//         console.error('Error uploading images:', error);
+//         res.status(500).json({ message: 'Internal server error. ' + error.message });
 
+//     }
+// }),
+
+// function to ask OCR image output to s3BucketCRUD.js
 
 
 router.get('/', async (req, res) => {
@@ -176,6 +161,5 @@ router.get('/', async (req, res) => {
         res.status(500).json({ message: 'Internal server error. ' + error.message });
     }
 });
-
 
 module.exports = router;
