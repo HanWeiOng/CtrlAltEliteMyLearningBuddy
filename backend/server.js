@@ -11,10 +11,13 @@ const client = require('./databasepg'); // PostgreSQL client
 const ocrRoutes = require("./routes/ocrRoutes");
 const createQuizRoutes = require("./routes/createQuizRoutes");
 const practiceQuizRoutes = require("./routes/practiceQuizRoutes");
+const s3BucketCRUD = require("./routes/s3BucketCRUD");
+
 app.use("/api/ocr", ocrRoutes);
 app.use("/api/createQuiz", createQuizRoutes);
 app.use("/api/practiceQuiz", practiceQuizRoutes);
-app.use("/api/s3", s3Routes);
+app.use("/api/s3BucketCRUD", s3BucketCRUD);
+
 
 
 

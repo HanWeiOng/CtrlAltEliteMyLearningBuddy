@@ -25,19 +25,20 @@ const safety_settings = [
 // ✅ Define System Instructions for Bounding Box Extraction
 const bounding_box_system_instructions = `
 Return a JSON array only. Do not include explanations, markdown, or text outside JSON.
-Extract all diagrams, graphs, questions, and answer keys** (not just diagrams).
-- Extract all questions, including plain text questions
-- If answer options are split from their question, ensure they are associated correctly.
+Extract **all diagrams, graphs, questions, and answer keys** (not just diagrams).
+
+- Extract **all questions, including plain text questions**
+- If answer options are split from their question, **ensure they are associated correctly**.
 - Ensure table content, including borders and internal divisions, is fully captured.
 - Maintain logical order when extracting text interrupted by diagrams or spanning multiple lines.
-- Answer Options (A, B, C, D): Label as "box_label": "answer_options".
-- Do not mark them as "question".
-- Extract full answer options (not just the first word of each row/column).
-- If answer options are in a table, extract them row-wise while preserving structure.
-- Ensure answer options are extracted as separate bounding boxes.
-- If answer options belong to a previous question (in case of broken text), associate the answer option and question sentence with the correct question.
-- If the image contains a final answer key, use "box_label": "answer_key".
-- Ensure all rows of the answer key are captured, not just the top row.
+- **Answer Options (A, B, C, D)**: Label as \"box_label\": \"answer_options\".
+  - Do **not** mark them as \"question\".
+  - Extract **full answer options** (not just the first word of each row/column).
+  - If answer options are in a **table**, extract them **row-wise** while preserving structure.
+  - Ensure answer options are extracted as separate bounding boxes.
+  - If answer options belong to a previous question (in case of broken text), associate the answer option and question sentence with the correct question.
+- If the image contains a **final answer key**, use \"box_label\": \"answer_key\".
+- Ensure **all rows of the answer key are captured**, not just the top row.
 - If the answer key is structured in multiple columns, extract them **sequentially from left to right, top to bottom**.
 Ensure every question has a corresponding question number.
 Ensure response follows this structure:
@@ -113,7 +114,6 @@ const OcrExecutionMinor = async(data) => {
         async function processImages() {
             await process_and_save_json(image_files, input_folder, primary_json_path, model);
             console.log('⏳ Waiting for 60 seconds...')
-
             await delay(60000); // Wait 60 seconds
             await process_and_save_json(image_files, input_folder, secondary_json_path, model);
             merge_json_files(primary_json_path, secondary_json_path);
@@ -131,27 +131,18 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function process_and_save_json(image_files, input_folder, output_json_path) {
+function process_and_save_json(image_files, input_folder, output_json_path) {
 
     console.log("Image File ", image_files)
     console.log("Input Folder ", input_folder)
     console.log(output_json_path)
     let all_extracted_data = [];
-    /*
+    
     for (const image_filename of image_files) {
         const image_path = path.join(input_folder, image_filename);
         console.log(`🚀 Processing: ${image_filename}`);
         
         const image_data = process_image(image_path, model, model_name, bounding_box_system_instructions, text_extraction_instructions, safety_settings);  // Process image
-        all_extracted_data = all_extracted_data.concat(image_data);
-    }
-    */
-
-    for (const image_filename of image_files) {
-        const image_path = path.join(input_folder, image_filename);
-        console.log(`🚀 Processing: ${image_filename}`);
-        
-        const image_data = await process_image(image_path, model, model_name, bounding_box_system_instructions, text_extraction_instructions, safety_settings);
         all_extracted_data = all_extracted_data.concat(image_data);
     }
 
@@ -186,77 +177,29 @@ async function process_image(image_path, model,model_name, bounding_box_system_i
      * Processes an image by extracting bounding boxes first, then extracting text with references.
      */
     const image_filename = path.basename(image_path, path.extname(image_path));
-    //console.log(bounding_box_system_instructions)
-    //console.log(text_extraction_instructions)
+
     // ✅ Load Image
-    const im = loadImage(image_path);
+    const im =  loadImage(image_path);
     console.log("loading image",image_path)
 
-    /*
+
     // 🚀 **Step 1: Call Gemini to Extract Bounding Boxes**
     const response_boxes = await model.generateContent({
         contents: [
             "Identify and extract bounding boxes for diagrams and graphs.",
-            bounding_box_system_instructions,
             im  // Assuming `im` is the image content
         ],
         system_instruction: bounding_box_system_instructions,  // Adjusting based on the error
         temperature: 0.5,
         safety_settings: safety_settings
     });
-    
-
-    // 🚀 **Step 1: Call Gemini to Extract Bounding Boxes**
-    const response_boxes = await model.generateContent({
-        contents: [
-            "Identify and extract bounding boxes for diagrams and graphs." + bounding_box_system_instructions,
-            im  // Assuming `im` is the image content
-        ]
-    });
-    */
-
-    const imageBuffer = fs.readFileSync(image_path);
-    const imageBase64 = imageBuffer.toString('base64');
-
-    const response_boxes = await model.generateContent({
-        contents: [
-            { role: "user", parts: [{ text: "Identify and extract bounding boxes for diagrams and graphs." }] },
-            { role: "user", parts: [{ text: bounding_box_system_instructions }] },
-            { role: "user", parts: [{ inlineData: { mimeType: "image/png", data: imageBase64 } }] }
-        ],
-        generationConfig: {
-            temperature: 0.5,
-        },
-        safetySettings: safety_settings
-    });
 
     console.log("I am response_boxes", response_boxes)
 
-    //console.log("I am here!")
-    /*
+    console.log("I am here!")
+
     // ✅ Parse Bounding Box Response
     const raw_boxes = response_boxes.text.trim();
-    const cleaned_boxes = JSON.parse(raw_boxes);
-    */
-
-    // ✅ Extract Text from API Response
-    const raw_boxes = await response_boxes.response.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!raw_boxes) {
-        throw new Error("❌ Failed to extract text from API response.");
-    }
-
-    // ✅ Remove Markdown (```json ... ```)
-    const cleaned_text = raw_boxes.replace(/```json/g, "").replace(/```/g, "").trim();
-
-    try {
-        const cleaned_boxes = JSON.parse(cleaned_text);
-        console.log("✅ Successfully parsed JSON:", cleaned_boxes);
-    } catch (error) {
-        console.error("❌ JSON Parsing Failed:", cleaned_text);
-        throw new Error("Invalid JSON received from API.");
-    }
-
     const cleaned_boxes = JSON.parse(raw_boxes);
 
     // ✅ Extract Bounding Box Data
@@ -265,8 +208,6 @@ async function process_image(image_path, model,model_name, bounding_box_system_i
     // ✅ Draw Bounding Boxes & Save Image (if any found)
     const { extracted_data, processed_image_path } =  plot_bounding_boxes(im, bounding_boxes, image_filename);
 
-
-    /*
     // 🚀 **Step 2: Call Gemini to Extract Text & Associate Bounding Boxes**
     const text_extraction_prompt = `Use the bounding box data: ${JSON.stringify(bounding_boxes)}\n\n${text_extraction_instructions}`;
     const response_text = client.models.generate_content({
@@ -278,34 +219,6 @@ async function process_image(image_path, model,model_name, bounding_box_system_i
             safety_settings: safety_settings,
         },
     });
-   
-
-    // 🚀 **Step 2: Call Gemini to Extract Text & Associate Bounding Boxes**
-    const text_extraction_prompt = `Use the bounding box data: ${JSON.stringify(bounding_boxes)}\n\n${text_extraction_instructions}`;
-    const response_text = client.models.generate_content({
-        model: model_name,
-        contents: [
-            text_extraction_prompt + text_extraction_instructions,
-            im],
-       
-    });
-     */
-
-    const response_text = await model.generateContent({
-        contents: [
-            { role: "user", parts: [{ text: `Use the bounding box data: ${JSON.stringify(bounding_boxes)}` }] },
-            { role: "user", parts: [{ text: text_extraction_instructions }] },
-            { role: "user", parts: [{ inlineData: { mimeType: "image/png", data: imageBase64 } }] }
-        ],
-        generationConfig: {
-            temperature: 0.5,
-            
-        },
-        safetySettings: safety_settings
-    });
-
-
-    
 
     // ✅ Parse Text Extraction Response
     const raw_text_response = response_text.text.trim();
@@ -428,107 +341,6 @@ function merge_json_files(primary_json_path, secondary_json_path) {
     fs.unlinkSync(secondary_json_path);
     console.log(`✅ Merging complete. Updated JSON saved at: ${primary_json_path}`);
 }
-
-
-// ✅ Function to Plot Bounding Boxes & Extract Images
-async function plotBoundingBoxes(image_path, bounding_boxes, image_filename, imgOutputFolder) {
-    /**
-     * Draws bounding boxes on an image, extracts the identified regions, 
-     * and saves both the annotated image and extracted diagrams.
-     */
-
-    // ✅ Load the image
-    const img = await loadImage(imagePath);
-    const width = img.width;
-    const height = img.height;
-
-    // ✅ Create a canvas to draw the image
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, width, height);
-
-    // ✅ Define colors for bounding boxes
-    const colors = [
-        'red', 'green', 'blue', 'yellow', 'orange', 'pink', 'purple',
-        'brown', 'gray', 'beige', 'turquoise', 'cyan', 'magenta',
-        'lime', 'navy', 'maroon', 'teal', 'olive', 'coral', 'lavender', 'violet',
-        'gold', 'silver'
-    ];
-
-    let extractedData = [];
-
-    console.log("🔍 Bounding boxes:\n", boundingBoxes);
-
-    // ✅ Iterate over bounding boxes
-    for (let i = 0; i < boundingBoxes.length; i++) {
-        let boundingBox = boundingBoxes[i];
-        if (!["diagram", "graph"].includes(boundingBox.label)) {
-            continue; // Skip non-diagram/graph bounding boxes
-        }
-
-        // ✅ Assign a unique color for each box
-        let color = colors[i % colors.length];
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 4;
-        ctx.font = '16px Arial';
-        ctx.fillStyle = color;
-
-        // ✅ Define margin expansion (5% of width & height)
-        let marginX = Math.round(0.05 * width);
-        let marginY = Math.round(0.05 * height);
-
-        // ✅ Extract and expand bounding box coordinates
-        let absY1 = Math.max(0, Math.round((boundingBox.bounding_box[0] / 1000) * height) - marginY);
-        let absX1 = Math.max(0, Math.round((boundingBox.bounding_box[1] / 1000) * width) - marginX);
-        let absY2 = Math.min(height, Math.round((boundingBox.bounding_box[2] / 1000) * height) + marginY);
-        let absX2 = Math.min(width, Math.round((boundingBox.bounding_box[3] / 1000) * width) + marginX);
-
-        // ✅ Ensure coordinates are ordered correctly
-        if (absX1 > absX2) [absX1, absX2] = [absX2, absX1];
-        if (absY1 > absY2) [absY1, absY2] = [absY2, absY1];
-
-        // ✅ Draw the bounding box
-        ctx.strokeRect(absX1, absY1, absX2 - absX1, absY2 - absY1);
-
-        // ✅ Draw label text
-        ctx.fillText(boundingBox.label, absX1 + 8, absY1 + 20);
-
-        // ✅ Extract and Save Cropped Image
-        const croppedCanvas = createCanvas(absX2 - absX1, absY2 - absY1);
-        const croppedCtx = croppedCanvas.getContext('2d');
-        croppedCtx.drawImage(img, absX1, absY1, absX2 - absX1, absY2 - absY1, 0, 0, absX2 - absX1, absY2 - absY1);
-
-        const croppedFilename = ${imageFilename}_cropped_${i + 1}.png;
-        const croppedPath = path.join(imgOutputFolder, croppedFilename);
-
-        // ✅ Save the cropped image
-        const croppedStream = fs.createWriteStream(croppedPath);
-        const croppedPNGStream = croppedCanvas.createPNGStream();
-        croppedPNGStream.pipe(croppedStream);
-
-        // ✅ Save extracted data
-        extractedData.push({
-            label: boundingBox.label,
-            bounding_box: boundingBox.bounding_box,
-            question_number: boundingBox.question_number,
-            cropped_image_path: croppedPath
-        });
-    }
-
-    // ✅ Save Processed Image with Bounding Boxes
-    const processedFilename = ${imageFilename}_processed.png;
-    const processedPath = path.join(imgOutputFolder, processedFilename);
-
-    // ✅ Save the processed image with bounding boxes
-    const out = fs.createWriteStream(processedPath);
-    const stream = canvas.createPNGStream();
-    stream.pipe(out);
-
-    out.on('finish', () => console.log(`✅ Processed image saved at: ${processedPath}`));
-
-    return { extractedData, processedPath };
-}
-
 
 
 module.exports = { OcrExecutionMinor };

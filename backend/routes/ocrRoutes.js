@@ -6,9 +6,41 @@ const path = require('path');
 const { PDFDocument } = require('pdf-lib');
 const { exec } = require('child_process');
 const upload = multer({ storage: multer.memoryStorage() });
+const { OcrExecutionMinor } = require('../routes/ocrfunctions'); // Only import this
+const client = require('../databasepg');
+
+
+
+router.post('/processImages', async (req, res) => {
+    try {
+        console.log('Request received at /processImages');
+        // Handle logic here
+        const { data } = req.body; 
+        const images = data.images
+        console.log("This is the backend",images )
+        console.log("Executing OCRExecutorMajor with images:", images);
+        await OcrExecutionMinor(data);
+        /*
+
+        //req.body contains your images + exam paper name 
+        //check wether exam paper name is already present in db or not
+        // to upload to s3 bucket with name of exam paper 
+        console.log('req.body:', req.body);
+        console.log('req.files:', req.files);
+        res.status(200).json({ message: 'Successfully uploaded images. Hello YZ' });
+        // call a function to process the uploaded images - with parameter as the exam paper images
+        // toRetrieveFromS3 exam papers images 
+        */
+    } catch (error) {
+        console.error('Error uploading images:', error);
+        res.status(500).json({ message: 'Internal server error. ' + error.message });
+    }
+})
+
+
 
 router.get('/test', (req, res) => {
-    res.status(200).json({ message: 'Backend is working!' });
+    res.status(200).json({ message: 'Backend is working!' });a
 });
 
 async function split_image(pdfPath) {
@@ -18,10 +50,6 @@ async function split_image(pdfPath) {
             fs.mkdirSync(outputDir, { recursive: true });
         }
 
-        const pdfBytes = fs.readFileSync(pdfPath);
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-        const totalPages = pdfDoc.getPageCount();
-        let imagePaths = [];
 
         for (let i = 0; i < totalPages; i++) {
             const newPdfDoc = await PDFDocument.create();
@@ -31,14 +59,6 @@ async function split_image(pdfPath) {
             const singlePageBytes = await newPdfDoc.save();
             const singlePagePath = path.join(outputDir, `page_${i + 1}.pdf`);
             fs.writeFileSync(singlePagePath, singlePageBytes);
-
-            const imageBasePath = path.join(outputDir, `page_${i + 1}`);
-            await new Promise((resolve, reject) => {
-                exec(`pdftoppm -png "${singlePagePath}" "${imageBasePath}"`, (error) => {
-                    if (error) reject(error);
-                    else resolve();
-                });
-            });
 
             const imagePath = `${imageBasePath}-1.png`;
             if (fs.existsSync(imagePath)) {
@@ -98,7 +118,6 @@ router.post('/split_pdf', upload.fields([
 });
 
 
-
 async function toRetrieveFromS3(examPaperName) {
     try {
         //include OCR code here
@@ -108,26 +127,7 @@ async function toRetrieveFromS3(examPaperName) {
     }
 }
 
-router.push('/upload_images/:fileName', async (req, res) => {
-    try {
 
-
-
-        
-        //req.body contains your images + exam paper name 
-        //check wether exam paper name is already present in db or not
-        // to upload to s3 bucket with name of exam paper 
-        console.log('req.body:', req.body);
-        console.log('req.files:', req.files);
-        res.status(200).json({ message: 'Successfully uploaded images. Hello YZ' });
-        // call a function to process the uploaded images - with parameter as the exam paper images
-        // toRetrieveFromS3 exam papers images 
-    } catch (error) {
-        console.error('Error uploading images:', error);
-        res.status(500).json({ message: 'Internal server error. ' + error.message });
-
-    }
-}),
 
 
 router.get('/', async (req, res) => {
@@ -142,6 +142,6 @@ router.get('/', async (req, res) => {
         res.status(500).json({ message: 'Internal server error. ' + error.message });
     }
 });
-*/
+
 
 module.exports = router;
