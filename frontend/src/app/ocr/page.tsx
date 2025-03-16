@@ -23,6 +23,9 @@ export default function UploadPage() {
   const [selectedBanding, setSelectedBanding] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("PSLE");
 
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+
+
   // Function to determine available bandings
   const getBandings = () => {
     if (selectedSubject === "Mathematics") return ["Math", "E Math", "A Math"];
@@ -64,6 +67,7 @@ export default function UploadPage() {
   const processFiles = async () => {
     setIsProcessing(true);
     setSuccessMessage(null); // Reset success message
+    setImageUrls([]); // Reset image state
 
     const formData = new FormData();
     uploadedFiles.forEach((file) => {
@@ -88,16 +92,27 @@ export default function UploadPage() {
         const result = await response.json();
         console.log("Processed PDF:", result);
 
+        // Extract images from the response
+        const { images, subject, banding, level } = result;
+
         // Set JSON output and success message
         setJsonOutput(JSON.stringify(result, null, 2));
-        setSuccessMessage(`Process completed! Subject: ${result.subject}, Banding: ${result.banding}, Level: ${result.level}`);
+        setSuccessMessage(`Process completed! Subject: ${subject}, Banding: ${banding}, Level: ${level}`);
+
+        // Update state with image URLs
+        if (images && images.length > 0) {
+            setImageUrls(images);
+        } else {
+            setImageUrls([]);
+        }
     } catch (error) {
         console.error("Error processing PDF:", error);
-        setJsonOutput(`Error: ${error.message}`);
+        setJsonOutput(`Error: ${error}`);
     } finally {
         setIsProcessing(false);
     }
 };
+
 
 
 
