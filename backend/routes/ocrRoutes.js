@@ -5,13 +5,21 @@ const fs = require('fs');
 const path = require('path');
 const { PDFDocument } = require('pdf-lib');
 const { exec } = require('child_process');
-const upload = multer({ storage: multer.memoryStorage() });
 
+const upload = multer({ storage: multer.memoryStorage() });
+const processedDataStore = {}; // In-memory storage for processed PDF data
+
+
+// Serve images via an API endpoint
+router.use('/images', express.static(path.join(__dirname, 'output_images')));
+
+// Test route
 router.get('/test', (req, res) => {
     res.status(200).json({ message: 'Backend is working!' });
 });
 
-async function split_image(pdfPath) {
+// Function to split PDF and convert pages to images
+async function split_image(pdfPath, req) {
     try {
         const outputDir = path.join(__dirname, 'output_images');
         if (!fs.existsSync(outputDir)) {
@@ -21,7 +29,7 @@ async function split_image(pdfPath) {
         const pdfBytes = fs.readFileSync(pdfPath);
         const pdfDoc = await PDFDocument.load(pdfBytes);
         const totalPages = pdfDoc.getPageCount();
-        let imagePaths = [];
+        let imageUrls = [];
 
         for (let i = 0; i < totalPages; i++) {
             const newPdfDoc = await PDFDocument.create();
@@ -40,21 +48,26 @@ async function split_image(pdfPath) {
                 });
             });
 
-            const imagePath = `${imageBasePath}-1.png`;
+            const imageFilename = `page_${i + 1}-1.png`;
+            const imagePath = path.join(outputDir, imageFilename);
             if (fs.existsSync(imagePath)) {
-                imagePaths.push(imagePath);
+                // ✅ FIXED: Correct API URL in response
+                const imageUrl = `${req.protocol}://${req.get('host')}/api/ocr/images/${imageFilename}`;
+                imageUrls.push(imageUrl);
             }
 
             fs.unlinkSync(singlePagePath);
         }
 
-        return imagePaths;
+        return imageUrls;
     } catch (error) {
         console.error('Error processing PDF:', error);
         throw error;
     }
 }
 
+
+// Route to handle PDF upload and processing
 router.post('/split_pdf', upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'subject', maxCount: 1 },
@@ -66,22 +79,18 @@ router.post('/split_pdf', upload.fields([
             throw new Error('No file uploaded');
         }
 
-        // Convert buffer to a temporary file
         const tempFilePath = path.join(__dirname, 'temp.pdf');
         fs.writeFileSync(tempFilePath, req.files.file[0].buffer);
-
-        const images = await split_image(tempFilePath);
-
-        // Delete temp file after processing
+        const images = await split_image(tempFilePath, req);
         fs.unlinkSync(tempFilePath);
 
-        // Extract paper name from the original file name
         const paperName = req.files.file[0].originalname.replace('.pdf', '');
-
-        // Extract additional data from the request body
         const subject = req.body.subject;
         const banding = req.body.banding;
         const level = req.body.level;
+
+        // ✅ Store processed data
+        processedDataStore[paperName] = { paperName, images, subject, banding, level };
 
         res.status(200).json({
             message: 'Successfully processed PDF.',
@@ -96,6 +105,18 @@ router.post('/split_pdf', upload.fields([
         res.status(500).json({ message: 'Internal server error: ' + error.message });
     }
 });
+
+router.get('/get_processed_data/:paperName', (req, res) => {
+    const paperName = req.params.paperName;
+    const data = processedDataStore[paperName];
+
+    if (!data) {
+        return res.status(404).json({ message: "No data found for this paper." });
+    }
+
+    res.status(200).json(data);
+});
+
 
 
 
