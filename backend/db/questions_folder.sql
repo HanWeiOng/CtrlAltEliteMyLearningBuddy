@@ -1,3 +1,4 @@
+-- Create the table only if it does not exist
 CREATE TABLE IF NOT EXISTS questions_folder (
     id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
@@ -14,8 +15,7 @@ CREATE TABLE IF NOT EXISTS questions_folder (
     CONSTRAINT chk_valid_question_ids CHECK (jsonb_typeof(question_ids) = 'array')
 );
 
-ALTER TABLE questions_folder ADD CONSTRAINT unique_folder_per_user UNIQUE (username, folder_name);
-
+-- Insert default data if not already present
 INSERT INTO questions_folder (username, folder_name, subject, banding, level, question_ids) 
 VALUES 
     ('alice123', 'Algebra Basics', 'Mathematics', 'E Math', 'O Level', '[523, 532, 545]'::JSONB),
