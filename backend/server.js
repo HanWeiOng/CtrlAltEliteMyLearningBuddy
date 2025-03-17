@@ -13,6 +13,7 @@ const createQuizRoutes = require("./routes/createQuizRoutes");
 const practiceQuizRoutes = require("./routes/practiceQuizRoutes");
 const s3BucketCRUD = require("./routes/s3BucketCRUD");
 const runTopicLabeling = require("./routes/topic_label");
+const processAllSubjects = require("./routes/insertTopics");
 
 app.use("/api/ocr", ocrRoutes);
 app.use("/api/createQuiz", createQuizRoutes);
