@@ -1,0 +1,350 @@
+{
+  "Cell Structure and Organisation": {
+    "learning_outcomes": [
+      {
+        "sub_topic": "Cell Structure and Function",
+        "description": "identify and state the functions of the following cell structures (including organelles) of typical plant and animal cells from diagrams, light micrographs and as seen under the light microscope using prepared slides and fresh material treated with an appropriate temporary staining technique:  \u2022 cell wall  \u2022 cell membrane  \u2022 cytoplasm  \u2022 nucleus  \u2022 cell vacuoles (large, sap-filled in plant cells, small, temporary in animal cells)  \u2022 chloroplasts"
+      },
+      {
+        "sub_topic": "Organelle Identification and Function: Mitochondria and Ribosomes",
+        "description": "identify and state the functions of the following organelles from diagrams and electron micrographs:  \u2022 mitochondria \u2022 ribosomes"
+      },
+      {
+        "sub_topic": "**Animal vs. Plant Cell Structure**",
+        "description": "compare the structure of typical animal and plant cells"
+      },
+      {
+        "sub_topic": "**Cell Structure and Function Adaptations**",
+        "description": "explain how the structures of specialised cells are adapted to their functions (e.g. muscle cell \u2013 many mitochondria to supply more energy, root hair cell \u2013 large surface area of cell membrane for greater absorption, red blood cell \u2013 lack of nucleus allowing it to transport more oxygen)"
+      }
+    ]
+  },
+  "Movement of Substances": {
+    "learning_outcomes": [
+      {
+        "sub_topic": "**Diffusion in Plants and Humans**",
+        "description": "define diffusion and describe its role in nutrient uptake and gaseous exchange in plants and humans"
+      },
+      {
+        "sub_topic": "Osmosis and its Effects on Tissues",
+        "description": "define osmosis, investigate and describe the effects of osmosis on plant and animal tissues"
+      }
+    ]
+  },
+  "Biological Molecules": {
+    "learning_outcomes": [
+      {
+        "sub_topic": "Macronutrient Roles in Organisms",
+        "description": "state the main roles of carbohydrates, fats and proteins in living organisms: \u2022 carbohydrates as an immediate source of energy \u2022 fats for insulation and long-term storage of energy \u2022 proteins for growth and repair of cells"
+      },
+      {
+        "sub_topic": "**Food Tests (or Food Testing)**",
+        "description": "describe and carry out tests for:  \u2022 starch (using iodine in potassium iodide solution)  \u2022 reducing sugars (using Benedict\u2019s solution)  \u2022 protein (using biuret solution)  \u2022 fats (using ethanol)"
+      },
+      {
+        "sub_topic": "**Macromolecule Synthesis: From Monomers to Polymers**",
+        "description": "state that large molecules are synthesised from smaller basic units:  \u2022 cellulose, glycogen and starch from glucose  \u2022 polypeptides and proteins from amino acids  \u2022 lipids such as fats from glycerol and fatty acids"
+      },
+      {
+        "sub_topic": "Enzyme Action: Lock and Key Hypothesis",
+        "description": "explain the mode of action of enzymes in terms of an active site, enzyme-substrate complex and enzyme specificity using the \u2018lock and key\u2019 hypothesis"
+      },
+      {
+        "sub_topic": "**Factors Affecting Enzyme Activity: Temperature and pH**",
+        "description": "investigate and explain the effects of temperature and pH on the rate of enzyme catalysed reactions"
+      }
+    ]
+  },
+  "Nutrition in Humans": {
+    "learning_outcomes": [
+      {
+        "sub_topic": "**Functions of the Digestive System**",
+        "description": "describe the functions of the various parts of the digestive system: mouth, salivary glands, oesophagus, stomach, duodenum, pancreas, gall bladder, liver, ileum, colon, rectum, anus, in relation to ingestion, digestion, absorption, assimilation and egestion of food, as appropriate"
+      },
+      {
+        "sub_topic": "Enzymes in Digestion: Function, Substrates, and Products",
+        "description": "describe the functions of enzymes (e.g. amylase, maltase, protease, lipase) in digestion, listing the substrates and end-products"
+      },
+      {
+        "sub_topic": "The Hepatic Portal Vein: Nutrient Transport",
+        "description": "state the function of the hepatic portal vein as the transport of blood rich in absorbed nutrients from the small intestine to the liver"
+      },
+      {
+        "sub_topic": "The Liver's Role in Metabolic Processes",
+        "description": "state the role of the liver in:  \u2022 conversion of glucose to glycogen and vice versa  \u2022 fat digestion \u2022 metabolism of amino acids and formation of urea \u2022 breakdown of alcohol \u2022 breakdown of hormones"
+      },
+      {
+        "sub_topic": "**Hormone Definition**",
+        "description": "define a hormone as a chemical substance, produced by a gland, carried by the blood, which alters the activity of one or more specific target organs"
+      },
+      {
+        "sub_topic": "Hormonal Control of Blood Glucose",
+        "description": "outline how blood glucose concentration is regulated by insulin and glucagon"
+      },
+      {
+        "sub_topic": "Type 2 Diabetes: Insulin Resistance and Hyperglycemia",
+        "description": "describe type 2 diabetes mellitus in terms of a persistently higher than normal blood glucose concentration due to the body's resistance to insulin or insufficient production of insulin"
+      },
+      {
+        "sub_topic": "Managing Type 2 Diabetes: Risks & Strategies",
+        "description": "identify the risk factors of (e.g. unhealthy diet and sedentary lifestyle) and ways to manage type 2 diabetes mellitus"
+      }
+    ]
+  },
+  "Transport in Humans": {
+    "learning_outcomes": [
+      {
+        "sub_topic": "Major Vessels of Key Organs",
+        "description": "identify the main blood vessels to and from the heart, lungs, liver and kidney"
+      },
+      {
+        "sub_topic": "**Structure-Function Relationships in Blood Vessels**",
+        "description": "relate the structures of arteries, veins and capillaries to their functions (specific names of muscle layers in arteries and veins are not required)"
+      },
+      {
+        "sub_topic": "**Blood Components: Structure and Function**",
+        "description": "state the components of blood and their roles in transport and defence: \u2022 red blood cells \u2013 haemoglobin for oxygen transport  \u2022 plasma \u2013 transport of blood cells, ions, soluble food substances, hormones, carbon dioxide, urea, vitamins, plasma proteins  \u2022 white blood cells \u2013 phagocytosis, antibody formation and tissue rejection \u2022 platelets \u2013 fibrinogen to fibrin, causing clotting"
+      },
+      {
+        "sub_topic": "**Heart Structure and Function: Muscular Contraction and Valve Mechanics**",
+        "description": "describe the structure and function of the heart in terms of muscular contraction and the working of valves (histology of the heart muscle, names of nerves and transmitter substances are not required)"
+      },
+      {
+        "sub_topic": "Coronary Heart Disease: Occlusion, Causes, and Prevention",
+        "description": "describe coronary heart disease in terms of the occlusion of coronary arteries and list the possible causes, such as unhealthy diet, sedentary lifestyle, and smoking, stating the possible preventative measures"
+      }
+    ]
+  },
+  "Respiration in Humans": {
+    "learning_outcomes": [
+      {
+        "sub_topic": "**The Human Respiratory System: Structure and Function**",
+        "description": "identify the larynx, trachea, bronchi, bronchioles, alveoli and associated capillaries and state their functions in human gaseous exchange"
+      },
+      {
+        "sub_topic": "Alveolar Structure and Gas Exchange",
+        "description": "explain how the structure of an alveolus is suited for its function of gaseous exchange"
+      },
+      {
+        "sub_topic": "Toxic Components of Tobacco Smoke and Their Health Effects",
+        "description": "state the major toxic components of tobacco smoke \u2013 nicotine, tar and carbon monoxide, and describe their effects on health"
+      },
+      {
+        "sub_topic": "Aerobic Respiration: Definition and Equation",
+        "description": "define aerobic respiration in human cells as the release of energy by the breakdown of glucose in the presence of oxygen and state the word equation"
+      },
+      {
+        "sub_topic": "Anaerobic Respiration: Definition and Word Equation",
+        "description": "define anaerobic respiration in human cells as the release of energy by the breakdown of glucose in the absence of oxygen and state the word equation"
+      },
+      {
+        "sub_topic": "Anaerobic Respiration and Oxygen Debt During Exercise",
+        "description": "explain why cells respire anaerobically during vigorous exercise resulting in an oxygen debt that is removed by rapid, deep breathing after exercise 7.Infectious Diseases in Humans"
+      },
+      {
+        "sub_topic": "Infectious vs. Non-Infectious Diseases",
+        "description": "state that infectious diseases can be spread from person to person whereas non-infectious diseases cannot and identify examples of each"
+      },
+      {
+        "sub_topic": "**Transmission of Infectious Diseases**",
+        "description": "explain that infectious diseases are caused by pathogens such as bacteria and viruses and can be spread from person to person through body fluids, food and water (knowledge of the structure of bacteria and viruses is not required)"
+      },
+      {
+        "sub_topic": "Signs and Symptoms of Influenza and Pneumococcal Disease",
+        "description": "state the signs and symptoms of:  \u2022 influenza \u2013 caused by the influenza virus \u2022 pneumococcal disease \u2013 caused by the bacteria, pneumococcus"
+      },
+      {
+        "sub_topic": "**Transmission and Prevention of Influenza and Pneumococcus**",
+        "description": "describe the transmission and methods to reduce the transmission of:  \u2022 influenza virus  \u2022 pneumococcus"
+      },
+      {
+        "sub_topic": "Vaccine Mechanisms: Antibody Production",
+        "description": "state that vaccines contain an agent that resembles a pathogen and prevent infectious diseases by stimulating white blood cells to quickly produce antibodies when the pathogen invades"
+      },
+      {
+        "sub_topic": "Antibiotics vs. Viruses",
+        "description": "state that antibiotics kill bacteria and are ineffective against viruses"
+      },
+      {
+        "sub_topic": "Antibiotic Resistance: The Role of Misuse",
+        "description": "explain that the misuse and overuse of antibiotics may accelerate the emergence of antibiotic-resistant bacteria"
+      }
+    ]
+  },
+  "Nutrition and Transport in Flowering Plants": {
+    "learning_outcomes": [
+      {
+        "sub_topic": "**Dicot Leaf Anatomy and Function**",
+        "description": "identify the cellular and tissue structure of a dicotyledonous leaf, as seen in transverse section using the light microscope and describe the significance of these features in terms of their functions, such as the \u2022 distribution of chloroplasts for photosynthesis  \u2022 stomata and mesophyll cells for gaseous exchange  \u2022 vascular bundles for transport"
+      },
+      {
+        "sub_topic": "Vascular Tissue Identification and Function in Dicot Stems and Leaves",
+        "description": "identify the positions of and state the functions of xylem vessels and phloem in sections of a herbaceous dicotyledonous leaf and stem, under the light microscope"
+      },
+      {
+        "sub_topic": "Root Hair Cell Structure and Function in Water and Ion Uptake",
+        "description": "explain how the structure of a root hair cell is suited for its function of water and ion uptake"
+      },
+      {
+        "sub_topic": "Chlorophyll's Role in Photosynthesis",
+        "description": "state that chlorophyll absorbs light energy and converts it into chemical energy for the formation of carbohydrates and their subsequent uses"
+      },
+      {
+        "sub_topic": "**Photosynthesis: The Basis of Life**",
+        "description": "briefly explain why most forms of life are completely dependent on photosynthesis"
+      },
+      {
+        "sub_topic": "Photosynthesis: Word Equation",
+        "description": "state the word equation for photosynthesis (details of light-dependent and light-independent stages are not required)"
+      },
+      {
+        "sub_topic": "**Carbon Dioxide Entry into Leaves**",
+        "description": "describe how carbon dioxide reaches mesophyll cells in a leaf"
+      },
+      {
+        "sub_topic": "**Factors Affecting Photosynthesis**",
+        "description": "investigate and describe the effects of varying light intensity, carbon dioxide concentration and temperature on the rate of photosynthesis (e.g. in submerged aquatic plants)"
+      },
+      {
+        "sub_topic": "Transpiration: Definition",
+        "description": "state that transpiration is the loss of water vapour from the stomata"
+      },
+      {
+        "sub_topic": "Transpiration Pull: Water Ascent in Stems",
+        "description": "briefly explain the movement of water through the stem in terms of transpiration pull"
+      },
+      {
+        "sub_topic": "Factors Affecting Transpiration and Wilting",
+        "description": "investigate and explain: \u2022 the effects of variation of air movement, temperature, humidity and light intensity on transpiration rate \u2022 how wilting occurs"
+      },
+      {
+        "sub_topic": "**Phloem Translocation Definition**",
+        "description": "define the term translocation as the transport of food (mainly sucrose) in the phloem tissue"
+      }
+    ]
+  },
+  "Organisms and their Environment": {
+    "learning_outcomes": [
+      {
+        "sub_topic": "Energy Flow: A Linear Process",
+        "description": "describe the non-cyclical nature of energy flow"
+      },
+      {
+        "sub_topic": "**Roles in Food Chains & Webs**",
+        "description": "describe the roles of producers, consumers and decomposers in food chains and food webs"
+      },
+      {
+        "sub_topic": "Energy Transfer and Trophic Efficiency",
+        "description": "explain how energy losses occur along food chains, and discuss the efficiency of energy transfer between trophic levels"
+      },
+      {
+        "sub_topic": "Pyramid Interpretation",
+        "description": "interpret pyramids of numbers and biomass"
+      },
+      {
+        "sub_topic": "The Carbon Cycle: Sinks and Flows",
+        "description": "describe how carbon is cycled within an ecosystem and outline the role of forests and oceans as carbon sinks"
+      },
+      {
+        "sub_topic": "Human Impact on Atmospheric CO2 and Global Warming",
+        "description": "describe how human activities, such as deforestation and use of fossil fuels, cause an increase in atmospheric carbon dioxide concentration, leading to global warming"
+      },
+      {
+        "sub_topic": "**Mitigating Global Warming: Human Actions**",
+        "description": "discuss how human actions can reduce the effects of global warming"
+      }
+    ]
+  },
+  "Molecular Genetics": {
+    "learning_outcomes": [
+      {
+        "sub_topic": "**DNA, Genes, and Chromosomes: An Interconnected Overview**",
+        "description": "outline the relationships among DNA, genes and chromosomes"
+      },
+      {
+        "sub_topic": "**DNA Structure: Double Helix and Nucleotide Composition**",
+        "description": "state that DNA is a double helix comprising two strands of nucleotides, each nucleotide formed of a sugar, a phosphate group and one of four different bases"
+      },
+      {
+        "sub_topic": "**Complementary Base Pairing Rules**",
+        "description": "state the rule of complementary base pairing"
+      },
+      {
+        "sub_topic": "Genes: Structure, Function, and Inheritance",
+        "description": "state that each gene:  \u2022 is a sequence of nucleotides, as part of a DNA molecule \u2022 codes for one polypeptide \u2022 is a unit of inheritance"
+      },
+      {
+        "sub_topic": "DNA as the Carrier of Genetic Information",
+        "description": "state that DNA is used to carry the genetic code, which is used to synthesise specific polypeptides (details of transcription and translation are not required)"
+      }
+    ]
+  },
+  "Reproduction in Humans": {
+    "learning_outcomes": [
+      {
+        "sub_topic": "Sexual Reproduction: Fusion of Gametes and Genetic Variation",
+        "description": "define sexual reproduction as the process involving the fusion of nuclei of male and female gametes to form a zygote and the production of genetically dissimilar offspring"
+      },
+      {
+        "sub_topic": "**Male Reproductive Anatomy and Function**",
+        "description": "identify the male reproductive system and state the functions of: testes, scrotum, sperm ducts, prostate gland, urethra and penis"
+      },
+      {
+        "sub_topic": "**Female Reproductive Anatomy and Function**",
+        "description": "identify the female reproductive system and state the functions of: ovaries, oviducts, uterus, cervix and vagina"
+      },
+      {
+        "sub_topic": "**Hormonal Control of the Menstrual Cycle**",
+        "description": "outline the menstrual cycle with reference to the alternation of menstruation and ovulation, the natural variation in its length, and the fertile and infertile phases of the cycle with reference to the effects of progesterone and oestrogen only"
+      },
+      {
+        "sub_topic": "Fertilisation and Early Zygote Development: From Ball of Cells to Implantation",
+        "description": "describe fertilisation and early development of the zygote simply in terms of the formation of a ball of cells which becomes implanted in the wall of the uterus"
+      },
+      {
+        "sub_topic": "HIV Transmission and Prevention",
+        "description": "discuss the transmission of human immunodeficiency virus (HIV) and methods to reduce transmission"
+      }
+    ]
+  },
+  "Inheritance": {
+    "learning_outcomes": [
+      {
+        "sub_topic": "Gene vs. Allele: Defining the Difference",
+        "description": "distinguish between the terms gene and allele"
+      },
+      {
+        "sub_topic": "**Types of Variation**",
+        "description": "distinguish between continuous and discontinuous variation and give examples of each"
+      },
+      {
+        "sub_topic": "Basic Genetic Terminology",
+        "description": "explain the terms dominant, recessive, homozygous, heterozygous, phenotype and genotype"
+      },
+      {
+        "sub_topic": "**Simple Mendelian Genetics & Ratios**",
+        "description": "predict the results of simple crosses with expected ratios of 3:1 and 1:1, using the terms homozygous, heterozygous, F1 generation and F2 generation"
+      },
+      {
+        "sub_topic": "**Deviation from Expected Ratios: The Role of Chance**",
+        "description": "explain why observed ratios often differ from expected ratios, especially when there are small numbers of progeny"
+      },
+      {
+        "sub_topic": "Monohybrid Crosses and Genetic Diagrams",
+        "description": "use genetic diagrams to solve problems involving monohybrid inheritance"
+      },
+      {
+        "sub_topic": "Chromosomal Sex Determination",
+        "description": "describe the determination of sex in humans \u2013 XX and XY chromosomes"
+      },
+      {
+        "sub_topic": "**Types of Mutations**",
+        "description": "describe mutation as a change in the sequence of a gene such as in sickle cell anaemia, or in the chromosome number, such as the 47 chromosomes in the condition known as Down syndrome"
+      },
+      {
+        "sub_topic": "**Causes of Increased Mutation Rate**",
+        "description": "name ionising radiation (e.g. X-ray) and chemical mutagens as factors which may increase the rate of mutation"
+      }
+    ]
+  }
+}
