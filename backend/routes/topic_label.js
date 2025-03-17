@@ -7,7 +7,7 @@ const path = require("path");
 // Initialize Hugging Face Inference API
 const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
-// PostgreSQL Client Setup (Disable SSL)
+// PostgreSQL Client Setup (Keep Connection Open)
 const client = new Client({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -20,24 +20,28 @@ const client = new Client({
     }
 });
 
+// Connect to the database once at startup
+client.connect().then(() => {
+    console.log("✅ Connected to PostgreSQL");
+}).catch(err => {
+    console.error("❌ Database connection error:", err.message);
+});
+
 // File paths
 const jsonFilePath = "/Applications/MAMP/htdocs/YZ_ctrl-alt-elite/backend/routes/output_json/AES 2019_original.json";
 const updatedFilePath = "/Applications/MAMP/htdocs/YZ_ctrl-alt-elite/backend/routes/output_json/AES_2019_with_topics.json";
 
-// Function to Fetch Topic Labels from PostgreSQL (Use sub_topic + description for analysis)
+// Function to Fetch Topic Labels (No need to reconnect each time)
 const fetchTopicLabels = async () => {
     try {
-        await client.connect();
         const result = await client.query("SELECT topic_name, sub_topic, description FROM topic_labelling");
         return result.rows.map(row => ({
-            sub_topic: row.sub_topic,  // Used for returning in final JSON
-            text: `${row.sub_topic}: ${row.description}` // Used for similarity ranking
+            sub_topic: row.sub_topic,  
+            text: `${row.sub_topic}: ${row.description}` 
         }));
     } catch (err) {
         console.error("❌ Error fetching topic labels:", err.message);
         return [];
-    } finally {
-        await client.end();
     }
 };
 
@@ -62,11 +66,10 @@ const rankAndMatchTopics = async () => {
         for (let question of jsonData) {
             if (!question.question_text) continue;
 
-
             // Get embeddings for question & topics
             const embeddings = await hf.featureExtraction({
                 model: "sentence-transformers/all-MiniLM-L6-v2",
-                inputs: [question.question_text, ...documents.map(d => d.text)] // Use sub_topic + description for ranking
+                inputs: [question.question_text, ...documents.map(d => d.text)] 
             });
 
             // Extract question embedding
@@ -74,7 +77,7 @@ const rankAndMatchTopics = async () => {
 
             // Compute cosine similarity scores
             const scores = embeddings.slice(1).map((embedding, index) => ({
-                sub_topic: documents[index].sub_topic, // Store only sub_topic for JSON output
+                sub_topic: documents[index].sub_topic, 
                 score: cosineSimilarity(questionEmbedding, embedding)
             }));
 
@@ -83,7 +86,6 @@ const rankAndMatchTopics = async () => {
 
             // Assign best-matching topic (Only Subtopic in JSON)
             question.topic_label = scores.length > 0 ? scores[0].sub_topic : "Unknown";
-
         }
 
         // Save updated JSON file
