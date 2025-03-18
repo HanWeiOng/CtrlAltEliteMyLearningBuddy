@@ -28,8 +28,8 @@ client.connect().then(() => {
 });
 
 // File paths
-const jsonFilePath = "/Applications/MAMP/htdocs/YZ_ctrl-alt-elite/backend/routes/output_json/AES 2019_original.json";
-const updatedFilePath = "/Applications/MAMP/htdocs/YZ_ctrl-alt-elite/backend/routes/output_json/AES_2019_with_topics.json";
+const jsonFilePath = "./routes/output_json/AES 2019_original.json";
+const updatedFilePath = "./routes/output_json/AES_2019_with_topics.json";
 
 // Function to Fetch Topic Labels (No need to reconnect each time)
 const fetchTopicLabels = async () => {

@@ -19,12 +19,11 @@ const client = new Client({
 // ✅ Function to Insert JSON Data into PostgreSQL
 const insertJSONData = async (jsonFileName) => {
     try {
-        const jsonFilePath = path.join(__dirname, './output_json', jsonFileName);
+        const jsonFilePath = path.join(__dirname, './output_json/with_topics', jsonFileName);
         if (!fs.existsSync(jsonFilePath)) {
             console.error('❌ JSON file not found:', jsonFilePath);
             return;
         }
-
         // Read and parse JSON file
         const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
         const parsedJSON = JSON.parse(jsonData);
@@ -36,7 +35,7 @@ const insertJSONData = async (jsonFileName) => {
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
                  ON CONFLICT DO NOTHING;`,
                 [
-                    jsonFilePath,
+                    jsonFileName.split("_").slice(0, 2).join(" "),
                     item.page_number,
                     item.question_number,
                     item.question_text,
@@ -61,7 +60,7 @@ const processAllJSONFiles = async () => {
         console.log('✅ Connected to the database');
 
         // Read all JSON files in the "data" directory
-        const dataFolder = path.join(__dirname, '../data');
+        const dataFolder = path.join(__dirname, '../routes/output_json/with_topics');
         const jsonFiles = fs.readdirSync(dataFolder).filter(file => file.endsWith(".json"));
 
         // Insert each JSON file dynamically
