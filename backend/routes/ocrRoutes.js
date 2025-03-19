@@ -7,10 +7,12 @@ const { PDFDocument } = require('pdf-lib');
 const { exec } = require('child_process');
 const upload = multer({ storage: multer.memoryStorage() });
 const { OcrExecutionMinor } = require('../routes/ocrfunctions'); // Only import this
+const { executeTopicLabel } = require('../routes/topic_label')
 const client = require('../databasepg');
 const processedDataStore = {}; // In-memory storage for processed PDF data
 
 
+// OCR Scraping and Structuring of Data
 router.post('/processImages', async (req, res) => {
     try {
         console.log('Request received at /processImages');
@@ -31,6 +33,16 @@ router.post('/processImages', async (req, res) => {
         // call a function to process the uploaded images - with parameter as the exam paper images
         // toRetrieveFromS3 exam papers images 
         */
+    } catch (error) {
+        console.error('Error uploading images:', error);
+        res.status(500).json({ message: 'Internal server error. ' + error.message });
+    }
+})
+
+// Labeling of JSON file after OCR is completed.
+router.post('/topiclabel', async (req, res) => {
+    try {
+        await executeTopicLabel();
     } catch (error) {
         console.error('Error uploading images:', error);
         res.status(500).json({ message: 'Internal server error. ' + error.message });
