@@ -12,6 +12,9 @@ const subjects = [
   "English",
 ] as const;
 
+const mathBandings = ["Math", "E Math", "A Math"];
+const scienceBandings = ["Combined", "Pure"];
+
 export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -28,9 +31,9 @@ export default function UploadPage() {
 
   // Function to determine available bandings
   const getBandings = () => {
-    if (selectedSubject === "Mathematics") return ["Math", "E Math", "A Math"];
+    if (selectedSubject === "Mathematics") return mathBandings;
     if (selectedSubject === "Biology" || selectedSubject === "Chemistry")
-      return ["Combined", "Pure"];
+      return scienceBandings;
     return [];
   };
 
@@ -68,50 +71,50 @@ export default function UploadPage() {
     setIsProcessing(true);
     setSuccessMessage(null); // Reset success message
     setImageUrls([]); // Reset image state
-
+  
     const formData = new FormData();
     uploadedFiles.forEach((file) => {
-        formData.append("file", file);
+      formData.append("file", file);
     });
-
+  
     // Append additional data to the form data
     formData.append("subject", selectedSubject);
-    formData.append("banding", selectedBanding);
+    formData.append("banding", selectedBanding || (selectedSubject === "Mathematics" ? mathBandings[0] : scienceBandings[0]));
     formData.append("level", selectedLevel);
-
+  
     try {
-        const response = await fetch("http://localhost:5003/api/ocr/split_pdf", {
-            method: "POST",
-            body: formData,
-        });
-
-        if (!response.ok) {
-            throw new Error("Failed to process PDF");
-        }
-
-        const result = await response.json();
-        console.log("Processed PDF:", result);
-
-        // Extract images from the response
-        const { images, subject, banding, level } = result;
-
-        // Set JSON output and success message
-        setJsonOutput(JSON.stringify(result, null, 2));
-        setSuccessMessage(`Process completed! Subject: ${subject}, Banding: ${banding}, Level: ${level}`);
-
-        // Update state with image URLs
-        if (images && images.length > 0) {
-            setImageUrls(images);
-        } else {
-            setImageUrls([]);
-        }
+      const response = await fetch("http://localhost:5003/api/ocr/split_pdf", {
+        method: "POST",
+        body: formData,
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to process PDF");
+      }
+  
+      const result = await response.json();
+      console.log("Processed PDF:", result);
+  
+      // Extract images from the response
+      const { images, subject, banding, level } = result;
+  
+      // Set JSON output and success message
+      setJsonOutput(JSON.stringify(result, null, 2));
+      setSuccessMessage(`Process completed! Subject: ${subject}, Banding: ${banding}, Level: ${level}`);
+  
+      // Update state with image URLs
+      if (images && images.length > 0) {
+        setImageUrls(images);
+      } else {
+        setImageUrls([]);
+      }
     } catch (error) {
-        console.error("Error processing PDF:", error);
-        setJsonOutput(`Error: ${error}`);
+      console.error("Error processing PDF:", error);
+      setJsonOutput(`Error: ${error}`);
     } finally {
-        setIsProcessing(false);
+      setIsProcessing(false);
     }
-};
+  };
 
 
 
