@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import Navbar from "@/components/ui/navbar"
 
 // Sample documents data
 const sampleDocuments = [
@@ -93,23 +94,7 @@ export default function DocumentsPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
-      <header className="container mx-auto py-6 px-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link href="/">
-              <Book className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">EduContent</h1>
-          </div>
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Home</span>
-          </Link>
-        </div>
-      </header>
+      <Navbar/>
 
       <main className="container mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-10">
