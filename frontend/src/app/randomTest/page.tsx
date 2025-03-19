@@ -46,6 +46,7 @@ export default function CreateQuizPage() {
 
     const OcrTest = async () => {
         try {
+            /*
             const test_paper = 'AES%202019'
             console.log(test_paper)
 
@@ -61,6 +62,7 @@ export default function CreateQuizPage() {
             }
         
             const staticListOfImages = await responseListOfImages.json(); // Parse response
+            */
             
             console.log ("This is the data :", staticListOfImages)
 

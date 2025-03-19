@@ -49,7 +49,6 @@ router.post('/topiclabel', async (req, res) => {
     }
 })
 
-
 // Serve images via an API endpoint
 router.use('/images', express.static(path.join(__dirname, 'output_images')));
 
