@@ -4,6 +4,8 @@ const { Client } = require("pg");
 const fs = require("fs");
 const path = require("path");
 
+require('events').EventEmitter.defaultMaxListeners = 20;
+
 // Initialize Hugging Face Inference API
 const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
@@ -28,8 +30,8 @@ client.connect().then(() => {
 });
 
 // File paths
-const jsonFilePath = "./routes/output_json/AES 2019_original.json";
-const updatedFilePath = "./routes/output_json/AES_2019_with_topics.json";
+//const jsonFilePath = "/Applications/MAMP/htdocs/YZ_ctrl-alt-elite/backend/routes/output_json/AES 2019_original.json";
+//const updatedFilePath = "/Applications/MAMP/htdocs/YZ_ctrl-alt-elite/backend/routes/output_json/AES_2019_with_topics.json";
 
 // Function to Fetch Topic Labels (No need to reconnect each time)
 const fetchTopicLabels = async () => {
@@ -54,13 +56,20 @@ const cosineSimilarity = (a, b) => {
 };
 
 // Function to Rank & Match Topics for Questions
-const rankAndMatchTopics = async () => {
+const rankAndMatchTopics = async (jsonFilePath, updatedFilePath) => {
     try {
+
+        console.log(`📂 Attempting to process file: ${jsonFilePath}`);
+        //console.log(updatedFilePath)
+
         // Read the JSON file
         const jsonData = JSON.parse(fs.readFileSync(jsonFilePath, "utf8"));
+        //console.log("This is jsonData in topic_label.js",jsonData)
 
         // Fetch topics from the database
         const documents = await fetchTopicLabels();
+
+        //console.log("This is documents in topic_label.js", documents)
 
         // Process each question
         for (let question of jsonData) {
@@ -85,8 +94,11 @@ const rankAndMatchTopics = async () => {
             scores.sort((a, b) => b.score - a.score);
 
             // Assign best-matching topic (Only Subtopic in JSON)
-            question.topic_label = scores.length > 0 ? scores[0].sub_topic : "Unknown";
+            question.topic_label = scores.length > 0 ? scores[0].sub_topic : "Unknown"
+            console.log("I died here 5");
         }
+
+        console.log("I am here.")
 
         // Save updated JSON file
         fs.writeFileSync(updatedFilePath, JSON.stringify(jsonData, null, 4));
@@ -97,4 +109,50 @@ const rankAndMatchTopics = async () => {
 };
 
 // Execute the function
-rankAndMatchTopics();
+//rankAndMatchTopics();
+
+
+// Function to Get the Latest JSON File in a Directory
+const getLatestJsonFile = (dir) => {
+    if (!fs.existsSync(dir)) {
+        console.error(`❌ Directory does not exist: ${dir}`);
+        return null;
+    }
+
+    const files = fs.readdirSync(dir)
+        .filter(file => file.endsWith("_original.json"))
+        .map(file => ({ file, time: fs.statSync(path.join(dir, file)).mtime.getTime() }))
+        .sort((a, b) => b.time - a.time); // Sort by latest
+
+    if (files.length === 0) {
+        console.error(`❌ No matching JSON file found in: ${dir}`);
+        return null;
+    }
+
+    console.log(`✅ Found latest JSON file: ${files[0].file}`);
+    return path.join(dir, files[0].file);
+};
+
+
+const executeTopicLabel = async () => {
+    // Set the directory where JSON files are stored
+    const jsonDir = "routes/output_json";
+    const latestFilePath = getLatestJsonFile(jsonDir);
+
+    if (latestFilePath) {
+        const updatedFilePath = latestFilePath.replace("_original.json", "_with_topics.json");
+        console.log(`📂 Processing file: ${latestFilePath}`);
+        await rankAndMatchTopics(latestFilePath, updatedFilePath);
+    } else {
+        console.error("❌ No matching JSON file found in directory.");
+    }
+    process.on("exit", () => {
+        client.end().then(() => console.log("🔌 Database connection closed."));
+    });
+
+}
+
+//executeTopicLabel();
+
+module.exports = { executeTopicLabel };
+// Gracefully close the database connection when the script exits
