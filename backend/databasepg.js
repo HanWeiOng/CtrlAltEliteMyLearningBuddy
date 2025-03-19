@@ -3,6 +3,7 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 const processAllSubjects = require('./routes/insertTopics'); // Import topic insertion function
+const processAllJSONFiles = require('./routes/insertQuestions'); // Import topic insertion function
 
 // Initialize PostgreSQL client
 const client = new Client({
@@ -53,6 +54,9 @@ const main = async () => {
         // Run topic insertion from insertTopics.js
         await processAllSubjects();
 
+        // Run question insertion from insertQuestions.js
+        await processAllJSONFiles();
+
         console.log('🚀 Database setup completed');
     } catch (err) {
         console.error('❌ Database connection error:', err.message);
@@ -61,6 +65,7 @@ const main = async () => {
         console.log('🔌 Disconnected from the database');
     }
 };
+
 
 // Execute the script
 main();

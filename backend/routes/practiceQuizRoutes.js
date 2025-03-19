@@ -19,7 +19,21 @@ router.get('/', async (req, res) => {
 
 // router.get ACCEPT params (subject, banding, level)
 // make request to DB, make SQL statement to retrieve relevant questions 
+router.get("/filterQuestions",async (req,res)=>{
+    try{
+        const result = await client.query(`
+            SELECT * 
+            FROM xyz
+            WHERE subject= 
+            AND banding=
+            AND level=
+        `)
+    }catch(error){
+        console.error('Error retrieving questions:', error);
+        res.status(500).json({ message: 'Internal server error. ' + error.message });
+    }
 
+})
 
 module.exports = router;
 //test
