@@ -16,16 +16,23 @@ const ocrRoutes = require("./routes/ocrRoutes");
 const createQuizRoutes = require("./routes/createQuizRoutes");
 const practiceQuizRoutes = require("./routes/practiceQuizRoutes");
 const s3BucketCRUD = require("./routes/s3BucketCRUD");
+const imageRoutes = require("./imageRoutes");
 
 // Mount the routes
 app.use("/api/ocr", ocrRoutes);
 app.use("/api/createQuiz", createQuizRoutes);
 app.use("/api/practiceQuiz", practiceQuizRoutes);
 app.use("/api/s3BucketCRUD", s3BucketCRUD);
+app.use("/api/images", imageRoutes);
 
 // Optional: A basic health-check endpoint
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK", message: "Server is running" });
+});
+
+// Test route
+app.get('/ping', (req, res) => {
+  res.status(200).json({ message: 'pong', time: new Date().toISOString() });
 });
 
 // Start Server on port 5003 (or the PORT specified in your .env)

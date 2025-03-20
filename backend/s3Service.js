@@ -10,10 +10,10 @@ const sharp = require('sharp');
 
 const storage = multer.memoryStorage();
 
-const bucketName = process.env.BUCKET_NAME;
-const bucketRegion = process.env.BUCKET_REGION;
-const accessKey = process.env.ACCESS_KEY;
-const secretAccessKey = process.env.SECRET_ACCESS_KEY;
+const bucketName = process.env.S3_BUCKET_NAME;
+const bucketRegion = process.env.S3_REGION;
+const accessKey = process.env.AWS_ACCESS_KEY_ID;
+const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 
 const s3 = new S3Client({
     credentials: {

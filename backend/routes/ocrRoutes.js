@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { PDFDocument } = require('pdf-lib');
 const { exec } = require('child_process');
+const FormData = require('form-data');
 const upload = multer({ storage: multer.memoryStorage() });
 const { OcrExecutionMinor } = require('../routes/ocrfunctions'); // Only import this
 const client = require('../databasepg');
@@ -117,8 +118,49 @@ router.post('/split_pdf', upload.fields([
         const banding = req.body.banding;
         const level = req.body.level;
 
-        // ✅ Store processed data
+        // Store processed data
         processedDataStore[paperName] = { paperName, images, subject, banding, level };
+        
+        // New: Upload generated images to S3
+        const s3UploadResults = [];
+        
+        try {
+            // For each generated image, upload to S3
+            for (const imageUrl of images) {
+                // Extract the image filename from the URL
+                const imageName = imageUrl.split('/').pop();
+                const imagePath = path.join(__dirname, 'output_images', imageName);
+                
+                if (fs.existsSync(imagePath)) {
+                    // Create form data for S3 upload
+                    const formData = new FormData();
+                    formData.append('image', fs.createReadStream(imagePath));
+                    formData.append('examPaperName', paperName);
+                    formData.append('subject', subject || '');
+                    formData.append('level', level || '');
+                    formData.append('banding', banding || '');
+                    
+                    // Upload to S3 via the new endpoint
+                    const uploadResponse = await fetch(`${req.protocol}://${req.get('host')}/api/s3BucketCRUD/uploadExamImage`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (uploadResponse.ok) {
+                        const result = await uploadResponse.json();
+                        s3UploadResults.push({
+                            originalImage: imageUrl,
+                            s3Result: result
+                        });
+                    } else {
+                        console.error(`Failed to upload ${imageName} to S3`);
+                    }
+                }
+            }
+        } catch (uploadError) {
+            console.error('Error during S3 upload:', uploadError);
+            // Continue with response even if S3 upload fails
+        }
 
         res.status(200).json({
             message: 'Successfully processed PDF.',
@@ -126,7 +168,8 @@ router.post('/split_pdf', upload.fields([
             paper_name: paperName,
             subject,
             banding,
-            level
+            level,
+            s3Uploads: s3UploadResults.length > 0 ? s3UploadResults : undefined
         });
     } catch (error) {
         console.error('Error processing PDF:', error);
