@@ -119,7 +119,7 @@ const OcrExecutionMinor = async (data) => {
             //await process_and_save_json(image_files, input_folder, secondary_json_path, model);
 
             // ✅ TEMP: Comment this out for debugging JSON saving
-            // merge_json_files(primary_json_path, secondary_json_path);
+            //merge_json_files(primary_json_path, secondary_json_path);
         }
 
         await processImages().catch(console.error);
@@ -329,7 +329,7 @@ function consolidate_questions(extracted_questions) {
     return Array.from(question_map.values()).sort((a, b) => a.question_number - b.question_number);
 }
 
-function merge_json_files(primary_json_path, secondary_json_path) {
+async function merge_json_files(primary_json_path, secondary_json_path) {
     const primary_data = JSON.parse(fs.readFileSync(primary_json_path, "utf8"));
     const secondary_data = JSON.parse(fs.readFileSync(secondary_json_path, "utf8"));
 
@@ -387,7 +387,23 @@ function merge_json_files(primary_json_path, secondary_json_path) {
         }
     });
 
+    
+
     fs.writeFileSync(primary_json_path, JSON.stringify(primary_data, null, 4));
+
+    const primary_json_path_data = JSON.parse(fs.readFileSync(primary_json_path, "utf8"));
+
+
+    const response = await fetch('http://localhost:5003/api/ocr/insertQuestion', {
+        method: 'POST',
+        headers : { 
+            'Content-Type': 'application/json',  // Specify the content type
+        },
+        body: JSON.stringify({
+            data: primary_json_path_data  // Sending the images and paper name
+        })
+    });
+
     fs.unlinkSync(secondary_json_path);
     console.log(`✅ Merging complete. Updated JSON saved at: ${primary_json_path}`);
 }

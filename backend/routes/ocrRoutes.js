@@ -15,6 +15,8 @@ const processedDataStore = {}; // In-memory storage for processed PDF data
 // OCR Scraping and Structuring of Data
 router.post('/processImages', async (req, res) => {
     try {
+
+        // create folder in s3 using the paper name + 
         console.log('Request received at /processImages');
         // Handle logic here
         const { data } = req.body; 
@@ -58,12 +60,14 @@ router.get('/test', (req, res) => {
 });
 
 // Function to split PDF and convert pages to images
-async function split_image(pdfPath, req) {
+async function split_image(pdfPath, req, paperName, subject, banding,level) {
     try {
+        /*
         const outputDir = path.join(__dirname, 'output_images');
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir, { recursive: true });
         }
+        */
 
         const pdfBytes = fs.readFileSync(pdfPath);
         const pdfDoc = await PDFDocument.load(pdfBytes);
@@ -79,7 +83,16 @@ async function split_image(pdfPath, req) {
             const singlePagePath = path.join(outputDir, `page_${i + 1}.pdf`);
             fs.writeFileSync(singlePagePath, singlePageBytes);
 
+            /*
             const imageBasePath = path.join(outputDir, `page_${i + 1}`);
+            await new Promise((resolve, reject) => {
+                exec(`pdftoppm -png "${singlePagePath}" "${imageBasePath}"`, (error) => {
+                    if (error) reject(error);
+                    else resolve();
+                });
+            });*/
+
+            const imageBasePath = `page_${i + 1}`;
             await new Promise((resolve, reject) => {
                 exec(`pdftoppm -png "${singlePagePath}" "${imageBasePath}"`, (error) => {
                     if (error) reject(error);
@@ -87,15 +100,40 @@ async function split_image(pdfPath, req) {
                 });
             });
 
-            const imageFilename = `page_${i + 1}-1.png`;
-            const imagePath = path.join(outputDir, imageFilename);
+            const imageFilename = `${imageBasePath}-1.png`;
+            const imageBuffer = fs.readFileSync(imageFilename);
+            
+            //const imagePath = path.join(outputDir, imageFilename);
+            /*
             if (fs.existsSync(imagePath)) {
                 // ✅ FIXED: Correct API URL in response
                 const imageUrl = `${req.protocol}://${req.get('host')}/api/ocr/images/${imageFilename}`;
                 imageUrls.push(imageUrl);
-            }
+            }*/
 
-            fs.unlinkSync(singlePagePath);
+            // ✅ Push the filename into the list
+            imageUrls.push(imageFilename);
+            
+
+            const formDataImage = new FormData();
+            formDataImage.append("image", new Blob([imageBuffer]), imageFilename);
+            formDataImage.append("paper_name", paperName); // Example: Set paper name
+            formDataImage.append("subject", subject )
+            formDataImage.append("banding", banding)
+            formDataImage.append("level", level)
+            console.log(selectedFile)            
+    
+            const uploadImageResponse = await axios.post(
+                "http://localhost:5003/api/s3BucketCRUD/uploadProcessedImage", // ✅ Fixed URL
+                formDataImage,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
+
+            //fs.unlinkSync(singlePagePath);
         }
 
         return imageUrls;
@@ -107,26 +145,33 @@ async function split_image(pdfPath, req) {
 
 
 // Route to handle PDF upload and processing
-router.post('/split_pdf', upload.fields([
-    { name: 'file', maxCount: 1 },
-    { name: 'subject', maxCount: 1 },
-    { name: 'banding', maxCount: 1 },
-    { name: 'level', maxCount: 1 }
-]), async (req, res) => {
+router.post('/split_pdf', async (req, res) => {
     try {
         if (!req.files || !req.files.file) {
             throw new Error('No file uploaded');
         }
-
-        const tempFilePath = path.join(__dirname, 'temp.pdf');
-        fs.writeFileSync(tempFilePath, req.files.file[0].buffer);
-        const images = await split_image(tempFilePath, req);
-        fs.unlinkSync(tempFilePath);
-
+        /*
         const paperName = req.files.file[0].originalname.replace('.pdf', '');
         const subject = req.body.subject;
         const banding = req.body.banding;
         const level = req.body.level;
+
+        
+        const tempFilePath = path.join(__dirname, 'temp.pdf');
+        fs.writeFileSync(tempFilePath, req.files.file[0].buffer);
+        const images = await split_image(tempFilePath, req ,paperName, subject, banding,level);
+        fs.unlinkSync(tempFilePath);
+        */
+
+
+        let pdfPath = req.file;
+        console.log(pdfPath)
+        const paperName = path.parse(pdfPath).name;
+        const subject = req.body.subject;
+        const banding = req.body.banding;
+        const level = req.body.level;
+        const images = await split_image(pdfPath, req ,paperName, subject, banding, level);
+        
 
         // ✅ Store processed data
         processedDataStore[paperName] = { paperName, images, subject, banding, level };
@@ -139,6 +184,8 @@ router.post('/split_pdf', upload.fields([
             banding,
             level
         });
+
+
     } catch (error) {
         console.error('Error processing PDF:', error);
         res.status(500).json({ message: 'Internal server error: ' + error.message });

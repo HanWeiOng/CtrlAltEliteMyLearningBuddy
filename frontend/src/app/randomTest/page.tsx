@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Trash } from "lucide-react";
 import Sidebar from "../../components/ui/sidebar";
 import Navbar from "../../components/ui/navbar";
+import axios from "axios";
 
 // Dummy MCQ Data
 
@@ -43,6 +44,9 @@ const staticListOfImages = {
 //   };
 
 export default function CreateQuizPage() {
+
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
 
     const OcrTest = async () => {
         try {
@@ -110,6 +114,73 @@ export default function CreateQuizPage() {
             console.error('Error occurred while making the request:', error);
         }
     };
+
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+        }
+    };
+    
+    // Handle file upload
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            alert("❌ No file selected!");
+            return;
+        }
+    
+        try {
+            const formDataImage = new FormData();
+            formDataImage.append("image", selectedFile);
+            formDataImage.append("paper_name", "AES_2019"); // Example: Set paper name
+            formDataImage.append("question_number", "1"); // Example: Set question number
+            console.log(selectedFile)            
+    
+            const uploadImageResponse = await axios.post(
+                "http://localhost:5003/api/s3BucketCRUD/uploadProcessedImage", // ✅ Fixed URL
+                formDataImage,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
+    
+            console.log("✅ Image uploaded:", uploadImageResponse.data);
+            alert("✅ Image uploaded successfully!");
+        } catch (error) {
+            console.error("❌ Upload error:", error);
+            alert("❌ Failed to upload image!");
+        }
+    };
+
+    const handleRetrieve = async () => {
+        try {
+            const requestData = {
+                imageName: "Screenshot 2025-03-19 at 1.03.13â¯PM.png",  // Example: Replace with the actual image name
+                folderName : "AES_2019"
+            };
+    
+            const response = await axios.post(
+                "http://localhost:5003/api/s3BucketCRUD/retrieveProcessedImage", // ✅ Fixed API URL
+                requestData, // ✅ Send data in request body
+                {
+                    headers: {
+                        "Content-Type": "application/json", // ✅ Fix: Use JSON instead of multipart/form-data
+                    },
+                }
+            );
+    
+            console.log("✅ Image retrieved:", response.data.signedUrl);
+            alert("✅ Image retrieved successfully!");
+    
+        } catch (error) {
+            console.error("❌ Retrieval error:", error);
+            alert("❌ Failed to retrieve image!");
+        }
+    };
+    
+    
     
     
     return (
@@ -147,6 +218,34 @@ export default function CreateQuizPage() {
                     Click Me for Topic Label Test
                 </button>
             </div>
+            <div>
+                <input type="file" accept="image/*" onChange={handleFileChange} className="mb-3" />
+                <button 
+                    onClick={handleUpload} 
+                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
+                >
+                    "Upload Image"
+                </button>'
+            </div>
+            <div>
+                <button 
+                    onClick={handleRetrieve} 
+                    style={{
+                        fontSize: "20px",
+                        padding: "10px 20px",
+                        borderRadius: "8px",
+                        backgroundColor: "#007bff",
+                        color: "white",
+                        border: "none",
+                        cursor: "pointer"
+                    }}
+                >
+                    Click Me
+                </button>
+            </div>
+
+
+            
         </div>
     );
     
