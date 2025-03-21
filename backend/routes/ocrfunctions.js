@@ -94,8 +94,10 @@ const OcrExecutionMinor = async (data) => {
     try {
         console.log("📥 Data Received in OcrExecutionMinor:", data);
         const paper_Name = data.paper_name;
+        const paper_images = data.images
         const subject = data.subject;
         console.log("📄 Paper Name:", paper_Name);
+        console.log("New Paper Name",paper_images )
 
         const input_folder = 'routes/output_images'; // This is where the extracted images are stored. //setup s3 here
         const primary_json_path = `routes/output_json/${paper_Name}_original.json`; 

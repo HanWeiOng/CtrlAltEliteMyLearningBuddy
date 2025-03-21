@@ -31,19 +31,35 @@ const staticListOfImages = {
     banding: 'Pure',
     level: 'PSLE'
   }
+    
 
 
   
-  
-//   const staticListOfImages = {
-//     message: "Successfully processed PDF.",
-//     images: [
-//       "http://localhost:5003/api/ocr/images/page_1-1.png",
-//       "http://localhost:5003/api/ocr/images/page_2-1.png",
-//       "http://localhost:5003/api/ocr/images/page_13-1.png"
-//     ],
-//     paper_name: "AES 2019"
-//   };
+/*
+const staticListOfImages = {
+    message: "Successfully processed PDF.",
+    images: [
+      "http://localhost:5003/api/ocr/images/page_1-1.png",
+      "http://localhost:5003/api/ocr/images/page_2-1.png",
+      "http://localhost:5003/api/ocr/images/page_3-1.png",
+      "http://localhost:5003/api/ocr/images/page_4-1.png",
+      "http://localhost:5003/api/ocr/images/page_5-1.png",
+      "http://localhost:5003/api/ocr/images/page_6-1.png",
+      "http://localhost:5003/api/ocr/images/page_7-1.png",
+      "http://localhost:5003/api/ocr/images/page_8-1.png",
+      "http://localhost:5003/api/ocr/images/page_9-1.png",
+      "http://localhost:5003/api/ocr/images/page_10-1.png",
+      "http://localhost:5003/api/ocr/images/page-11-1.png",
+      "http://localhost:5003/api/ocr/images/page_12-1.png",
+      "http://localhost:5003/api/ocr/images/page_13-1.png",
+      "http://localhost:5003/api/ocr/images/page_14-1.png"
+    ],
+    paper_name: 'AES_2019',
+    subject: 'Biology',
+    banding: 'Pure',
+    level: 'PSLE'
+  };
+*/
 
 export default function CreateQuizPage() {
 
@@ -80,9 +96,9 @@ export default function CreateQuizPage() {
                 },
                 body: JSON.stringify({
                     data: staticListOfImages  // Sending the images and paper name
-                })
+                }) 
             });
-            
+             
 
     
             
