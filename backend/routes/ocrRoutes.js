@@ -9,6 +9,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 const { OcrExecutionMinor } = require('../routes/ocrfunctions'); // Only import this
 const { executeTopicLabel } = require('../routes/topic_label')
 const client = require('../databasepg');
+const processAllJSONFiles = require('./insertQuestions');
 const processedDataStore = {}; // In-memory storage for processed PDF data
 
 
@@ -156,6 +157,9 @@ router.get('/get_processed_data/:paperName', (req, res) => {
     res.status(200).json(data);
 });
 
+router.post('/insertQuestions',(req,res)=>{
+    processAllJSONFiles()
+})
 
 
 async function toRetrieveFromS3(examPaperName) {
