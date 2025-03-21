@@ -94,13 +94,14 @@ const OcrExecutionMinor = async (data) => {
     try {
         console.log("📥 Data Received in OcrExecutionMinor:", data);
         const paper_Name = data.paper_name;
-        console.log("📄 Paper Name:", typeof paper_Name);
+        const subject = data.subject;
+        console.log("📄 Paper Name:", paper_Name);
 
-        const input_folder = 'routes/output_images'; // This is where the extracted images are stored.
+        const input_folder = 'routes/output_images'; // This is where the extracted images are stored. //setup s3 here
         const primary_json_path = `routes/output_json/${paper_Name}_original.json`; 
         const secondary_json_path = `routes/output_json/${paper_Name}_secondary.json`; 
-
-        console.log("📂 Input folder path:", input_folder);
+        
+        console.log("📂 Input folder path:", input_folder); //Need build S3 here
         console.log("📝 Primary JSON path:", primary_json_path);
         console.log("📝 Secondary JSON path:", secondary_json_path);
 
@@ -113,6 +114,7 @@ const OcrExecutionMinor = async (data) => {
 
         // Function to process images and save JSON
         async function processImages() {
+            console.log("I received paper_Name", paper_Name)
             await process_and_save_json(image_files, input_folder, primary_json_path, model, paper_Name);
             console.log('⏳ Waiting for 60 seconds...');
             
@@ -125,6 +127,7 @@ const OcrExecutionMinor = async (data) => {
         }
 
         await processImages().catch(console.error);
+        
     } catch (err) {
         console.error("❌ Error in OcrExecutionMinor:", err);
         throw err;  // Ensure the calling function can catch this error
@@ -136,8 +139,9 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function process_and_save_json(image_files, input_folder, output_json_path, paper_Name) {
-
+async function process_and_save_json(image_files, input_folder, output_json_path, model, paper_Name) {
+    
+    console.log("I received paper_Name @ process_and_save_json", paper_Name)
     console.log("Image File ", image_files)
     console.log("Input Folder ", input_folder)
     console.log(output_json_path)
@@ -179,6 +183,7 @@ async function process_and_save_json(image_files, input_folder, output_json_path
 }
 
 async function process_image(image_path, model, model_name, bounding_box_system_instructions, text_extraction_instructions, safety_settings, paper_Name) {
+    console.log("I received paper_Name @ process_image", paper_Name)
 
     const image_filename = path.basename(image_path, path.extname(image_path));
 

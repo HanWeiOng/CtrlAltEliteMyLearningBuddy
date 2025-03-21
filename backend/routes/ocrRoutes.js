@@ -1,4 +1,6 @@
 const express = require('express');
+const axios = require("axios");
+const FormData = require('form-data');
 const multer = require('multer');
 const router = express.Router();
 const fs = require('fs');
@@ -64,8 +66,12 @@ async function split_image(pdfPath, req, paperName, subject, banding,level) {
     try {
 
         console.log("receiving PDF", pdfPath)
+        console.log("I receive paperName @ split_image",paperName)
+        console.log("I receive subject @ split_image",subject)
+        console.log("I receive banding @ split_image",banding)
+        console.log("I receive level @ split_image",level)
         
-        const outputDir = path.join(__dirname, 'output_images2');
+        const outputDir = path.join(__dirname, 'output_images3');
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir, { recursive: true });
         }
@@ -104,35 +110,42 @@ async function split_image(pdfPath, req, paperName, subject, banding,level) {
         
             const imageFilename = `page_${i + 1}-1.png`;
             const imagePath = path.join(outputDir, imageFilename);
-            
+
+
+            const formDataImage = new FormData();
+            formDataImage.append("image", fs.createReadStream(imagePath)); 
+            formDataImage.append("paper_name", paperName); // Example: Set paper name
+            formDataImage.append("subject", subject )
+            formDataImage.append("banding", banding)
+            formDataImage.append("level", level)
+            const headers = formDataImage.getHeaders(); // Get correct multipart headers
+
+    
+            const uploadImageResponse = await axios.post(
+                "http://localhost:5003/api/s3BucketCRUD/uploadProcessedImage", // ✅ Fixed URL
+                formDataImage,
+                { headers }
+            );
+
+            if (uploadImageResponse.data?.url) {
+                imageUrls.push(uploadImageResponse.data.url);
+              }
+        
+
+            /*
             if (fs.existsSync(imagePath)) {
                 // ✅ FIXED: Correct API URL in response
                 const imageUrl = `${req.protocol}://${req.get('host')}/api/ocr/images/${imageFilename}`;
                 imageUrls.push(imageUrl);
             }
+                */
+        
 
             console.log(imageUrls)
             
 
-            /*
-            const formDataImage = new FormData();
-            formDataImage.append("image", new Blob([imageBuffer]), imageFilename);
-            formDataImage.append("paper_name", paperName); // Example: Set paper name
-            formDataImage.append("subject", subject )
-            formDataImage.append("banding", banding)
-            formDataImage.append("level", level)
-            console.log(selectedFile)            
-    
-            const uploadImageResponse = await axios.post(
-                "http://localhost:5003/api/s3BucketCRUD/uploadProcessedImage", // ✅ Fixed URL
-                formDataImage,
-                {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
-                }
-            );
-            */
+            
+            
 
             fs.unlinkSync(singlePagePath);
         }
@@ -170,16 +183,17 @@ router.post('/split_pdf', upload.single('file'), async (req, res) => {
         console.log("File received:", req.file);
 
         const paperName = req.file.originalname.replace('.pdf', '');
-        console.log("paperName",paperName)
-
         
         const data = req.body
         const subject = data.subject;
-        console.log("paperName", subject)
+        console.log("subject", subject)
         const banding = data.banding || "";;
         console.log("banding",banding)
         const level = data.level;
         console.log("level",level)
+        
+        
+
 
         // ✅ Save the buffer as a temporary file
         const tempFilePath = path.join(__dirname, `${paperName}.pdf`);
@@ -191,6 +205,15 @@ router.post('/split_pdf', upload.single('file'), async (req, res) => {
 
         // ✅ Store processed data
         processedDataStore[paperName] = { paperName, images, subject, banding, level };
+
+        console.log('📦 Final Response:', {
+            message: 'Successfully processed PDF.',
+            images,
+            paper_name: paperName,
+            subject,
+            banding,
+            level
+        });
 
         res.status(200).json({
             message: 'Successfully processed PDF.',

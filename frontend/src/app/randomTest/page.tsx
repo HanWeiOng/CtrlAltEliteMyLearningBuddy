@@ -9,29 +9,31 @@ import axios from "axios";
 // Dummy MCQ Data
 
 const staticListOfImages = {
-    message: "Successfully processed PDF.",
+    message: 'Successfully processed PDF.',
     images: [
-      "http://localhost:5003/api/ocr/images/page_1-1.png",
-      "http://localhost:5003/api/ocr/images/page_2-1.png",
-      "http://localhost:5003/api/ocr/images/page_3-1.png",
-      "http://localhost:5003/api/ocr/images/page_4-1.png",
-      "http://localhost:5003/api/ocr/images/page_5-1.png",
-      "http://localhost:5003/api/ocr/images/page_6-1.png",
-      "http://localhost:5003/api/ocr/images/page_7-1.png",
-      "http://localhost:5003/api/ocr/images/page_8-1.png",
-      "http://localhost:5003/api/ocr/images/page_9-1.png",
-      "http://localhost:5003/api/ocr/images/page_10-1.png",
-      "http://localhost:5003/api/ocr/images/page_11-1.png",
-      "http://localhost:5003/api/ocr/images/page_12-1.png",
-      "http://localhost:5003/api/ocr/images/page_13-1.png",
-      "http://localhost:5003/api/ocr/images/page_14-1.png"
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_1-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_2-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_3-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_4-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_5-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_6-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_7-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_8-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_9-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_10-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_11-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_12-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_13-1.png',
+      'https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology__PSLE/page_14-1.png'
     ],
-    paper_name: "AES 2019",
-    subject: "Biology",
-    banding: "Pure",
-    level: "O Level"
-  };
+    paper_name: 'AES_2019',
+    subject: 'Biology',
+    banding: 'Pure',
+    level: 'PSLE'
+  }
 
+
+  
   
 //   const staticListOfImages = {
 //     message: "Successfully processed PDF.",

@@ -44,7 +44,9 @@ router.post('/uploadProcessedImage', upload.single('image'), async (req, res) =>
         const banding = data.banding
         const level = data.level
         //const paperName = "AES_2019" //data.paper_name //
-        const folderName =  data.paper_name //"AES_2019" //paper_name+"_"+subject+"_"+banding+"_"+level
+        const folderName =  data.paper_name+"_"+subject+"_"+banding+"_"+level  //"AES_2019" //paper_name+"_"+subject+"_"+banding+"_"+level
+        //const paperName = inputPaperName + "_" + subject + "_" + banding +  "_"  + level
+        //console.log (paperName)
         const imageName = req.file ? req.file.originalname : "undefined-file"; // ✅ Extract from uploaded file
 
         console.log("This is the folderName" ,folderName)
@@ -90,14 +92,23 @@ router.post('/uploadProcessedImage', upload.single('image'), async (req, res) =>
             Bucket: bucketName,
             Key: `${folderName}/${imageName}`,
             Body: fileBuffer,
-            ContentType: req.file.mimetype
+            ContentType: req.file.mimetype,
+            ACL: 'public-read' // 👈 Add this
+            
         };
 
         const command = new PutObjectCommand(params);
         const response = await s3.send(command);
         console.log('S3 Response:', response);
         console.log("✅ Upload successful! S3 Response:", response);
-        res.status(200).json({ message: "Upload successful", data: response });
+        //res.status(200).json({ message: "Upload successful", data: response });
+
+        const imageUrl = `https://${bucketName}.s3.${bucketRegion}.amazonaws.com/${folderName}/${imageName}`;
+        res.status(200).json({
+            message: "Upload successful",
+            url: imageUrl,
+            data: response
+          });
 
     } catch (error) {
         console.error('Error uploading file to S3:', error);
