@@ -34,13 +34,17 @@ const s3 = new S3Client({
 router.post('/uploadProcessedImage', upload.single('image'), async (req, res) => {
     try {
         //resize image
+        console.log("Uploaded file object:", req.file);
+        if (!req.file) {
+            return res.status(400).json({ error: "No file received." });
+        }
 
         const data = req.body 
         const subject =  data.subject
         const banding = data.banding
         const level = data.level
         //const paperName = "AES_2019" //data.paper_name //
-        const folderName = "AES_2019" //paper_name+"_"+subject+"_"+banding+"_"+level
+        const folderName =  data.paper_name //"AES_2019" //paper_name+"_"+subject+"_"+banding+"_"+level
         const imageName = req.file ? req.file.originalname : "undefined-file"; // ✅ Extract from uploaded file
 
         console.log("This is the folderName" ,folderName)
@@ -92,12 +96,13 @@ router.post('/uploadProcessedImage', upload.single('image'), async (req, res) =>
         const command = new PutObjectCommand(params);
         const response = await s3.send(command);
         console.log('S3 Response:', response);
+        console.log("✅ Upload successful! S3 Response:", response);
+        res.status(200).json({ message: "Upload successful", data: response });
 
     } catch (error) {
         console.error('Error uploading file to S3:', error);
         res.status(500).send('Error uploading file');
     }
-
 })
 
 

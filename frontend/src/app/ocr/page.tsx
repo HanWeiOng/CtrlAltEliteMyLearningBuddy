@@ -69,12 +69,23 @@ export default function UploadPage() {
     setSuccessMessage(null); // Reset success message
     setImageUrls([]); // Reset image state
 
+
     const formData = new FormData();
+    /*
     uploadedFiles.forEach((file) => {
         formData.append("file", file);
     });
+    */
+
+    if (uploadedFiles.length === 0) {
+      alert("❌ No file selected!");
+      return;
+  }
+
+
 
     // Append additional data to the form data
+    formData.append("file", uploadedFiles[0]);  // Only sending first file
     formData.append("subject", selectedSubject);
     formData.append("banding", selectedBanding);
     formData.append("level", selectedLevel);
