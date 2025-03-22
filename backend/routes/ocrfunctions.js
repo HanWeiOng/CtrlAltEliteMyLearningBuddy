@@ -1,5 +1,7 @@
+const axios = require("axios");
 const fs = require('fs');
 const path = require('path');
+const FormData = require('form-data');
 
 require('dotenv').config()
 const { createCanvas, loadImage } = require('canvas');
@@ -15,7 +17,7 @@ const img_output_folder = 'routes/processed_images'
 
 
 // ✅ Define Safety Settings
-const safety_settings = [
+const safety_settings = [ 
     {
         category: "HARM_CATEGORY_DANGEROUS_CONTENT",
         threshold: "BLOCK_ONLY_HIGH",
@@ -92,13 +94,16 @@ const OcrExecutionMinor = async (data) => {
     try {
         console.log("📥 Data Received in OcrExecutionMinor:", data);
         const paper_Name = data.paper_name;
+        const paper_images = data.images
+        const subject = data.subject;
         console.log("📄 Paper Name:", paper_Name);
+        console.log("New Paper Name",paper_images )
 
-        const input_folder = 'routes/output_images'; // This is where the extracted images are stored.
+        const input_folder = 'routes/output_images'; // This is where the extracted images are stored. //setup s3 here
         const primary_json_path = `routes/output_json/${paper_Name}_original.json`; 
         const secondary_json_path = `routes/output_json/${paper_Name}_secondary.json`; 
-
-        console.log("📂 Input folder path:", input_folder);
+        
+        console.log("📂 Input folder path:", input_folder); //Need build S3 here
         console.log("📝 Primary JSON path:", primary_json_path);
         console.log("📝 Secondary JSON path:", secondary_json_path);
 
@@ -111,7 +116,8 @@ const OcrExecutionMinor = async (data) => {
 
         // Function to process images and save JSON
         async function processImages() {
-            await process_and_save_json(image_files, input_folder, primary_json_path, model);
+            console.log("I received paper_Name", paper_Name)
+            await process_and_save_json(image_files, input_folder, primary_json_path, model, paper_Name);
             console.log('⏳ Waiting for 60 seconds...');
             
             //await delay(60000); // Wait 60 seconds
@@ -119,10 +125,11 @@ const OcrExecutionMinor = async (data) => {
             //await process_and_save_json(image_files, input_folder, secondary_json_path, model);
 
             // ✅ TEMP: Comment this out for debugging JSON saving
-            // merge_json_files(primary_json_path, secondary_json_path);
+            //merge_json_files(primary_json_path, secondary_json_path);
         }
 
         await processImages().catch(console.error);
+        
     } catch (err) {
         console.error("❌ Error in OcrExecutionMinor:", err);
         throw err;  // Ensure the calling function can catch this error
@@ -134,8 +141,9 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function process_and_save_json(image_files, input_folder, output_json_path) {
-
+async function process_and_save_json(image_files, input_folder, output_json_path, model, paper_Name) {
+    
+    console.log("I received paper_Name @ process_and_save_json", paper_Name)
     console.log("Image File ", image_files)
     console.log("Input Folder ", input_folder)
     console.log(output_json_path)
@@ -146,7 +154,7 @@ async function process_and_save_json(image_files, input_folder, output_json_path
         const image_path = path.join(input_folder, image_filename);
         console.log(`🚀 Processing: ${image_filename}`);
         
-        const image_data = await process_image(image_path, model, model_name, bounding_box_system_instructions, text_extraction_instructions, safety_settings);
+        const image_data = await process_image(image_path, model, model_name, bounding_box_system_instructions, text_extraction_instructions, safety_settings, paper_Name);
         all_extracted_data = all_extracted_data.concat(image_data);
     }
 
@@ -176,7 +184,8 @@ async function process_and_save_json(image_files, input_folder, output_json_path
     }
 }
 
-async function process_image(image_path, model, model_name, bounding_box_system_instructions, text_extraction_instructions, safety_settings) {
+async function process_image(image_path, model, model_name, bounding_box_system_instructions, text_extraction_instructions, safety_settings, paper_Name) {
+    console.log("I received paper_Name @ process_image", paper_Name)
 
     const image_filename = path.basename(image_path, path.extname(image_path));
 
@@ -227,7 +236,7 @@ async function process_image(image_path, model, model_name, bounding_box_system_
         fs.mkdirSync(img_output_folder, { recursive: true });
     }
     // ✅ Draw Bounding Boxes & Save Image (if any found)
-    const { extracted_data, processed_image_path } =  await plot_bounding_boxes(image_path, bounding_boxes, image_filename, img_output_folder);
+    const { extracted_data, processed_image_path } =  await plot_bounding_boxes(image_path, bounding_boxes, image_filename, img_output_folder, paper_Name);
 
     
     // 🚀 **Step 2: Call Gemini to Extract Text & Associate Bounding Boxes**
@@ -329,7 +338,7 @@ function consolidate_questions(extracted_questions) {
     return Array.from(question_map.values()).sort((a, b) => a.question_number - b.question_number);
 }
 
-function merge_json_files(primary_json_path, secondary_json_path) {
+async function merge_json_files(primary_json_path, secondary_json_path) {
     const primary_data = JSON.parse(fs.readFileSync(primary_json_path, "utf8"));
     const secondary_data = JSON.parse(fs.readFileSync(secondary_json_path, "utf8"));
 
@@ -387,14 +396,31 @@ function merge_json_files(primary_json_path, secondary_json_path) {
         }
     });
 
+    
+
     fs.writeFileSync(primary_json_path, JSON.stringify(primary_data, null, 4));
+
+    const primary_json_path_data = JSON.parse(fs.readFileSync(primary_json_path, "utf8"));
+
+
+    const response = await fetch('http://localhost:5003/api/ocr/insertQuestion', {
+        method: 'POST',
+        headers : { 
+            'Content-Type': 'application/json',  // Specify the content type
+        },
+        body: JSON.stringify({
+            data: primary_json_path_data  // Sending the images and paper name
+        })
+    });
+
     fs.unlinkSync(secondary_json_path);
     console.log(`✅ Merging complete. Updated JSON saved at: ${primary_json_path}`);
 }
 
 
 // ✅ Function to Plot Bounding Boxes & Extract Images
-async function plot_bounding_boxes(image_path, bounding_boxes, image_filename, img_output_folder) {
+async function plot_bounding_boxes(image_path, bounding_boxes, image_filename, img_output_folder, paper_Name) {
+        console.log("This is the Plot_Bounding_Boxes Paper Name :", paper_Name)
         // ✅ Ensure output directory exists
         if (!fs.existsSync(img_output_folder)) {
             fs.mkdirSync(img_output_folder, { recursive: true });
@@ -472,9 +498,45 @@ async function plot_bounding_boxes(image_path, bounding_boxes, image_filename, i
                 const croppedStream = fs.createWriteStream(cropped_path);
                 const croppedPNGStream = croppedCanvas.createPNGStream();
                 croppedPNGStream.pipe(croppedStream);
-                croppedStream.on("finish", () => {
+                croppedStream.on("finish", async () => {
                     console.log(`✅ Cropped image saved at: ${cropped_path}`);
+                    // ✅ Upload after the file is fully saved
+                    try {
+                        await fs.promises.access(cropped_path);
+                        const formDataImage = new FormData();
+                        formDataImage.append("image", fs.createReadStream(cropped_path));  // ✅ Read file properly
+                        formDataImage.append("paper_name", "AES_2019"); // ✅ Append paper name
+                        console.log("📤 Uploading image:", cropped_path);
+                        const headers = formDataImage.getHeaders(); // Get correct multipart headers
+
+                   
+                        const uploadImageResponse = await axios.post(
+                            "http://localhost:5003/api/s3BucketCRUD/uploadProcessedImage",
+                            formDataImage,
+                            { headers }
+                        );
+
+                        console.log("✅ Upload successful:", uploadImageResponse.data);
+                    
+                    } catch (uploadError) {
+                        console.error("❌ Upload failed:", uploadError.response?.data || uploadError.message);
+                    }
+                    console.log("I failed to continue")
                     resolve();
+                    /*
+                    const formDataImage = new FormData();
+                    formDataImage.append("image", fs.createReadStream(cropped_path));
+                    formDataImage.append("paper_name", paper_Name); // Example: Set paper name
+    
+                    const uploadImageResponse = await axios.post(
+                        "http://localhost:5003/api/s3BucketCRUD/uploadProcessedImage", // ✅ Fixed URL
+                        formDataImage,
+                        {
+                            headers: {
+                                "Content-Type": "multipart/form-data",
+                            },
+                        }
+                    );*/
                 });
                 croppedStream.on("error", reject);
             });
