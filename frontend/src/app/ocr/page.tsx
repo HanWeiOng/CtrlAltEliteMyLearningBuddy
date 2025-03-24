@@ -79,12 +79,7 @@ export default function UploadPage() {
 
 
     const formData = new FormData();
-    /*
-    uploadedFiles.forEach((file) => {
-        formData.append("file", file);
-    });
-    */
-
+ 
     if (uploadedFiles.length === 0) {
       alert("❌ No file selected!");
       return;
