@@ -7,7 +7,7 @@ router.get('/', async (req, res) => {
     // retrieve all available question folders subsequently filter from FE
     try{
         const result = await client.query(`
-            SELECT * FROM xyz
+            SELECT * FROM documents
         `);
         console.log(result.rows)
         res.status(200).json(result.rows)
@@ -33,6 +33,10 @@ router.get("/filterQuestions",async (req,res)=>{
         res.status(500).json({ message: 'Internal server error. ' + error.message });
     }
 
+})
+
+router.get("/practiceQuiz", async (req,res)=>{
+    
 })
 
 module.exports = router;
