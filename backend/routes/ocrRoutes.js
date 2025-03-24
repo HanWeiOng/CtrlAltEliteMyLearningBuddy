@@ -162,22 +162,7 @@ async function split_image(pdfPath, req, paperName, subject, banding,level) {
 // Route to handle PDF upload and processing
 router.post('/split_pdf', upload.single('file'), async (req, res) => {
     try {
-        /*
-        if (!req.files || !req.files.file) {
-            throw new Error('No file uploaded');
-        }
-        
-        const paperName = req.files.file[0].originalname.replace('.pdf', '');
-        const subject = req.body.subject;
-        const banding = req.body.banding;
-        const level = req.body.level;
 
-        
-        const tempFilePath = path.join(__dirname, `${paperName}.pdf`);
-        fs.writeFileSync(tempFilePath, req.files.file[0].buffer);
-        const images = await split_image(tempFilePath, req ,paperName, subject, banding,level);
-        fs.unlinkSync(tempFilePath);
-        */
         if (!req.file) {
             throw new Error('No file uploaded');
         }
@@ -193,9 +178,7 @@ router.post('/split_pdf', upload.single('file'), async (req, res) => {
         const level = data.level;
         console.log("level",level)
         
-        
-
-
+    
         // ✅ Save the buffer as a temporary file
         const tempFilePath = path.join(__dirname, `${paperName}.pdf`);
         fs.writeFileSync(tempFilePath, req.file.buffer);
