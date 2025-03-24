@@ -14,7 +14,7 @@ const practiceQuizRoutes = require("./routes/practiceQuizRoutes");
 const s3BucketCRUD = require("./routes/s3BucketCRUD");
 const runTopicLabeling = require("./routes/topic_label");
 const processAllSubjects = require("./routes/insertTopics");
-const processAllJSONFiles = require("./routes/insertQuestions")
+// const processAllJSONFiles = require("./routes/insertQuestions")
 
 app.use("/api/ocr", ocrRoutes);
 app.use("/api/createQuiz", createQuizRoutes);
