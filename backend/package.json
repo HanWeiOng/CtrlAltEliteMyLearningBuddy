@@ -11,9 +11,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.772.0",
+    "@aws-sdk/lib-storage": "^3.772.0",
+    "@aws-sdk/s3-request-presigner": "^3.758.0",
     "@google/generative-ai": "^0.24.0",
     "@huggingface/inference": "^3.5.2",
     "@radix-ui/react-slot": "^1.1.2",
+    "axios": "^1.8.4",
     "canvas": "^3.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -23,7 +27,11 @@
     "node-sass": "^9.0.0",
     "path": "^0.12.7",
     "pdf-lib": "^1.17.1",
-    "pg": "^8.14.0"
+    "pdf-poppler": "^0.2.1",
+    "pdf2pic": "^3.1.4",
+    "pg": "^8.14.0",
+    "puppeteer": "^24.4.0",
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

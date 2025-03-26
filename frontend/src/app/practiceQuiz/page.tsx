@@ -20,7 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import Navbar from "@/components/ui/navbar"
+import Navbar from "../../components/ui/navbar"
+import BasicModal from "@/components/ui/modal"
 
 // Sample documents data
 const sampleDocuments = [
@@ -232,8 +233,9 @@ export default function DocumentsPage() {
                         <span>Modified {doc.lastModified}</span>
                       </div>
                       <Button variant="outline" className="w-full rounded-full">
-                        Open
+                        <BasicModal/>
                       </Button>
+                      
                     </div>
                   </div>
                 ))}

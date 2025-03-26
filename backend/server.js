@@ -8,21 +8,10 @@ app.use(cors()); // Enable CORS for all requests
 const client = require('./databasepg'); // PostgreSQL client
 
 // Define various Routes
-const ocrRoutes = require("./routes/ocrRoutes");
-const createQuizRoutes = require("./routes/createQuizRoutes");
-const practiceQuizRoutes = require("./routes/practiceQuizRoutes");
-const s3BucketCRUD = require("./routes/s3BucketCRUD");
-const runTopicLabeling = require("./routes/topic_label");
-const processAllSubjects = require("./routes/insertTopics");
-const processAllJSONFiles = require("./routes/insertQuestions")
+const ocrRoutes = require("./routes/ocr/ocrRoutes");
+
 
 app.use("/api/ocr", ocrRoutes);
-app.use("/api/createQuiz", createQuizRoutes);
-app.use("/api/practiceQuiz", practiceQuizRoutes);
-app.use("/api/s3BucketCRUD", s3BucketCRUD);
-
-
-
 
 
 // Start Server on port 5000

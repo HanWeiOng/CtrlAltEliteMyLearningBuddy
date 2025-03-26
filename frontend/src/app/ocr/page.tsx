@@ -1,8 +1,7 @@
 "use client";
-
-import { useState } from "react";
 import { Plus, Trash } from "lucide-react";
 import Navbar from "../../components/ui/navbar";
+import { useState, useEffect } from "react";
 
 const subjects = [
   "Biology",
@@ -21,13 +20,9 @@ export default function UploadPage() {
   const [jsonOutput, setJsonOutput] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null); // New state for success message
-
-  const [selectedSubject, setSelectedSubject] = useState(subjects[0]);
-  const [selectedBanding, setSelectedBanding] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<(typeof subjects)[number]>(subjects[0]);
   const [selectedLevel, setSelectedLevel] = useState("PSLE");
-
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-
 
   // Function to determine available bandings
   const getBandings = () => {
@@ -38,6 +33,19 @@ export default function UploadPage() {
   };
 
   const availableBandings = getBandings();
+  const [selectedBanding, setSelectedBanding] = useState(
+    availableBandings.length > 0 ? availableBandings[0] : ""
+  );
+
+  // Update selectedBanding when selectedSubject changes
+  useEffect(() => {
+    const bandings = getBandings();
+    if (bandings.length > 0) {
+      setSelectedBanding(bandings[0]);
+    } else {
+      setSelectedBanding("");
+    }
+  }, [selectedSubject]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -71,13 +79,19 @@ export default function UploadPage() {
     setIsProcessing(true);
     setSuccessMessage(null); // Reset success message
     setImageUrls([]); // Reset image state
-  
+
+
     const formData = new FormData();
-    uploadedFiles.forEach((file) => {
-      formData.append("file", file);
-    });
-  
+ 
+    if (uploadedFiles.length === 0) {
+      alert("❌ No file selected!");
+      return;
+  }
+
+
+
     // Append additional data to the form data
+    formData.append("file", uploadedFiles[0]);  // Only sending first file
     formData.append("subject", selectedSubject);
     formData.append("banding", selectedBanding || (selectedSubject === "Mathematics" ? mathBandings[0] : scienceBandings[0]));
     formData.append("level", selectedLevel);
