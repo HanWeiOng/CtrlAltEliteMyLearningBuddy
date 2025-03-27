@@ -1,24 +1,33 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, Save } from "lucide-react";
 import Sidebar from "../../components/ui/sidebar";
 import Navbar from "../../components/ui/navbar";
+import Popup from "../../components/ui/popup"; // Import the popup component
 
 export default function CreateQuizPage() {
-  const [selectedSubject, setSelectedSubject] = useState("Biology"); // Initialize as string
-  const [selectedBanding, setSelectedBanding] = useState("Combined"); // Initialize as string
-  const [selectedLevel, setSelectedLevel] = useState("O Level"); // Initialize as string
+  const [selectedSubject, setSelectedSubject] = useState("Biology");
+  const [selectedBanding, setSelectedBanding] = useState("Combined");
+  const [selectedLevel, setSelectedLevel] = useState("O Level");
   const [questions, setQuestions] = useState<
     {
+      id: number;
       question_text: string;
       answer_options: { option: string; text: object }[];
       image_paths?: string;
     }[]
   >([]);
   const [savedQuestions, setSavedQuestions] = useState<
-    { question: string; options: string[] }[]
+    { question: string; options: string[]; id: number }[]
   >([]);
+  const [fileName, setFileName] = useState("");
+  
+  // Popup states
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupTitle, setPopupTitle] = useState("");
+  const [popupConfirmAction, setPopupConfirmAction] = useState<() => void>(() => {});
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -36,42 +45,79 @@ export default function CreateQuizPage() {
         setQuestions(data);
       } catch (error) {
         console.error("Error fetching questions:", error);
-        // Handle error appropriately (e.g., show an error message to the user)
-        setQuestions([])
+        setQuestions([]);
       }
     };
-    setQuestions([]);
     fetchQuestions();
-  }, [selectedSubject, selectedBanding, selectedLevel]); // Re-fetch when these change
+  }, [selectedSubject, selectedBanding, selectedLevel]);
 
-  // Add Question to Folder
-  const addToFolder = (question: string, options: readonly string[]) => {
-    if (!savedQuestions.some((q) => q.question === question)) {
-      setSavedQuestions([
-        ...savedQuestions,
-        { question, options: [...options] },
-      ]); // ✅ Convert readonly array to mutable
+  const addToFolder = (question: string, options: string[], id: number) => {
+    if (!savedQuestions.some((q) => q.id === id)) {
+      setSavedQuestions([...savedQuestions, { question, options, id }]); // Include the question id
     }
   };
 
-  // Remove Question from Folder
   const removeFromFolder = (question: string) => {
     setSavedQuestions(savedQuestions.filter((q) => q.question !== question));
   };
 
+  const showPopup = (title: string, message: string, confirmAction?: () => void) => {
+    setPopupTitle(title);
+    setPopupMessage(message);
+    if (confirmAction) {
+      setPopupConfirmAction(() => confirmAction);
+    }
+    setIsPopupOpen(true);
+  };
+
+  const saveQuestionsToFile = async () => {
+    if (!fileName.trim()) {
+      showPopup("Error", "Please enter a folder name.");
+      return;
+    }
+
+    const questionIds = savedQuestions.map(q => q.id);
+
+    const payload = {
+      folder_name: fileName,
+      question_ids: questionIds,
+      subject: selectedSubject,
+      banding: selectedBanding,
+      level: selectedLevel
+    };
+
+    try {
+      const response = await fetch("http://localhost:5003/api/createquiz/saveFolder", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        showPopup("Success", "Folder saved successfully!", () => {
+          window.location.reload();
+        });
+      } else {
+        showPopup("Error", `Error: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Error saving folder:", error);
+      showPopup("Error", "Failed to save folder.");
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      {/* Navbar at the top */}
       <Navbar />
 
       <div className="flex flex-grow">
-        {/* Left Sidebar */}
         <div className="w-1/5 p-4 bg-white shadow-md">
           <Sidebar setSelectedSubject={setSelectedSubject} />
-        
         </div>
 
-        {/* Middle - MCQ Questions */}
         <div className="flex-1 p-6">
           <h1 className="text-2xl font-semibold mb-4">
             MCQ Questions - {selectedSubject}
@@ -98,21 +144,27 @@ export default function CreateQuizPage() {
                     >
                       {option.option}:{" "}
                       {typeof option.text === "object"
-                        ? // Handle object case (if you still need to handle the first image case)
-                          option.text &&
-                          Object.entries(option.text).map(([key, value]) => (
+                        ? Object.entries(option.text).map(([key, value]) => (
                             <span key={key}>
-                              {key}: {value},
+                              {key}: {value},{" "}
                             </span>
                           ))
-                        : // Handle string case
-                          option.text}
+                        : option.text}
                     </li>
                   ))}
                 </ul>
-                {/* Add to Folder Button */}
                 <button
-                  onClick={() => addToFolder(q.question_text, q.answer_option)}
+                  onClick={() =>
+                    addToFolder(
+                      q.question_text,
+                      q.answer_options.map((option) =>
+                        typeof option.text === "object"
+                          ? JSON.stringify(option.text)
+                          : option.text
+                      ),
+                      q.id
+                    )
+                  }
                   className="absolute top-3 right-3 p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
                 >
                   <Plus className="w-4 h-4" />
@@ -122,7 +174,6 @@ export default function CreateQuizPage() {
           </div>
         </div>
 
-        {/* Right - Saved Folder */}
         <div className="w-1/4 p-4 bg-white shadow-md">
           <h2 className="text-xl font-semibold mb-4">Saved Questions</h2>
           {savedQuestions.length > 0 ? (
@@ -145,8 +196,36 @@ export default function CreateQuizPage() {
           ) : (
             <p className="text-gray-500">No questions saved.</p>
           )}
+
+          <div className="mt-6 border-t pt-4">
+            <input
+              type="text"
+              placeholder="Enter file name"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              className="w-full p-2 border rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={saveQuestionsToFile}
+              disabled={savedQuestions.length === 0}
+              className="w-full flex items-center justify-center p-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              <Save className="w-5 h-5 mr-2" />
+              Save Questions
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Popup Component */}
+      <Popup
+        isOpen={isPopupOpen}
+        onClose={() => setIsPopupOpen(false)}
+        title={popupTitle}
+        message={popupMessage}
+        confirmText="OK"
+        onConfirm={popupConfirmAction}
+      />
     </div>
   );
 }
