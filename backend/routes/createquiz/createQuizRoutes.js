@@ -1,6 +1,17 @@
+require("dotenv").config();
+
 const express = require('express');
 const router = express.Router();
 const { Client } = require('pg');
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+// Google Gemini Model Setup
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const modelName = "gemini-2.0-flash";
+const model = genAI.getGenerativeModel({ model: modelName });
+
+
+
 
 const client = new Client({
     host: process.env.DB_HOST,
@@ -46,4 +57,146 @@ router.get('/getQuestions', async (req, res) => {
     //}
 });
 
+// router.post('/postWrongAnswer', async (req, res) => {
+//     const { question, userAnswer } = req.body;
+
+//     // Optional: validate input
+//     if (!question || !userAnswer) {
+//         return res.status(400).json({ message: 'Missing question or userAnswer' });
+//     }
+
+//     try {
+//         // const question = "What is 2+2?"
+//         // const userAnswer = "3"
+//         const explanation = await explainWrongAnswer(question, userAnswer, model);
+//         console.log(explanation);
+
+//         // ✅ Send the explanation back to the client
+//         return res.status(200).json({ explanation });
+//     } catch (error) {
+//         console.error('Gemini error:', error);
+//         return res.status(500).json({ message: 'Something went wrong', error: error.message });
+//     }
+// });
+
+
+
+
+
+/**
+ * Explain why a user's answer to a question is wrong using Gemini
+ * @param {string} question - The original question
+ * @param {string} userAnswer - The user's (wrong) answer
+ * @returns {Promise<string>} - Gemini's explanation
+ */
+// async function explainWrongAnswer(question, userAnswer, model) {
+//     // const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  
+//     const prompt = `
+//   Can you explain why the answer is wrong?
+  
+//   Question: ${question}
+//   Student's Answer: ${userAnswer}
+  
+//   Please explain clearly and briefly.
+//   `;
+  
+//     const result = await model.generateContent(prompt);
+//     const response = await result.response;
+//     return response.text();
+//   }
+
+
+// router.post('/postWrongAnswer', async (req, res) => {
+//     // const { question, userAnswer,  imageUrl } = req.body;
+//     const question = req.body.question;
+//     const userAnswer = req.body.userAnswer;
+//     const imageUrl = req.body.imageUrl;
+  
+//     // if (!question || !userAnswer ) {
+//     //   return res.status(400).json({ message: 'Missing fields in request body' });
+//     // }
+  
+//     try {
+//         // const question = "The diagram below shows a cell as seen under an electron microscope. What are the functions in the cell of the numbered parts?"
+//         // const userAnswer = "stores genetic information: 3, controls the entry of substances: 1, releases energy from the breakdown of glucose: 2"
+//         // const imageUrl= "https://ctrlaltelite-image.s3.ap-southeast-2.amazonaws.com/AES_2019_Biology_Combined_O_Level/Q21.png"
+//         const explanation = await explainWrongAnswer({
+
+//             question,
+//             userAnswer,
+//             imageUrl,
+//             model,
+//         });
+  
+//       return res.status(200).json({ explanation });
+//     } catch (error) {
+//       console.error('Gemini error:', error);
+//       return res.status(500).json({ message: 'Something went wrong', error: error.message });
+
+//     }
+
+//   });
+  
+
+  router.post('/postWrongAnswer', async (req, res) => {
+    const { question, userAnswer, correctAnswer, options, imageUrl } = req.body;
+  
+    if (!question || !userAnswer || !correctAnswer || !options) {
+      return res.status(400).json({ message: 'Missing fields in request body' });
+    }
+  
+    try {
+      const explanation = await explainWrongAnswer({
+        question,
+        userAnswer,
+        correctAnswer,
+        options,
+        imageUrl,
+        model,
+      });
+  
+      return res.status(200).json({ explanation });
+    } catch (error) {
+      console.error('Gemini error:', error);
+      return res.status(500).json({ message: 'Something went wrong', error: error.message });
+    }
+  });
+  
+
+
+  
+  async function explainWrongAnswer({ question, userAnswer, correctAnswer, options, imageUrl, model }) {
+    let formattedOptions = options
+      .map((opt) => {
+        const text = typeof opt.text === 'string' ? opt.text : JSON.stringify(opt.text);
+        return `${opt.option}: ${text}`;
+      })
+      .join('\n');
+  
+    const prompt = `
+  
+  Here is the full context:
+  - Question: ${question}
+  - Image (if available): ${imageUrl ? imageUrl : "No diagram provided"}
+  - Answer: ${userAnswer.option}: ${userAnswer.text}
+  - Correct answer : ${correctAnswer.option}: ${correctAnswer.text}
+  - Options: ${formattedOptions}
+
+
+  Please explain why the answer is wrong and why the correct answer is correct. Be concise.
+  If the diagram is important, mention what it shows.
+  Do not use markdowns.
+  `;
+  
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  }
+  
+
+
+  
+
 module.exports = router;
+
