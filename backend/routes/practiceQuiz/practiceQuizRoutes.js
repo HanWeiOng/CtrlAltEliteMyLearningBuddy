@@ -82,4 +82,45 @@ router.post('/saveQuiz', async (req, res) => {
     }
 });
 
+// Route to get all folders for a user
+router.get('/getFolders', async (req, res) => {
+    const { username } = req.query;
+
+    if (!username) {
+        return res.status(400).json({
+            message: 'Username is required'
+        });
+    }
+
+    try {
+        const result = await client.query(`
+            SELECT 
+                id,
+                folder_name,
+                subject,
+                banding,
+                level,
+                question_ids,
+                created_at
+            FROM questions_folder 
+            WHERE username = $1
+            ORDER BY created_at DESC
+        `, [username]);
+
+        // For each folder, get the count of questions
+        const foldersWithQuestionCount = result.rows.map(folder => ({
+            ...folder,
+            questionCount: folder.question_ids ? folder.question_ids.length : 0
+        }));
+
+        res.status(200).json(foldersWithQuestionCount);
+    } catch (error) {
+        console.error('Error retrieving folders:', error);
+        res.status(500).json({ 
+            message: 'Internal server error',
+            error: error.message 
+        });
+    }
+});
+
 module.exports = router;
