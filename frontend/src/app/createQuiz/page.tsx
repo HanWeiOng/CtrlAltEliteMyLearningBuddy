@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { Plus, Trash, Search } from "lucide-react";
 import Sidebar from "../../components/ui/sidebar";
 import Navbar from "../../components/ui/navbar";
+import QuizModal from "../../components/ui/quiz-modal";
 
 export default function CreateQuizPage() {
-  const [selectedSubject, setSelectedSubject] = useState("Biology");
+  const [selectedSubject, setSelectedSubject] = useState<"Biology" | "Chemistry" | "Mathematics" | "History" | "English">("Biology");
   const [selectedBanding, setSelectedBanding] = useState("Combined");
   const [selectedLevel, setSelectedLevel] = useState("O Level");
   const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [userAnswers, setUserAnswers] = useState<{
     [questionText: string]: string;
@@ -34,6 +36,8 @@ export default function CreateQuizPage() {
 
   const fetchQuestions = async () => {
     setIsLoading(true);
+    setUserAnswers({});
+    setExplanations({});
     try {
       const response = await fetch(
         `http://localhost:5003/api/createquiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
@@ -142,6 +146,13 @@ export default function CreateQuizPage() {
         [questionText]: "⚠️ Something went wrong. Please try again.",
       }));
     }
+  };
+
+  const handleCreateQuiz = (quizName: string, description: string) => {
+    // Here you would typically make an API call to save the quiz
+    console.log("Creating quiz:", { quizName, description, savedQuestions });
+    setIsModalOpen(false);
+    // You can add your API call here to save the quiz
   };
 
   return (
@@ -255,7 +266,7 @@ export default function CreateQuizPage() {
               ))
             ) : (
               <div className="text-center py-12">
-                {/* <p className="text-gray-500">No questions available. Click "Filter Questions" to load questions.</p> */}
+                <p className="text-gray-500">No questions available. Click "Filter Questions" to load questions.</p>
               </div>
             )}
           </div>
@@ -280,12 +291,25 @@ export default function CreateQuizPage() {
                   </button>
                 </div>
               ))}
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="w-full mt-4 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm"
+              >
+                Create Quiz
+              </button>
             </div>
           ) : (
             <p className="text-gray-500">No questions saved.</p>
           )}
         </div>
       </div>
+
+      <QuizModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleCreateQuiz}
+        savedQuestions={savedQuestions}
+      />
     </div>
   );
 }
