@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import Navbar from "../../components/ui/navbar"
-import BasicModal from "@/components/ui/modal"
+
 import { FolderActions } from "@/components/ui/folder-actions"
 
 // Define types for our data
@@ -371,12 +371,14 @@ const PracticeQuizPage: React.FC = () => {
                         <span>{folder.questionCount} questions</span>
                         <span>Modified {getRelativeTime(folder.created_at)}</span>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        className="w-full rounded-lg border-[#7C3AED] dark:border-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 text-[#7C3AED] dark:text-[#7C3AED] transition-all duration-200"
-                      >
-                        <BasicModal/>
-                      </Button>
+                      <Link href={`/practiceQuiz/${folder.id}`}>
+                        <Button 
+                          variant="outline" 
+                          className="w-full rounded-lg border-[#7C3AED] dark:border-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 text-[#7C3AED] dark:text-[#7C3AED] transition-all duration-200"
+                        >
+                          Open Quiz
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 ))}
