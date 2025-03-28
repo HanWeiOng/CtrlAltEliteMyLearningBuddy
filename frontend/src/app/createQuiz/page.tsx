@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Plus, Trash, Search } from "lucide-react";
 import Sidebar from "../../components/ui/sidebar";
 import Navbar from "../../components/ui/navbar";
 import QuizModal from "../../components/ui/quiz-modal";
+
 
 export default function CreateQuizPage() {
   const [selectedSubject, setSelectedSubject] = useState<"Biology" | "Chemistry" | "Mathematics" | "History" | "English">("Biology");
@@ -12,6 +13,7 @@ export default function CreateQuizPage() {
   const [selectedLevel, setSelectedLevel] = useState("O Level");
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [userAnswers, setUserAnswers] = useState<{
     [questionText: string]: string;
@@ -23,6 +25,7 @@ export default function CreateQuizPage() {
 
   const [questions, setQuestions] = useState<
     {
+      id: number;
       question_text: string;
       answer_key: string;
       answer_options: { option: string; text: object | string }[];
@@ -31,7 +34,7 @@ export default function CreateQuizPage() {
   >([]);
 
   const [savedQuestions, setSavedQuestions] = useState<
-    { question: string; options: string[] }[]
+    { id: number; question: string; options: string[] }[]
   >([]);
 
   const fetchQuestions = async () => {
@@ -56,17 +59,17 @@ export default function CreateQuizPage() {
     }
   };
 
-  const addToFolder = (question: string, options: readonly string[]) => {
-    if (!savedQuestions.some((q) => q.question === question)) {
+  const addToFolder = (id: number, question: string, options: readonly string[]) => {
+    if (!savedQuestions.some((q) => q.id === id)) {
       setSavedQuestions([
         ...savedQuestions,
-        { question, options: [...options] },
+        { id, question, options: [...options] },
       ]);
     }
   };
 
-  const removeFromFolder = (question: string) => {
-    setSavedQuestions(savedQuestions.filter((q) => q.question !== question));
+  const removeFromFolder = (id: number) => {
+    setSavedQuestions(savedQuestions.filter((q) => q.id !== id));
   };
 
   const selectOption = async (
@@ -148,11 +151,56 @@ export default function CreateQuizPage() {
     }
   };
 
-  const handleCreateQuiz = (quizName: string, description: string) => {
-    // Here you would typically make an API call to save the quiz
-    console.log("Creating quiz:", { quizName, description, savedQuestions });
-    setIsModalOpen(false);
-    // You can add your API call here to save the quiz
+  const handleCreateQuiz = async (quizName: string, description: string) => {
+    try {
+      setIsSaving(true);
+      const questionIds = savedQuestions.map(q => q.id);
+
+      console.log('Sending request to save quiz:', {
+        username: 'sharon001',
+        folder_name: quizName,
+        subject: selectedSubject,
+        banding: selectedBanding,
+        level: selectedLevel,
+        question_ids: questionIds,
+      });
+
+      const response = await fetch('http://localhost:5003/api/practiceQuiz/saveQuiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: 'sharon001',
+          folder_name: quizName,
+          subject: selectedSubject,
+          banding: selectedBanding,
+          level: selectedLevel,
+          question_ids: questionIds,
+        }),
+      });
+
+      // if (!response.ok) {
+      //   throw new Error('Failed to save quiz');
+      // }
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Failed to save quiz: ${response.status} ${response.statusText}\n${errorData}`);
+      }
+
+      const result = await response.json();
+      console.log('Quiz saved successfully:', result);
+      
+      // Clear saved questions after successful save
+      setSavedQuestions([]);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Error saving quiz:', error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -254,6 +302,7 @@ export default function CreateQuizPage() {
                   <button
                     onClick={() =>
                       addToFolder(
+                        q.id,
                         q.question_text,
                         q.answer_options.map((opt) => opt.option)
                       )
@@ -284,7 +333,7 @@ export default function CreateQuizPage() {
                 >
                   <p className="font-medium">{q.question}</p>
                   <button
-                    onClick={() => removeFromFolder(q.question)}
+                    onClick={() => removeFromFolder(q.id)}
                     className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
                   >
                     <Trash className="w-4 h-4" />
@@ -308,7 +357,7 @@ export default function CreateQuizPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleCreateQuiz}
-        savedQuestions={savedQuestions}
+        isSaving={isSaving}
       />
     </div>
   );

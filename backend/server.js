@@ -10,9 +10,12 @@ const client = require('./databasepg'); // PostgreSQL client
 // Define various Routes
 const ocrRoutes = require("./routes/ocr/ocrRoutes");
 const createQuizRoutes = require("./routes/createquiz/createQuizRoutes");
+const practiceQuizRoutes = require("./routes/practiceQuiz/practiceQuizRoutes");
+
 
 app.use("/api/ocr", ocrRoutes);
 app.use("/api/createquiz", createQuizRoutes);
+app.use("/api/practicequiz", practiceQuizRoutes);
 
 // Start Server on port 5000
 const PORT = process.env.PORT || 5003;
