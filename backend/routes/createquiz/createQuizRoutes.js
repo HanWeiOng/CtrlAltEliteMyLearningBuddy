@@ -174,8 +174,30 @@ router.get('/getQuestions', async (req, res) => {
       })
       .join('\n');
   
-    const prompt = `
+//     const prompt = `
   
+//   Here is the full context:
+//   - Question: ${question}
+//   - Image (if available): ${imageUrl ? imageUrl : "No diagram provided"}
+//   - Answer: ${userAnswer.option}: ${userAnswer.text}
+//   - Correct answer : ${correctAnswer.option}: ${correctAnswer.text}
+//   - Options: ${formattedOptions}
+
+
+//   Please explain why the answer is wrong and why the correct answer is correct. Be concise.
+//   If the diagram is important, mention what it shows.
+//   Do not use markdowns. Use formatted bulletpoints if neccesary.
+//   Do not give image link.
+//   Optimise format for readability.
+//   At the end of the explanation, add "\n ✅ Correct answer: ${correctAnswer.option}"
+//   Be consistent in your formatting.
+
+
+//   `;
+
+const prompt = `
+You are a helpful tutor explaining why an answer is incorrect. Please provide a clear and concise explanation following this format:
+
   Here is the full context:
   - Question: ${question}
   - Image (if available): ${imageUrl ? imageUrl : "No diagram provided"}
@@ -183,11 +205,27 @@ router.get('/getQuestions', async (req, res) => {
   - Correct answer : ${correctAnswer.option}: ${correctAnswer.text}
   - Options: ${formattedOptions}
 
+Please provide your explanation following these guidelines:
+1. Start with "❌ ${userAnswer.option} is incorrect because:"
+2. Then explain "✅ Correct Answer: ${correctAnswer.option}"\
+3. If the diagram is important, explain its relevance
+4. Keep explanations concise and focused
+5. Use bullet points for clarity
+6. Do not use markdown formatting
 
-  Please explain why the answer is wrong and why the correct answer is correct. Be concise.
-  If the diagram is important, mention what it shows.
-  Do not use markdowns.
-  `;
+Format your response like this:
+${imageUrl ? `
+    • [Explain diagram's relevance]` : ''}
+
+❌ ${userAnswer.option} is incorrect because:
+• [First reason]
+• [Second reason]
+
+✅ Correct Answer: ${correctAnswer.option}
+• [First reason]
+• [Second reason]
+• [More reasons if neccesary]
+`;
   
     const result = await model.generateContent(prompt);
     const response = await result.response;
