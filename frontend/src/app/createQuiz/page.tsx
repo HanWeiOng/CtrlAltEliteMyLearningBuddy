@@ -22,7 +22,7 @@ export default function CreateQuizPage() {
   const [questions, setQuestions] = useState<
     {
       question_text: string;
-      correct_answer: string;
+      answer_key: string;
       answer_options: { option: string; text: object | string }[];
       image_paths?: string;
     }[]
@@ -193,7 +193,7 @@ export default function CreateQuizPage() {
                   <ul className="mt-2 space-y-2">
                     {q.answer_options.map((option, i) => {
                       const isSelected = userAnswers[q.question_text] === option.option;
-                      const isCorrect = q.correct_answer === option.option;
+                      const isCorrect = q.answer_key === option.option;
                       const hasAnswered = !!userAnswers[q.question_text];
 
                       return (
@@ -204,7 +204,7 @@ export default function CreateQuizPage() {
                             selectOption(
                               q.question_text,
                               option.option,
-                              q.correct_answer,
+                              q.answer_key,
                               q.answer_options,
                               q.image_paths
                             )
