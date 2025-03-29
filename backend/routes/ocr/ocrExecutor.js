@@ -1,15 +1,14 @@
-// ocrExecution.js
+// 🔧 ocrExecutor.js
+const fsPromises = require("fs/promises");
 const axios = require("axios");
 const path = require("path");
 const { createCanvas, loadImage } = require("canvas");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { PutObjectCommand, S3Client } = require("@aws-sdk/client-s3");
-const fs = require("fs");
 require("dotenv").config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
 const s3 = new S3Client({
   region: process.env.S3_REGION,
   credentials: {
@@ -84,24 +83,45 @@ const textExtractionInstructions = `
     ]
 `;
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const OcrExecutionMinor = async (data) => {
   try {
     const { subject, banding, level, paper_name: paperName, images } = data;
     const imageFiles = images.map((url) => ({ url, filename: path.basename(url) }));
     const allExtractedData = [];
 
-    for (const image of imageFiles) {
-      const response = await axios.get(image.url, { responseType: "arraybuffer" });
-      const buffer = Buffer.from(response.data, "binary");
-      const data = await processImageFromBuffer(buffer, image.filename, model, paperName);
-      allExtractedData.push(...data);
+    for (let i = 0; i < imageFiles.length; i++) {
+      const imageMeta = imageFiles[i];
+      try {
+        const response = await axios.get(imageMeta.url, { responseType: "arraybuffer" });
+        const buffer = Buffer.from(response.data, "binary");
+        const base64 = buffer.toString("base64");
+        const image = await loadImage(buffer);
+
+        const { extractedData, boundingBoxes } = await extractBoundingBoxesAndCrop(image, base64, imageMeta.filename, paperName);
+
+        const extractedQuestions = await extractTextFromImage(base64);
+        const croppedMap = mapCroppedImages(extractedData);
+
+        extractedQuestions.forEach((q) => {
+          const qNum = String(q.question_number || "");
+          q.image_filename = imageMeta.filename;
+          q.image_path = croppedMap[qNum] || [];
+        });
+
+        allExtractedData.push(...extractedQuestions);
+        console.log(`✅ Processed ${imageMeta.filename} (${i + 1}/${imageFiles.length})`);
+      } catch (err) {
+        console.warn(`⚠️ Skipped ${imageMeta.filename} due to error:`, err.message);
+      }
+
+      if ((i + 1) % 5 === 0 && i < imageFiles.length - 1) {
+        console.log("⏳ Pausing 3 seconds to avoid Gemini overload...");
+        await sleep(3000);
+      }
     }
 
-    // Debug logging for answer keys
-    const hasAnswerKeys = allExtractedData.filter(q => q.answer_key);
-    console.log(`✅ Found ${hasAnswerKeys.length} answer_key entries`);
-
-    // Handle orphaned answer_key entries
     allExtractedData.forEach((entry) => {
       if (entry.answer_key && !entry.question_number) {
         entry.question_number = entry.answer_key.question_number;
@@ -109,33 +129,23 @@ const OcrExecutionMinor = async (data) => {
     });
 
     const questions = consolidateQuestions(allExtractedData);
-    const consolidated = {
-      paperName,
+
+    return {
+      paper_name: paperName,
       subject,
       banding,
       level,
       questions,
     };
-
-    console.log("✅ Final structured output:", JSON.stringify(consolidated, null, 2));
-
-    const outputPath = path.join(__dirname, "output", `${paperName}_structured_output.json`);
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-    fs.writeFileSync(outputPath, JSON.stringify(consolidated, null, 2), "utf-8");
-    console.log(`✅ Structured output saved to: ${outputPath}`);
   } catch (err) {
     console.error("❌ Error in OcrExecutionMinor:", err);
     throw err;
   }
 };
 
-const processImageFromBuffer = async (buffer, filename, model, paperName) => {
-  const base64 = buffer.toString("base64");
-  const image = await loadImage(buffer);
-
+const extractBoundingBoxesAndCrop = async (image, base64, filename, paperName) => {
   const boundingBoxResponse = await model.generateContent({
     contents: [
-      { role: "user", parts: [{ text: "Identify and extract bounding boxes." }] },
       { role: "user", parts: [{ text: boundingBoxInstructions }] },
       { role: "user", parts: [{ inlineData: { mimeType: "image/png", data: base64 } }] },
     ],
@@ -145,13 +155,21 @@ const processImageFromBuffer = async (buffer, filename, model, paperName) => {
 
   const rawBoxes = extractTextFromResponse(boundingBoxResponse);
   const cleanedBoxes = safeJsonParse(rawBoxes);
-  const boundingBoxes = extractBoundingBoxes(cleanedBoxes);
 
+  if (!cleanedBoxes || !Array.isArray(cleanedBoxes) || cleanedBoxes.length === 0) {
+    console.warn(`⚠️ No bounding boxes found in ${filename}. Skipping.`);
+    return { extractedData: [], boundingBoxes: [] };
+  }
+
+  const boundingBoxes = extractBoundingBoxes(cleanedBoxes);
   const { extractedData } = await extractBoundingBoxDataFromImage(image, boundingBoxes, filename, paperName);
 
+  return { extractedData, boundingBoxes };
+};
+
+const extractTextFromImage = async (base64) => {
   const textResponse = await model.generateContent({
     contents: [
-      { role: "user", parts: [{ text: `Use the bounding box data: ${JSON.stringify(boundingBoxes)}` }] },
       { role: "user", parts: [{ text: textExtractionInstructions }] },
       { role: "user", parts: [{ inlineData: { mimeType: "image/png", data: base64 } }] },
     ],
@@ -160,16 +178,7 @@ const processImageFromBuffer = async (buffer, filename, model, paperName) => {
   });
 
   const rawText = extractTextFromResponse(textResponse);
-  const extractedQuestions = safeJsonParse(rawText);
-  const croppedMap = mapCroppedImages(extractedData);
-
-  extractedQuestions.forEach((q) => {
-    const qNum = String(q.question_number || "");
-    q.image_filename = filename;
-    q.image_path = croppedMap[qNum] || [];
-  });
-
-  return extractedQuestions;
+  return safeJsonParse(rawText);
 };
 
 const extractBoundingBoxDataFromImage = async (img, boundingBoxes, filename, paperName) => {
@@ -197,16 +206,17 @@ const extractBoundingBoxDataFromImage = async (img, boundingBoxes, filename, pap
     const croppedBuffer = croppedCanvas.toBuffer("image/png");
     const s3Key = `${paperName}/${filename.replace(".png", "")}_${box.label}_${box.question_number}.png`;
 
-    const uploadParams = new PutObjectCommand({
+    await s3.send(new PutObjectCommand({
       Bucket: process.env.S3_BUCKET_NAME,
       Key: s3Key,
       Body: croppedBuffer,
       ContentType: "image/png",
       ACL: "public-read",
-    });
+    }));
 
-    await s3.send(uploadParams);
-    const s3Url = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/${s3Key}`;
+    const encodedPaperName = encodeURIComponent(paperName).replace(/%20/g, '+'); // S3 URL-safe
+
+    const s3Url = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/${encodedPaperName}/${filename.replace(".png", "")}_${box.label}_${box.question_number}.png`;
 
     extractedData.push({
       label: box.label,
@@ -226,26 +236,43 @@ const extractTextFromResponse = (response) => {
     ?.trim() || null;
 };
 
+const tryFixBrokenJsonArray = (text) => {
+  if (!text || !text.trim().startsWith("[")) return null;
+  let fixed = text.trim();
+  if (!fixed.endsWith("]")) fixed += "]";
+  fixed = fixed.replace(/,(\s*[\]}])/g, "$1");
+  try {
+    return JSON.parse(fixed);
+  } catch (e) {
+    return null;
+  }
+};
+
 const safeJsonParse = (text) => {
   try {
     return JSON.parse(text);
   } catch (err) {
-    console.error("❌ JSON parse failed:", err);
+    const fixed = tryFixBrokenJsonArray(text);
+    if (fixed) {
+      console.warn("⚠️ JSON was malformed but successfully recovered.");
+      return fixed;
+    }
+    console.error("❌ JSON parse failed:", err.message);
     throw new Error("Invalid JSON received from API.");
   }
 };
 
 const extractBoundingBoxes = (json) => {
-  const boxes = [];
-  json.forEach((box) => {
+  return json.map((box) => {
     const key = Object.keys(box).find((k) => k.startsWith("box_"));
-    const coords = box[key] || [];
+    const coords = box[key];
     const labelKey = Object.keys(box).find((k) => k.endsWith("_label"));
-    const label = box[labelKey] || "Unknown";
-    if (["question", "answer_key", "answer_options", "box_label"].includes(label)) return;
-    boxes.push({ label, bounding_box: coords, question_number: box.question_number || null });
-  });
-  return boxes;
+    return {
+      label: box[labelKey] || "Unknown",
+      bounding_box: coords,
+      question_number: box.question_number || null,
+    };
+  }).filter(b => b.label !== "answer_key" && b.bounding_box);
 };
 
 const consolidateQuestions = (questions) => {
@@ -253,7 +280,6 @@ const consolidateQuestions = (questions) => {
   for (const q of questions) {
     const key = q.question_number;
     if (!key) continue;
-
     if (!map.has(key)) {
       map.set(key, q);
     } else {
