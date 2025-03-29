@@ -263,6 +263,16 @@ router.get('/testFolder/:id', async (req, res) => {
     }
 });
 
+
+// Error handling middleware
+router.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+        message: 'Internal server error',
+        error: err.message
+    });
+});
+
 /*
 
 // Helper function for wrong answer explanations
@@ -345,13 +355,6 @@ router.post("/postWrongAnswer", async (req, res) => {
     }
 });
 */
-// Error handling middleware
-router.use((err, req, res, next) => {
-    console.error('Unhandled error:', err);
-    res.status(500).json({
-        message: 'Internal server error',
-        error: err.message
-    });
-});
+
 
 module.exports = router;
