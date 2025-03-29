@@ -156,6 +156,31 @@ export default function CreateQuizPage() {
             alert("❌ Failed to retrieve image!");
         }
     };
+
+
+    const handleRowayne = async () => {
+        try {
+           
+    
+            const response = await axios.post(
+                "http://localhost:5003/api/createQuiz/postWrongAnswer", // ✅ Fixed API URL
+               
+                {
+                    headers: {
+                        "Content-Type": "application/json", // ✅ Fix: Use JSON instead of multipart/form-data
+                    },
+                }
+            );
+    
+            console.log("✅ Image retrieved:", response);
+            alert("✅ postWrongAnswer successfully!");
+    
+        } catch (error) {
+            console.error("❌ Retrieval error:", error);
+            alert("❌ Failed to postWrongAnswer!");
+        }
+    };
+    
     
     
     
@@ -220,6 +245,24 @@ export default function CreateQuizPage() {
                     Click Me
                 </button>
             </div>
+
+            <div>
+                <button 
+                    onClick={handleRowayne} 
+                    style={{
+                        fontSize: "20px",
+                        padding: "10px 20px",
+                        borderRadius: "8px",
+                        backgroundColor: "#007bff",
+                        color: "white",
+                        border: "none",
+                        cursor: "pointer"
+                    }}
+                >
+                    Click Me
+                </button>
+            </div>
+
 
 
             

@@ -1,19 +1,15 @@
+// ocrExecution.js
 const axios = require("axios");
 const path = require("path");
 const { createCanvas, loadImage } = require("canvas");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { PutObjectCommand, S3Client } = require("@aws-sdk/client-s3");
-
-// Temporary writing of JSON to local directory
 const fs = require("fs");
 require("dotenv").config();
 
-// Google Gemini Model Setup
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const modelName = "gemini-2.0-flash";
-const model = genAI.getGenerativeModel({ model: modelName });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-// AWS S3 Setup (v3 SDK)
 const s3 = new S3Client({
   region: process.env.S3_REGION,
   credentials: {
@@ -22,7 +18,6 @@ const s3 = new S3Client({
   },
 });
 
-// Constants
 const safetySettings = [
   { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
 ];
@@ -91,7 +86,7 @@ const textExtractionInstructions = `
 
 const OcrExecutionMinor = async (data) => {
   try {
-    const { paper_name: paperName, images } = data;
+    const { subject, banding, level, paper_name: paperName, images } = data;
     const imageFiles = images.map((url) => ({ url, filename: path.basename(url) }));
     const allExtractedData = [];
 
@@ -102,7 +97,26 @@ const OcrExecutionMinor = async (data) => {
       allExtractedData.push(...data);
     }
 
-    const consolidated = consolidateQuestions(allExtractedData);
+    // Debug logging for answer keys
+    const hasAnswerKeys = allExtractedData.filter(q => q.answer_key);
+    console.log(`✅ Found ${hasAnswerKeys.length} answer_key entries`);
+
+    // Handle orphaned answer_key entries
+    allExtractedData.forEach((entry) => {
+      if (entry.answer_key && !entry.question_number) {
+        entry.question_number = entry.answer_key.question_number;
+      }
+    });
+
+    const questions = consolidateQuestions(allExtractedData);
+    const consolidated = {
+      paperName,
+      subject,
+      banding,
+      level,
+      questions,
+    };
+
     console.log("✅ Final structured output:", JSON.stringify(consolidated, null, 2));
 
     const outputPath = path.join(__dirname, "output", `${paperName}_structured_output.json`);
@@ -153,7 +167,6 @@ const processImageFromBuffer = async (buffer, filename, model, paperName) => {
     const qNum = String(q.question_number || "");
     q.image_filename = filename;
     q.image_path = croppedMap[qNum] || [];
-    q.original_image_base64 = base64;
   });
 
   return extractedQuestions;
@@ -171,7 +184,7 @@ const extractBoundingBoxDataFromImage = async (img, boundingBoxes, filename, pap
   for (const box of boundingBoxes) {
     if (!["diagram", "graph"].includes(box.label)) continue;
 
-    const [y1, x1, y2, x2] = box.bounding_box;
+    const [x1, y1, x2, y2] = box.bounding_box;
     const absX1 = Math.max(0, Math.round((x1 / 1000) * width));
     const absY1 = Math.max(0, Math.round((y1 / 1000) * height));
     const absX2 = Math.min(width, Math.round((x2 / 1000) * width));
@@ -193,7 +206,7 @@ const extractBoundingBoxDataFromImage = async (img, boundingBoxes, filename, pap
     });
 
     await s3.send(uploadParams);
-    const s3Url = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+    const s3Url = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.S3_REGION}.amazonaws.com/${s3Key}`;
 
     extractedData.push({
       label: box.label,
@@ -237,15 +250,20 @@ const extractBoundingBoxes = (json) => {
 
 const consolidateQuestions = (questions) => {
   const map = new Map();
-  questions.forEach((q) => {
+  for (const q of questions) {
     const key = q.question_number;
+    if (!key) continue;
+
     if (!map.has(key)) {
       map.set(key, q);
-    } else if (q.answer_key) {
-      map.get(key).answer_key = q.answer_key;
+    } else {
+      const existing = map.get(key);
+      if (q.answer_key && !existing.answer_key) {
+        existing.answer_key = q.answer_key;
+      }
     }
-  });
-  return Array.from(map.values()).sort((a, b) => a.question_number - b.question_number);
+  }
+  return Array.from(map.values()).sort((a, b) => parseInt(a.question_number) - parseInt(b.question_number));
 };
 
 const mapCroppedImages = (data) => {

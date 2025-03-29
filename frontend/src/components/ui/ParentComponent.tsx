@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import QuizModal from "./QuizModal";  // Import the component
+import QuizModal from "./quiz-modal";  // Import the component
 import {Button} from './button'
 
 const ParentComponent = () => {
