@@ -20,14 +20,15 @@ const client = require("./databasepg");
 // Import Routes
 const ocrRoutes = require("./routes/ocr/ocrRoutes");
 const createQuizRoutes = require("./routes/createquiz/createQuizRoutes");
-const showQuizFolderRoutes = require("./routes/practicequiz/showQuizFolder");
-const practiceQuizRoutes = require("./routes/practicequiz/practiceQuizRoutes");
+const showQuizFolderRoutes = require("./routes/practiceQuiz/showQuizFolder");
+const practiceQuizRoutes = require("./routes/practiceQuiz/practiceQuizRoutes");
+
 
 // Attach Routes to API paths
 app.use("/api/ocr", ocrRoutes);
 app.use("/api/createquiz", createQuizRoutes);
-app.use("/api/practicequiz", showQuizFolderRoutes);  // Folder listing
-app.use("/api/practicequiz", practiceQuizRoutes);    // Quiz-specific actions
+app.use("/api/practicequiz", showQuizFolderRoutes);
+app.use("/api/openpracticequiz", practiceQuizRoutes);
 
 // Start Server
 const PORT = process.env.PORT || 5003;
