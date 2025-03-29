@@ -9,15 +9,15 @@ import QuizModal from "../../components/ui/quiz-modal";
 
 
 export default function CreateQuizPage() {
-  const [selectedSubject, setSelectedSubject] = useState<"Biology" | "Chemistry" | "Mathematics" | "History" | "English">("Biology");
-  const [selectedBanding, setSelectedBanding] = useState("Combined");
-  const [selectedLevel, setSelectedLevel] = useState("O Level");
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [selectedBanding, setSelectedBanding] = useState<string>("");
+  const [selectedLevel, setSelectedLevel] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const updateFilters = (
-    subject: "Biology" | "Chemistry" | "Mathematics" | "History" | "English",
+    subject: string,
     banding: string,
     level: string
   ) => {
