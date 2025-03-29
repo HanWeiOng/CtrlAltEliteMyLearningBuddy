@@ -2,169 +2,177 @@
 
 import { useParams, useRouter } from "next/navigation"; // Import useRouter
 import { useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle, XCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import Navbar from "@/components/ui/navbar"; // Import Navbar for consistency
 
 interface Question {
-  id: number
-  question_text: string
-  answer_key: string
+  id: number;
+  question_text: string;
+  answer_key: string;
   answer_options: Array<{
-    option: string
-    text: string | Record<string, string>
-  }>
-  image_paths?: string
+    option: string;
+    text: string | Record<string, string>;
+  }>;
+  image_paths?: string;
 }
 
 interface QuizProgress {
-  current: number
-  total: number
+  current: number;
+  total: number;
   score: {
-    percentage: number
-    fraction: string
-  }
+    percentage: number;
+    fraction: string;
+  };
 }
 
 // Server Component
-export default function TakeQuizPage({ params }: { params: { folderId: string } }) {
-  return <QuizContent folderId={params.folderId} />
+export default function TakeQuizPage({
+  params,
+}: {
+  params: { folderId: string };
+}) {
+  return <QuizContent folderId={params.folderId} />;
 }
 
 // Client Component
 function QuizContent({ folderId }: { folderId: string }) {
-  const router = useRouter()
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({})
-  const [explanations, setExplanations] = useState<{ [key: number]: string }>({})
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isComplete, setIsComplete] = useState(false)
+  const router = useRouter();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
+  const [explanations, setExplanations] = useState<{ [key: number]: string }>(
+    {}
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
   const [progress, setProgress] = useState<QuizProgress>({
     current: 0,
     total: 0,
     score: {
       percentage: 0,
-      fraction: "0/0"
-    }
-  })
+      fraction: "0/0",
+    },
+  });
 
   const fetchQuestions = async () => {
     try {
-      setIsLoading(true)
-      const response = await fetch(`http://localhost:5003/api/openpracticequiz//getQuestionsByFolderId?folderId=${folderId}`)
+      setIsLoading(true);
+      const response = await fetch(
+        `http://localhost:5003/api/openpracticequiz//getQuestionsByFolderId?folderId=${folderId}`
+      );
       if (!response.ok) {
-        throw new Error('Failed to fetch questions')
+        throw new Error("Failed to fetch questions");
       }
-      const data = await response.json()
-      setQuestions(data)
-      setProgress(prev => ({ ...prev, total: data.length }))
-      setError(null)
+      const data = await response.json();
+      setQuestions(data);
+      setProgress((prev) => ({ ...prev, total: data.length }));
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch questions')
-      console.error('Error fetching questions:', err)
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch questions"
+      );
+      console.error("Error fetching questions:", err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     if (folderId) {
-      fetchQuestions()
+      fetchQuestions();
     }
-  }, [folderId])
-
-  const calculateScore = () => {
-    if (questions.length === 0) return;
-
-    let correctCount = 0;
-    let totalAnswered = 0;
-
-    questions.forEach(question => {
-      const userAnswer = userAnswers[question.id];
-      if (userAnswer) {
-        totalAnswered++;
-        if (userAnswer === question.answer_key) {
-          correctCount++;
-        }
-      }
-    });
-
-    const percentage = Math.round((correctCount / totalAnswered) * 100) || 0;
-    const fraction = `${correctCount}/${questions.length}`;
-
-    setProgress(prev => ({
-      ...prev,
-      current: totalAnswered,
-      score: { percentage, fraction }
-    }));
-
-    if (totalAnswered === questions.length) {
-      setIsComplete(true);
-    }
-  };
+  }, [folderId]);
 
   const selectAnswer = async (questionId: number, selectedOption: string) => {
     if (userAnswers[questionId]) return; // Prevent multiple answers
 
-    const currentQuestion = questions.find(q => q.id === questionId);
+    const currentQuestion = questions.find((q) => q.id === questionId);
     if (!currentQuestion) return;
 
-    // Update answers
-    setUserAnswers(prev => {
+    // Update answers and progress immediately
+    setUserAnswers((prev) => {
       const newAnswers = { ...prev, [questionId]: selectedOption };
-      // Use setTimeout to ensure state is updated before calculating score
-      setTimeout(() => calculateScore(), 0);
+
+      // Update progress immediately after setting the answer
+      const totalAnswered = Object.keys(newAnswers).length;
+      const correctCount = questions.reduce((count, question) => {
+        const userAnswer = newAnswers[question.id];
+        return userAnswer === question.answer_key ? count + 1 : count;
+      }, 0);
+
+      const percentage =
+        Math.round((correctCount / questions.length) * 100) || 0;
+      const fraction = `${correctCount}/${questions.length}`;
+
+      setProgress({
+        current: totalAnswered,
+        total: questions.length,
+        score: { percentage, fraction },
+      });
+
+      // Check if the quiz is complete
+      if (totalAnswered === questions.length) {
+        setIsComplete(true);
+      }
+
       return newAnswers;
     });
 
+    // Handle explanations
     if (selectedOption === currentQuestion.answer_key) {
-      setExplanations(prev => ({
+      setExplanations((prev) => ({
         ...prev,
-        [questionId]: "✅ Correct! Great job!"
+        [questionId]: "✅ Correct! Great job!",
       }));
     } else {
       try {
-        const response = await fetch("http://localhost:5003/api/createquiz/postWrongAnswer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question: currentQuestion.question_text,
-            userAnswer: {
-              option: selectedOption,
-              text: currentQuestion.answer_options.find(opt => opt.option === selectedOption)?.text
-            },
-            correctAnswer: {
-              option: currentQuestion.answer_key,
-              text: currentQuestion.answer_options.find(opt => opt.option === currentQuestion.answer_key)?.text
-            },
-            options: currentQuestion.answer_options,
-            imageUrl: currentQuestion.image_paths
-          }),
-        })
+        const response = await fetch(
+          "http://localhost:5003/api/createquiz/postWrongAnswer",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              question: currentQuestion.question_text,
+              userAnswer: {
+                option: selectedOption,
+                text: currentQuestion.answer_options.find(
+                  (opt) => opt.option === selectedOption
+                )?.text,
+              },
+              correctAnswer: {
+                option: currentQuestion.answer_key,
+                text: currentQuestion.answer_options.find(
+                  (opt) => opt.option === currentQuestion.answer_key
+                )?.text,
+              },
+              options: currentQuestion.answer_options,
+              imageUrl: currentQuestion.image_paths,
+            }),
+          }
+        );
 
-        const data = await response.json()
+        const data = await response.json();
         if (response.ok) {
-          setExplanations(prev => ({
+          setExplanations((prev) => ({
             ...prev,
-            [questionId]: data.explanation
-          }))
+            [questionId]: data.explanation,
+          }));
         } else {
-          setExplanations(prev => ({
+          setExplanations((prev) => ({
             ...prev,
-            [questionId]: "❌ Incorrect — but couldn't explain why."
-          }))
+            [questionId]: "❌ Incorrect — but couldn't explain why.",
+          }));
         }
       } catch (error) {
-        console.error("Error explaining wrong answer:", error)
-        setExplanations(prev => ({
+        console.error("Error explaining wrong answer:", error);
+        setExplanations((prev) => ({
           ...prev,
-          [questionId]: "⚠️ Something went wrong. Please try again."
-        }))
+          [questionId]: "⚠️ Something went wrong. Please try again.",
+        }));
       }
     }
-  }
-
+  };
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -172,11 +180,13 @@ function QuizContent({ folderId }: { folderId: string }) {
         <main className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading quiz...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">
+              Loading quiz...
+            </span>
           </div>
         </main>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -186,8 +196,8 @@ function QuizContent({ folderId }: { folderId: string }) {
         <main className="container mx-auto px-4 py-8">
           <div className="text-center text-red-600 dark:text-red-400">
             <p>{error}</p>
-            <Button 
-              onClick={fetchQuestions} 
+            <Button
+              onClick={fetchQuestions}
               className="mt-4 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:from-[#6D28D9] hover:to-[#5B21B6] text-white transition-all duration-200 shadow-sm hover:shadow-md"
             >
               Retry
@@ -195,9 +205,8 @@ function QuizContent({ folderId }: { folderId: string }) {
           </div>
         </main>
       </div>
-    )
+    );
   }
-
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -208,7 +217,7 @@ function QuizContent({ folderId }: { folderId: string }) {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => router.push('/practiceQuiz')}
+              onClick={() => router.push("/practiceQuiz")}
               className="gap-2 text-[#7C3AED] hover:text-[#7C3AED] hover:bg-[#7C3AED]/10"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -219,7 +228,8 @@ function QuizContent({ folderId }: { folderId: string }) {
                 Questions Answered: {progress.current} of {progress.total}
               </div>
               <div className="text-sm font-medium text-[#7C3AED]">
-                Current Score: {progress.score.percentage}% ({progress.score.fraction})
+                Current Score: {progress.score.percentage}% (
+                {progress.score.fraction})
               </div>
             </div>
           </div>
@@ -229,8 +239,8 @@ function QuizContent({ folderId }: { folderId: string }) {
       <main className="container mx-auto px-4 py-8">
         <div className="space-y-8">
           {questions.map((question, index) => (
-            <div 
-              key={question.id} 
+            <div
+              key={question.id}
               className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 transition-all duration-200 hover:shadow-md"
             >
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
@@ -245,14 +255,16 @@ function QuizContent({ folderId }: { folderId: string }) {
               )}
               <div className="space-y-3">
                 {question.answer_options.map((option, optionIndex) => {
-                  const isSelected = userAnswers[question.id] === option.option
-                  const isCorrect = question.answer_key === option.option
-                  const hasAnswered = !!userAnswers[question.id]
+                  const isSelected = userAnswers[question.id] === option.option;
+                  const isCorrect = question.answer_key === option.option;
+                  const hasAnswered = !!userAnswers[question.id];
 
                   return (
                     <button
                       key={optionIndex}
-                      onClick={() => !hasAnswered && selectAnswer(question.id, option.option)}
+                      onClick={() =>
+                        !hasAnswered && selectAnswer(question.id, option.option)
+                      }
                       disabled={hasAnswered}
                       className={`w-full p-4 text-left rounded-lg border transition-all duration-200 ${
                         hasAnswered
@@ -267,34 +279,37 @@ function QuizContent({ folderId }: { folderId: string }) {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        {hasAnswered && (
-                          isSelected && isCorrect ? (
+                        {hasAnswered &&
+                          (isSelected && isCorrect ? (
                             <CheckCircle className="h-5 w-5 text-green-500" />
                           ) : isSelected && !isCorrect ? (
                             <XCircle className="h-5 w-5 text-red-500" />
                           ) : isCorrect ? (
                             <CheckCircle className="h-5 w-5 text-green-500" />
-                          ) : null
-                        )}
+                          ) : null)}
                         <span className="font-medium">{option.option}:</span>
                         <span>
                           {typeof option.text === "object"
-                            ? Object.entries(option.text).map(([key, value]) => (
-                                <span key={key}>
-                                  {key}: {value},{" "}
-                                </span>
-                              ))
+                            ? Object.entries(option.text).map(
+                                ([key, value]) => (
+                                  <span key={key}>
+                                    {key}: {value},{" "}
+                                  </span>
+                                )
+                              )
                             : option.text}
                         </span>
                       </div>
                     </button>
-                  )
+                  );
                 })}
               </div>
 
               {explanations[question.id] && (
                 <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 dark:border-yellow-400 text-yellow-900 dark:text-yellow-100 rounded shadow-sm animate-fadeIn whitespace-pre-line">
-                  <div className="font-semibold mb-1">🧠 Tutor's Explanation:</div>
+                  <div className="font-semibold mb-1">
+                    🧠 Tutor's Explanation:
+                  </div>
                   <div>{explanations[question.id]}</div>
                 </div>
               )}
@@ -315,7 +330,7 @@ function QuizContent({ folderId }: { folderId: string }) {
                 You got {progress.score.fraction} questions correct
               </p>
               <Button
-                onClick={() => router.push('/practiceQuiz')}
+                onClick={() => router.push("/practiceQuiz")}
                 className="rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:from-[#6D28D9] hover:to-[#5B21B6] text-white transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 Return to Folders
