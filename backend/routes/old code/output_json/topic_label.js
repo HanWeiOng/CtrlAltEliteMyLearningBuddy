@@ -82,6 +82,10 @@ const topicLabelling = async (jsonData) => {
       return jsonData;
     }
 
+    console.log("This is json from OCR:")
+    console.log("")
+    console.log(jsonData)
+
     for (let question of jsonData.questions) {
       if (!question.question_text || typeof question.question_text !== "string") {
         console.warn("⚠️ Skipping invalid question_text:", question);
@@ -98,20 +102,11 @@ const topicLabelling = async (jsonData) => {
 
         const scores = topicEmbeddings.map((embedding, index) => ({
           sub_topic: documents[index].sub_topic,
-          description: documents[index].description,
           score: cosineSimilarity(qEmbed[0], embedding)
         }));
 
         scores.sort((a, b) => b.score - a.score);
-
-        if (scores.length > 0) {
-          question.topic_label = scores[0].sub_topic;
-          question.topic_description = scores[0].description;
-        } else {
-          question.topic_label = "Unknown";
-          question.topic_description = null;
-        }
-
+        question.topic_label = scores.length > 0 ? scores[0].sub_topic : "Unknown";
         console.log(`🏷️  Q${question.question_number} tagged as: ${question.topic_label}`);
       } catch (embedErr) {
         console.error(`❌ Hugging Face API error for Q${question.question_number}:`, embedErr.message);

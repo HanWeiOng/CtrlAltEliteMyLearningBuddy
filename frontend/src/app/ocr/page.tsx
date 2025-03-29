@@ -15,6 +15,8 @@ const mathBandings = ["Math", "E Math", "A Math"];
 const scienceBandings = ["Combined", "Pure"];
 
 export default function UploadPage() {
+  const [progress, setProgress] = useState({ step: 0, message: "" });
+  const TOTAL_STEPS = 5;
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [jsonOutput, setJsonOutput] = useState<string | null>(null);
@@ -46,6 +48,24 @@ export default function UploadPage() {
       setSelectedBanding("");
     }
   }, [selectedSubject]);
+
+  useEffect(() => {
+    const eventSource = new EventSource("http://localhost:5003/api/ocr/progress-stream");
+  
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setProgress(data);
+    };
+  
+    eventSource.onerror = () => {
+      console.error("❌ SSE connection closed.");
+      eventSource.close();
+    };
+  
+    return () => {
+      eventSource.close();
+    };
+  }, []);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -285,6 +305,27 @@ export default function UploadPage() {
                 >
                   {isProcessing ? "Processing..." : "Process Files"}
                 </button>
+
+                {/* Progress status section - OUTSIDE the button */}
+                <div className="mt-4">
+                  {!isProcessing && progress.step === 0 && (
+                    <p className="text-gray-500 text-sm italic">Ready to process PDF.</p>
+                  )}
+
+                  {isProcessing && (
+                    <>
+                      <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 transition-all duration-500 ease-in-out"
+                          style={{ width: `${(progress.step / TOTAL_STEPS) * 100}%` }}
+                        />
+                      </div>
+                      <p className="text-sm text-blue-600 mt-2">
+                        Step {progress.step}/{TOTAL_STEPS} — {progress.message}
+                      </p>
+                    </>
+                  )}
+                </div>
 
                 {successMessage && (
                   <div className="mt-4 text-green-500">{successMessage}</div>

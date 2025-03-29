@@ -16,11 +16,11 @@ CREATE TABLE IF NOT EXISTS questions_folder (
 );
 
 -- Insert default data if not already present
-INSERT INTO questions_folder (username, folder_name, subject, banding, level, question_ids) 
-VALUES 
-    ('alice123', 'Algebra Basics', 'Mathematics', 'E Math', 'O Level', '[523, 532, 545]'::JSONB),
-    ('bob456', 'Science Essentials', 'Chemistry', 'Pure', 'Lower Secondary', '[528, 537, 556]'::JSONB),
-    ('charlie789', 'Historical Analysis', 'History', NULL, 'O Level', '[522, 531, 550]'::JSONB),
-    ('david001', 'English Vocabulary', 'English', NULL, 'PSLE', '[525, 539, 558]'::JSONB),
-    ('emma999', 'Space & Biology', 'Biology', 'Combined', 'N Level', '[526, 541, 552]'::JSONB)
-ON CONFLICT (username, folder_name) DO NOTHING;
+-- INSERT INTO questions_folder (username, folder_name, subject, banding, level, question_ids) 
+-- VALUES 
+--     ('alice123', 'Algebra Basics', 'Mathematics', 'E Math', 'O Level', '[523, 532, 545]'::JSONB),
+--     ('bob456', 'Science Essentials', 'Chemistry', 'Pure', 'Lower Secondary', '[528, 537, 556]'::JSONB),
+--     ('charlie789', 'Historical Analysis', 'History', NULL, 'O Level', '[522, 531, 550]'::JSONB),
+--     ('david001', 'English Vocabulary', 'English', NULL, 'PSLE', '[525, 539, 558]'::JSONB),
+--     ('emma999', 'Space & Biology', 'Biology', 'Combined', 'N Level', '[526, 541, 552]'::JSONB)
+-- ON CONFLICT (username, folder_name) DO NOTHING;

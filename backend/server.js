@@ -1,26 +1,37 @@
-// Initiate the server
-require("dotenv").config(); // Load environment variables from .env file
-const express = require("express"); 
-const cors = require("cors"); // Enable CORS for all requests
-const app = express(); // Create express app
-app.use(express.json()); // Middleware to parse JSON request bodies
-app.use(cors()); // Enable CORS for all requests
-const client = require('./databasepg'); // PostgreSQL client
+// server.js
 
-// Define various Routes
+// Load environment variables from .env file
+require("dotenv").config();
+
+// Import dependencies
+const express = require("express");
+const cors = require("cors");
+
+// Create express app
+const app = express();
+
+// Middleware
+app.use(cors()); // Enable CORS for all incoming requests
+app.use(express.json()); // Parse incoming JSON requests
+
+// PostgreSQL client (optional if used directly in routes)
+const client = require("./databasepg");
+
+// Import Routes
 const ocrRoutes = require("./routes/ocr/ocrRoutes");
 const createQuizRoutes = require("./routes/createquiz/createQuizRoutes");
-// const showQuizFolderRoutes = require("./routes/practicequiz/showQuizFolder");
+const showQuizFolderRoutes = require("./routes/practiceQuiz/showQuizFolder");
 const practiceQuizRoutes = require("./routes/practiceQuiz/practiceQuizRoutes");
 
 
+// Attach Routes to API paths
 app.use("/api/ocr", ocrRoutes);
 app.use("/api/createquiz", createQuizRoutes);
 app.use("/api/practicequiz", showQuizFolderRoutes);
-app.use("/api/practicequiz", practiceQuizRoutes);
+app.use("/api/openpracticequiz", practiceQuizRoutes);
 
-// Start Server on port 5000
+// Start Server
 const PORT = process.env.PORT || 5003;
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

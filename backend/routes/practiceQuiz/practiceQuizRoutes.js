@@ -203,7 +203,7 @@ router.post('/saveQuiz', validateQuizInput, async (req, res) => {
     }
 });
 
-// Route to get all folders for a user
+// Route to get all folders for a user 
 router.get('/getFolders', async (req, res) => {
     const { username } = req.query;
 
@@ -262,6 +262,18 @@ router.get('/testFolder/:id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
+// Error handling middleware
+router.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+        message: 'Internal server error',
+        error: err.message
+    });
+});
+
+/*
 
 // Helper function for wrong answer explanations
 async function explainWrongAnswer({ question, userAnswer, correctAnswer, options, imageUrl, model }) {
@@ -342,14 +354,7 @@ router.post("/postWrongAnswer", async (req, res) => {
         return res.status(500).json({ message: 'Something went wrong', error: error.message });
     }
 });
+*/
 
-// Error handling middleware
-router.use((err, req, res, next) => {
-    console.error('Unhandled error:', err);
-    res.status(500).json({
-        message: 'Internal server error',
-        error: err.message
-    });
-});
 
 module.exports = router;
