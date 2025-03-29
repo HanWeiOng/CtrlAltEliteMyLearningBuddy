@@ -90,16 +90,20 @@ export default function Sidebar({ updateFilters }: SidebarProps) {
           }}
         >
           {(() => {
-            // Dynamically determine banding options based on the selected subject
+            // Dynamically determine banding options based on the selected subject and level
             let options: (string | null)[] = [];
             if (
               selectedSubject === "Biology" ||
               selectedSubject === "Chemistry" ||
-              selectedSubject === "Physics" // Added Physics here
+              selectedSubject === "Physics"
             ) {
               options = ["Combined", "Pure"];
             } else if (selectedSubject === "Mathematics") {
-              options = ["E-Math", "A-Math"];
+              if (selectedLevel === "PSLE") {
+                options = ["Math"]; // Only "Math" for PSLE level
+              } else {
+                options = ["E-Math", "A-Math"];
+              }
             } else {
               options = [null]; // Default to "N.A"
             }
