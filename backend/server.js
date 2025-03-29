@@ -17,7 +17,7 @@ const practiceQuizRoutes = require("./routes/practiceQuiz/practiceQuizRoutes");
 app.use("/api/ocr", ocrRoutes);
 app.use("/api/createquiz", createQuizRoutes);
 app.use("/api/practicequiz", showQuizFolderRoutes);
-app.use("/api/practicequiz2", practiceQuizRoutes);
+app.use("/api/openpracticequiz", practiceQuizRoutes);
 
 // Start Server on port 5000
 const PORT = process.env.PORT || 5003;

@@ -185,7 +185,7 @@ export default function CreateQuizPage() {
         question_ids: questionIds,
       });
 
-      const response = await fetch('http://localhost:5003/api/practiceQuiz2/saveQuiz', {
+      const response = await fetch('http://localhost:5003/api/openpracticequiz/saveQuiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
