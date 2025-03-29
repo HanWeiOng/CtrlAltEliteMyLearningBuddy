@@ -7,18 +7,17 @@ import Navbar from "../../components/ui/navbar";
 import Popup from "../../components/ui/popup"; // Import the popup component
 import QuizModal from "../../components/ui/quiz-modal";
 
-
 export default function CreateQuizPage() {
-  const [selectedSubject, setSelectedSubject] = useState<string>("");
-  const [selectedBanding, setSelectedBanding] = useState<string>("");
-  const [selectedLevel, setSelectedLevel] = useState<string>("");
+  const [selectedSubject, setSelectedSubject] = useState<string>(""); // Default to blank
+  const [selectedBanding, setSelectedBanding] = useState<string | null>(null); // Allow null
+  const [selectedLevel, setSelectedLevel] = useState<string>(""); // Default to blank
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const updateFilters = (
-    subject: string,
-    banding: string,
+    subject: "Biology" | "Chemistry" | "Mathematics" | "History" | "English",
+    banding: string | null, // Allow null for banding
     level: string
   ) => {
     setSelectedSubject(subject);
@@ -49,12 +48,14 @@ export default function CreateQuizPage() {
   >([]);
 
   const [fileName, setFileName] = useState("");
-  
+
   // Popup states
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupTitle, setPopupTitle] = useState("");
-  const [popupConfirmAction, setPopupConfirmAction] = useState<() => void>(() => {});
+  const [popupConfirmAction, setPopupConfirmAction] = useState<() => void>(
+    () => {}
+  );
 
   const fetchQuestions = async () => {
     setIsLoading(true);
@@ -78,7 +79,11 @@ export default function CreateQuizPage() {
     }
   };
 
-  const addToFolder = (id: number, question: string, options: readonly string[]) => {
+  const addToFolder = (
+    id: number,
+    question: string,
+    options: readonly string[]
+  ) => {
     if (!savedQuestions.some((q) => q.id === id)) {
       setSavedQuestions([
         ...savedQuestions,
@@ -131,23 +136,26 @@ export default function CreateQuizPage() {
     }
 
     try {
-      const res = await fetch("http://localhost:5003/api/createquiz/postWrongAnswer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: questionText,
-          userAnswer: {
-            option: selectedOption,
-            text: userAnswerText,
-          },
-          correctAnswer: {
-            option: correctAnswer,
-            text: correctAnswerText,
-          },
-          options: answerOptions,
-          imageUrl,
-        }),
-      });
+      const res = await fetch(
+        "http://localhost:5003/api/createquiz/postWrongAnswer",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: questionText,
+            userAnswer: {
+              option: selectedOption,
+              text: userAnswerText,
+            },
+            correctAnswer: {
+              option: correctAnswer,
+              text: correctAnswerText,
+            },
+            options: answerOptions,
+            imageUrl,
+          }),
+        }
+      );
 
       const data = await res.json();
       if (res.ok) {
@@ -170,14 +178,13 @@ export default function CreateQuizPage() {
     }
   };
 
-
   const handleCreateQuiz = async (quizName: string, description: string) => {
     try {
       setIsSaving(true);
-      const questionIds = savedQuestions.map(q => q.id);
+      const questionIds = savedQuestions.map((q) => q.id);
 
-      console.log('Sending request to save quiz:', {
-        username: 'sharon001',
+      console.log("Sending request to save quiz:", {
+        username: "sharon001",
         folder_name: quizName,
         subject: selectedSubject,
         banding: selectedBanding,
@@ -185,43 +192,50 @@ export default function CreateQuizPage() {
         question_ids: questionIds,
       });
 
-      const response = await fetch('http://localhost:5003/api/openpracticequiz/saveQuiz', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: 'sharon001',
-          folder_name: quizName,
-          subject: selectedSubject,
-          banding: selectedBanding,
-          level: selectedLevel,
-          question_ids: questionIds,
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:5003/api/openpracticequiz/saveQuiz",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: "sharon001",
+            folder_name: quizName,
+            subject: selectedSubject,
+            banding: selectedBanding,
+            level: selectedLevel,
+            question_ids: questionIds,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(`Failed to save quiz: ${response.status} ${response.statusText}\n${errorData}`);
+        throw new Error(
+          `Failed to save quiz: ${response.status} ${response.statusText}\n${errorData}`
+        );
       }
 
       const result = await response.json();
-      console.log('Quiz saved successfully:', result);
-      
+      console.log("Quiz saved successfully:", result);
+
       // Clear saved questions after successful save
       setSavedQuestions([]);
       setIsModalOpen(false);
     } catch (error) {
-      console.error('Error saving quiz:', error);
+      console.error("Error saving quiz:", error);
       // You might want to show an error message to the user here
     } finally {
       setIsSaving(false);
     }
   };
 
-  
-
-  const showPopup = (title: string, message: string, confirmAction?: () => void) => {
+  const showPopup = (
+    title: string,
+    message: string,
+    confirmAction?: () => void
+  ) => {
     setPopupTitle(title);
     setPopupMessage(message);
     if (confirmAction) {
@@ -317,7 +331,8 @@ export default function CreateQuizPage() {
                   )}
                   <ul className="mt-2 space-y-2">
                     {q.answer_options.map((option, i) => {
-                      const isSelected = userAnswers[q.question_text] === option.option;
+                      const isSelected =
+                        userAnswers[q.question_text] === option.option;
                       const isCorrect = q.answer_key === option.option;
                       const hasAnswered = !!userAnswers[q.question_text];
 
@@ -346,11 +361,13 @@ export default function CreateQuizPage() {
                         >
                           {option.option}:{" "}
                           {typeof option.text === "object"
-                            ? Object.entries(option.text).map(([key, value]) => (
-                                <span key={key}>
-                                  {key}: {value},{" "}
-                                </span>
-                              ))
+                            ? Object.entries(option.text).map(
+                                ([key, value]) => (
+                                  <span key={key}>
+                                    {key}: {value},{" "}
+                                  </span>
+                                )
+                              )
                             : option.text}
                         </li>
                       );
@@ -359,7 +376,9 @@ export default function CreateQuizPage() {
 
                   {explanations[q.question_text] && (
                     <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-600 text-yellow-900 rounded shadow-sm whitespace-pre-line">
-                      <div className="font-semibold mb-1">🧠 Tutor's Explanation:</div>
+                      <div className="font-semibold mb-1">
+                        🧠 Tutor's Explanation:
+                      </div>
                       <div>{explanations[q.question_text]}</div>
                     </div>
                   )}
@@ -381,7 +400,10 @@ export default function CreateQuizPage() {
               ))
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500">No questions available. Click "Filter Questions" to load questions.</p>
+                <p className="text-gray-500">
+                  No questions available. Click "Filter Questions" to load
+                  questions.
+                </p>
               </div>
             )}
           </div>
@@ -428,7 +450,6 @@ export default function CreateQuizPage() {
         confirmText="OK"
         onConfirm={popupConfirmAction}
       />
-
 
       <QuizModal
         isOpen={isModalOpen}
