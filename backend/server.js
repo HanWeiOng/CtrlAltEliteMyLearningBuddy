@@ -10,7 +10,7 @@ const client = require('./databasepg'); // PostgreSQL client
 // Define various Routes
 const ocrRoutes = require("./routes/ocr/ocrRoutes");
 const createQuizRoutes = require("./routes/createquiz/createQuizRoutes");
-const showQuizFolderRoutes = require("./routes/practicequiz/showQuizFolder");
+// const showQuizFolderRoutes = require("./routes/practicequiz/showQuizFolder");
 const practiceQuizRoutes = require("./routes/practiceQuiz/practiceQuizRoutes");
 
 
