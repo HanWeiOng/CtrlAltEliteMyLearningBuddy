@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus, Trash, Save, Search } from "lucide-react";
 import Sidebar from "../../components/ui/sidebar";
 import Navbar from "../../components/ui/navbar";
-import Popup from "../../components/ui/popup";
+import Popup from "../../components/ui/popup"; // Import the popup component
 import QuizModal from "../../components/ui/quiz-modal";
 
 export default function CreateQuizPage() {
@@ -65,8 +65,11 @@ export default function CreateQuizPage() {
       const response = await fetch(
         `http://localhost:5003/api/createquiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
       );
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
+      console.log(data);
       setQuestions(data);
     } catch (error) {
       console.error("Error fetching questions:", error);
@@ -82,7 +85,10 @@ export default function CreateQuizPage() {
     options: readonly string[]
   ) => {
     if (!savedQuestions.some((q) => q.id === id)) {
-      setSavedQuestions([...savedQuestions, { id, question, options }]);
+      setSavedQuestions([
+        ...savedQuestions,
+        { id, question, options: [...options] },
+      ]);
     }
   };
 
@@ -99,13 +105,27 @@ export default function CreateQuizPage() {
   ) => {
     if (userAnswers[questionText]) return;
 
-    setUserAnswers((prev) => ({ ...prev, [questionText]: selectedOption }));
+    setUserAnswers((prev) => ({
+      ...prev,
+      [questionText]: selectedOption,
+    }));
 
-    const selectedText = answerOptions.find((opt) => opt.option === selectedOption)?.text;
-    const correctText = answerOptions.find((opt) => opt.option === correctAnswer)?.text;
+    const selectedOptionTextObj = answerOptions.find(
+      (opt) => opt.option === selectedOption
+    );
+    const correctOptionTextObj = answerOptions.find(
+      (opt) => opt.option === correctAnswer
+    );
 
-    const selectedTextStr = typeof selectedText === "object" ? JSON.stringify(selectedText) : selectedText;
-    const correctTextStr = typeof correctText === "object" ? JSON.stringify(correctText) : correctText;
+    const userAnswerText =
+      typeof selectedOptionTextObj?.text === "object"
+        ? JSON.stringify(selectedOptionTextObj?.text)
+        : selectedOptionTextObj?.text;
+
+    const correctAnswerText =
+      typeof correctOptionTextObj?.text === "object"
+        ? JSON.stringify(correctOptionTextObj?.text)
+        : correctOptionTextObj?.text;
 
     if (selectedOption === correctAnswer) {
       setExplanations((prev) => ({
@@ -137,15 +157,16 @@ export default function CreateQuizPage() {
         }
       );
 
-        const data = await res.json();
+      const data = await res.json();
+      if (res.ok) {
         setExplanations((prev) => ({
           ...prev,
-          [questionText]: res.ok ? data.explanation : "❌ Incorrect — but Gemini couldn't explain why.",
+          [questionText]: data.explanation,
         }));
-      } catch (err) {
+      } else {
         setExplanations((prev) => ({
           ...prev,
-          [questionText]: "⚠️ Something went wrong. Please try again.",
+          [questionText]: "❌ Incorrect — but Gemini couldn't explain why.",
         }));
       }
     } catch (error) {
@@ -217,7 +238,9 @@ export default function CreateQuizPage() {
   ) => {
     setPopupTitle(title);
     setPopupMessage(message);
-    if (confirmAction) setPopupConfirmAction(() => confirmAction);
+    if (confirmAction) {
+      setPopupConfirmAction(() => confirmAction);
+    }
     setIsPopupOpen(true);
   };
 
@@ -228,28 +251,35 @@ export default function CreateQuizPage() {
       return;
     }
 
+    const questionIds = savedQuestions.map(q => q.id);
+
     const payload = {
       folder_name: fileName,
-      question_ids: savedQuestions.map((q) => q.id),
+      question_ids: questionIds,
       subject: selectedSubject,
       banding: selectedBanding,
-      level: selectedLevel,
+      level: selectedLevel
     };
 
     try {
       const response = await fetch("http://localhost:5003/api/createquiz/saveFolder", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
       if (response.ok) {
-        showPopup("Success", "Folder saved successfully!", () => window.location.reload());
+        showPopup("Success", "Folder saved successfully!", () => {
+          window.location.reload();
+        });
       } else {
         showPopup("Error", `Error: ${data.error}`);
       }
     } catch (error) {
+      console.error("Error saving folder:", error);
       showPopup("Error", "Failed to save folder.");
     }
   };
@@ -258,13 +288,14 @@ export default function CreateQuizPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       <Navbar />
+
       <div className="flex flex-grow">
         <div className="w-1/5 p-4 bg-white shadow-md">
           <Sidebar updateFilters={updateFilters} />
           <div className="mt-4 flex justify-end">
             <button
               onClick={fetchQuestions}
-              className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm"
             >
               <Search className="w-4 h-4 mr-2" />
               Filter Questions
@@ -383,12 +414,15 @@ export default function CreateQuizPage() {
           <h2 className="text-xl font-semibold mb-4">Saved Questions</h2>
           {savedQuestions.length > 0 ? (
             <div className="space-y-4">
-              {savedQuestions.map((q) => (
-                <div key={q.id} className="p-3 border rounded-lg bg-gray-50 relative">
+              {savedQuestions.map((q, index) => (
+                <div
+                  key={index}
+                  className="p-3 border rounded-lg bg-gray-50 relative"
+                >
                   <p className="font-medium">{q.question}</p>
                   <button
                     onClick={() => removeFromFolder(q.id)}
-                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
                   >
                     <Trash className="w-4 h-4" />
                   </button>
@@ -396,7 +430,7 @@ export default function CreateQuizPage() {
               ))}
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="w-full mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                className="w-full mt-4 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm"
               >
                 Create Quiz
               </button>
@@ -407,6 +441,7 @@ export default function CreateQuizPage() {
         </div>
       </div>
 
+      {/* Popup Component */}
       <Popup
         isOpen={isPopupOpen}
         onClose={() => setIsPopupOpen(false)}

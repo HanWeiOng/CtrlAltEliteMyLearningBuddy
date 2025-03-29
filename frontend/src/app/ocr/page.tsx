@@ -15,6 +15,7 @@ const mathBandings = ["Math", "E Math", "A Math"];
 const scienceBandings = ["Combined", "Pure"];
 
 export default function UploadPage() {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [progress, setProgress] = useState({ step: 0, message: "" });
   const TOTAL_STEPS = 5;
   const [isDragging, setIsDragging] = useState(false);
@@ -121,22 +122,27 @@ export default function UploadPage() {
         method: "POST",
         body: formData,
       });
-  
+    
       if (!response.ok) {
-        throw new Error("Failed to process PDF");
+        const errorRes = await response.json();
+        // Check for specific status
+        if (response.status === 409) {
+          setErrorMessage(errorRes.message || "PDF already exists.");
+        } else {
+          setErrorMessage("Failed to process PDF. Please try again.");
+        }
+        throw new Error(errorRes.message || "Upload failed");
       }
-  
+    
       const result = await response.json();
       console.log("Processed PDF:", result);
-  
-      // Extract images from the response
+    
       const { images, subject, banding, level } = result;
-  
-      // Set JSON output and success message
+    
       setJsonOutput(JSON.stringify(result, null, 2));
       setSuccessMessage(`Process completed! Subject: ${subject}, Banding: ${banding}, Level: ${level}`);
-  
-      // Update state with image URLs
+      setErrorMessage(null); // Clear any previous errors
+    
       if (images && images.length > 0) {
         setImageUrls(images);
       } else {
@@ -148,8 +154,8 @@ export default function UploadPage() {
     } finally {
       setIsProcessing(false);
     }
-  };
-
+  }
+    
 
 
 
@@ -330,6 +336,12 @@ export default function UploadPage() {
                 {successMessage && (
                   <div className="mt-4 text-green-500">{successMessage}</div>
                 )}
+                {errorMessage && (
+                  <div className="mt-4 text-red-500 font-medium">
+                    {errorMessage}
+                  </div>
+                )}
+
               </div>
             )}
           </div>
