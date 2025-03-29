@@ -57,6 +57,35 @@ router.get('/getQuestions', async (req, res) => {
     //}
 });
 
+router.post('/saveFolder', async (req, res) => {
+    try {
+        const { folder_name, question_ids, subject, banding, level } = req.body;
+
+        if (!folder_name || !question_ids || question_ids.length === 0) {
+            return res.status(400).json({ error: "Folder name and question IDs are required." });
+        }
+
+        // Select a random username (modify as needed)
+        const usernames = ["alice123", "bob456", "charlie789", "david001", "emma999"];
+        const username = usernames[Math.floor(Math.random() * usernames.length)];
+
+        // Convert question IDs array to JSONB format for PostgreSQL
+        const questionIdsJson = JSON.stringify(question_ids);
+
+        // Insert into database
+        const query = `
+            INSERT INTO questions_folder (username, folder_name, subject, banding, level, question_ids)
+            VALUES ($1, $2, $3, $4, $5, $6::JSONB)
+        `;
+        await client.query(query, [username, folder_name, subject, banding, level, questionIdsJson]);
+
+        res.status(200).json({ message: "Folder saved successfully!", username });
+    } catch (error) {
+        console.error("Error saving folder:", error);
+        res.status(500).json({ error: "Internal server error: " + error.message });
+    }
+});
+
 // router.post('/postWrongAnswer', async (req, res) => {
 //     const { question, userAnswer } = req.body;
 
