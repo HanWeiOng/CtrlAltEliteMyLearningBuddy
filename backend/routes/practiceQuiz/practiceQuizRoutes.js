@@ -203,7 +203,7 @@ router.post('/saveQuiz', validateQuizInput, async (req, res) => {
     }
 });
 
-// Route to get all folders for a user
+// Route to get all folders for a user 
 router.get('/getFolders', async (req, res) => {
     const { username } = req.query;
 

@@ -13,8 +13,18 @@ export default function CreateQuizPage() {
   const [selectedBanding, setSelectedBanding] = useState("Combined");
   const [selectedLevel, setSelectedLevel] = useState("O Level");
   const [isLoading, setIsLoading] = useState(false);
-  //const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const updateFilters = (
+    subject: "Biology" | "Chemistry" | "Mathematics" | "History" | "English",
+    banding: string,
+    level: string
+  ) => {
+    setSelectedSubject(subject);
+    setSelectedBanding(banding);
+    setSelectedLevel(level);
+  };
 
   const [userAnswers, setUserAnswers] = useState<{
     [questionText: string]: string;
@@ -160,7 +170,7 @@ export default function CreateQuizPage() {
     }
   };
 
-  /*
+
   const handleCreateQuiz = async (quizName: string, description: string) => {
     try {
       setIsSaving(true);
@@ -175,7 +185,7 @@ export default function CreateQuizPage() {
         question_ids: questionIds,
       });
 
-      const response = await fetch('http://localhost:5003/api/practiceQuiz/saveQuiz', {
+      const response = await fetch('http://localhost:5003/api/practiceQuiz2/saveQuiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -207,7 +217,9 @@ export default function CreateQuizPage() {
     } finally {
       setIsSaving(false);
     }
-  };*/
+  };
+
+  
 
   const showPopup = (title: string, message: string, confirmAction?: () => void) => {
     setPopupTitle(title);
@@ -218,6 +230,7 @@ export default function CreateQuizPage() {
     setIsPopupOpen(true);
   };
 
+  /*
   const saveQuestionsToFile = async () => {
     if (!fileName.trim()) {
       showPopup("Error", "Please enter a folder name.");
@@ -256,6 +269,7 @@ export default function CreateQuizPage() {
       showPopup("Error", "Failed to save folder.");
     }
   };
+  */
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -263,7 +277,7 @@ export default function CreateQuizPage() {
 
       <div className="flex flex-grow">
         <div className="w-1/5 p-4 bg-white shadow-md">
-          <Sidebar setSelectedSubject={setSelectedSubject} />
+          <Sidebar updateFilters={updateFilters} />
           <div className="mt-4 flex justify-end">
             <button
               onClick={fetchQuestions}
@@ -373,6 +387,7 @@ export default function CreateQuizPage() {
           </div>
         </div>
 
+        {/* Right - Saved Folder */}
         <div className="w-1/4 p-4 bg-white shadow-md">
           <h2 className="text-xl font-semibold mb-4">Saved Questions</h2>
           {savedQuestions.length > 0 ? (
@@ -391,29 +406,16 @@ export default function CreateQuizPage() {
                   </button>
                 </div>
               ))}
-              
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="w-full mt-4 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm"
+              >
+                Create Quiz
+              </button>
             </div>
           ) : (
             <p className="text-gray-500">No questions saved.</p>
           )}
-
-          <div className="mt-6 border-t pt-4">
-            <input
-              type="text"
-              placeholder="Enter file name"
-              value={fileName}
-              onChange={(e) => setFileName(e.target.value)}
-              className="w-full p-2 border rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={saveQuestionsToFile}
-              disabled={savedQuestions.length === 0}
-              className="w-full flex items-center justify-center p-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              <Save className="w-5 h-5 mr-2" />
-              Save Questions
-            </button>
-          </div>
         </div>
       </div>
 
@@ -428,12 +430,12 @@ export default function CreateQuizPage() {
       />
 
 
-      {/* <QuizModal
+      <QuizModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleCreateQuiz}
         isSaving={isSaving}
-      /> */}
+      />
     </div>
   );
 }

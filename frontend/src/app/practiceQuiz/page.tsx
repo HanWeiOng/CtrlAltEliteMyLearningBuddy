@@ -67,7 +67,7 @@ const PracticeQuizPage: React.FC = () => {
   const fetchFolders = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:5003/api/practiceQuiz/getFolders?username=sharon001')
+      const response = await fetch('http://localhost:5003/api/practiceQuiz2/getFolders?username=sharon001')
       if (!response.ok) {
         throw new Error(`Failed to fetch folders: ${response.statusText}`)
       }
@@ -124,7 +124,7 @@ const PracticeQuizPage: React.FC = () => {
 
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:5003/api/practiceQuiz/saveQuiz', {
+      const response = await fetch('http://localhost:5003/api/practiceQuiz2/saveQuiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -5,22 +5,28 @@ import { Dispatch, SetStateAction, useState } from "react";
 const subjects = ["Biology", "Chemistry", "Mathematics", "History", "English"] as const;
 const bandings = ["Combined", "Pure"] as const;
 const levels = ["PSLE", "Lower Secondary", "O Level", "N Level"] as const;
-
 interface SidebarProps {
-  setSelectedSubject: Dispatch<SetStateAction<"Biology" | "Chemistry" | "Mathematics" | "History" | "English">>;
+  updateFilters: (
+    subject: "Biology" | "Chemistry" | "Mathematics" | "History" | "English",
+    banding: typeof bandings[number],
+    level: typeof levels[number]
+  ) => void;
 }
 
-export default function Sidebar({ setSelectedSubject }: SidebarProps) {
-  const [selectedSubject, setLocalSubject] = useState(subjects[0]);
-  const [selectedBanding, setSelectedBanding] = useState(bandings[0]);
-  const [selectedLevel, setSelectedLevel] = useState(levels[0]);
+export default function Sidebar({ updateFilters }: SidebarProps) {
+  const [selectedSubject, setSelectedSubject] = useState<typeof subjects[number]>(subjects[0]);
+  const [selectedBanding, setSelectedBanding] = useState<typeof bandings[number]>(bandings[0]);
+  const [selectedLevel, setSelectedLevel] = useState<typeof levels[number]>(levels[0]);
 
+  /*
   const handleSubjectChange = (subject: string) => {
     if (subjects.includes(subject as any)) {
       setLocalSubject(subject as any);
       setSelectedSubject(subject as any);
     }
   };
+  */
+
 
   return (
     <div className="w-full p-4 bg-white shadow-md rounded-lg">
@@ -32,7 +38,11 @@ export default function Sidebar({ setSelectedSubject }: SidebarProps) {
         <select
           className="w-full p-2 border rounded-md"
           value={selectedSubject}
-          onChange={(e) => handleSubjectChange(e.target.value)}
+          onChange={(e) => {
+            const newSubject = e.target.value as typeof subjects[number];
+            setSelectedSubject(newSubject);
+            updateFilters(newSubject, selectedBanding, selectedLevel);
+          }}
         >
           {subjects.map((subject) => (
             <option key={subject} value={subject}>
@@ -48,7 +58,11 @@ export default function Sidebar({ setSelectedSubject }: SidebarProps) {
         <select
           className="w-full p-2 border rounded-md"
           value={selectedBanding}
-          onChange={(e) => setSelectedBanding(e.target.value as any)}
+          onChange={(e) => {
+            const newBanding = e.target.value as typeof bandings[number];
+            setSelectedBanding(newBanding);
+            updateFilters(selectedSubject, newBanding, selectedLevel);
+          }}
         >
           {bandings.map((banding) => (
             <option key={banding} value={banding}>
@@ -64,7 +78,11 @@ export default function Sidebar({ setSelectedSubject }: SidebarProps) {
         <select
           className="w-full p-2 border rounded-md"
           value={selectedLevel}
-          onChange={(e) => setSelectedLevel(e.target.value as any)}
+          onChange={(e) => {
+            const newLevel = e.target.value as typeof levels[number];
+            setSelectedLevel(newLevel);
+            updateFilters(selectedSubject, selectedBanding, newLevel);
+          }}
         >
           {levels.map((level) => (
             <option key={level} value={level}>

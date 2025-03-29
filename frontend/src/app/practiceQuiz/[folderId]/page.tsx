@@ -52,7 +52,7 @@ function QuizContent({ folderId }: { folderId: string }) {
   const fetchQuestions = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`http://localhost:5003/api/practiceQuiz/getQuestionsByFolderId?folderId=${folderId}`)
+      const response = await fetch(`http://localhost:5003/api/practiceQuiz2//getQuestionsByFolderId?folderId=${folderId}`)
       if (!response.ok) {
         throw new Error('Failed to fetch questions')
       }
