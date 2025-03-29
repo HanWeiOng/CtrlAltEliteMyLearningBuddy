@@ -263,6 +263,8 @@ router.get('/testFolder/:id', async (req, res) => {
     }
 });
 
+/*
+
 // Helper function for wrong answer explanations
 async function explainWrongAnswer({ question, userAnswer, correctAnswer, options, imageUrl, model }) {
     let formattedOptions = options
@@ -342,7 +344,7 @@ router.post("/postWrongAnswer", async (req, res) => {
         return res.status(500).json({ message: 'Something went wrong', error: error.message });
     }
 });
-
+*/
 // Error handling middleware
 router.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
