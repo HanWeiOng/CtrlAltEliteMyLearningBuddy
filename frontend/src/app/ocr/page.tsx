@@ -51,7 +51,7 @@ export default function UploadPage() {
   }, [selectedSubject]);
 
   useEffect(() => {
-    const eventSource = new EventSource("http://localhost:5003/api/ocr/progress-stream");
+    const eventSource = new EventSource(`${process.env.NEXT_PUBLIC_API_URL}/api/ocr/progress-stream`);
   
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -118,7 +118,7 @@ export default function UploadPage() {
     formData.append("level", selectedLevel);
   
     try {
-      const response = await fetch("http://localhost:5003/api/ocr/split_pdf", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ocr/split_pdf`, {
         method: "POST",
         body: formData,
       });

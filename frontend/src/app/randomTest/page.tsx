@@ -48,7 +48,7 @@ export default function CreateQuizPage() {
             console.log ("This is the data :", staticListOfImages)
 
 
-            const response = await fetch('http://localhost:5003/api/ocr/processImages', {
+            const response = await fetch('${process.env.NEXT_PUBLIC_API_URL}/api/ocr/processImages', {
                 method: 'POST',
                 headers : { 
                     'Content-Type': 'application/json',  // Specify the content type
@@ -76,7 +76,7 @@ export default function CreateQuizPage() {
 
     const TopicLabelTest = async () => {
         try {
-            const response = await fetch('http://localhost:5003/api/ocr/topiclabel', {
+            const response = await fetch('${process.env.NEXT_PUBLIC_API_URL}/api/ocr/topiclabel', {
                 method: 'POST'
             });
              // You can process the response here
@@ -114,7 +114,7 @@ export default function CreateQuizPage() {
             console.log(selectedFile)            
     
             const uploadImageResponse = await axios.post(
-                "http://localhost:5003/api/s3BucketCRUD/uploadProcessedImage", // ✅ Fixed URL
+                `${process.env.NEXT_PUBLIC_API_URL}/api/s3BucketCRUD/uploadProcessedImage`, // ✅ Fixed URL
                 formDataImage,
                 {
                     headers: {
@@ -139,7 +139,7 @@ export default function CreateQuizPage() {
             };
     
             const response = await axios.post(
-                "http://localhost:5003/api/s3BucketCRUD/retrieveProcessedImage", // ✅ Fixed API URL
+                `${process.env.NEXT_PUBLIC_API_URL}/api/s3BucketCRUD/retrieveProcessedImage`, // ✅ Fixed API URL
                 requestData, // ✅ Send data in request body
                 {
                     headers: {
@@ -163,7 +163,7 @@ export default function CreateQuizPage() {
            
     
             const response = await axios.post(
-                "http://localhost:5003/api/createQuiz/postWrongAnswer", // ✅ Fixed API URL
+                `${process.env.NEXT_PUBLIC_API_URL}/api/createQuiz/postWrongAnswer`, // ✅ Fixed API URL
                
                 {
                     headers: {

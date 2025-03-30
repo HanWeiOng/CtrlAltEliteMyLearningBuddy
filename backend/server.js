@@ -33,5 +33,5 @@ app.use("/api/openpracticequiz", practiceQuizRoutes);
 // Start Server
 const PORT = process.env.PORT || 5003;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running at ${process.env.NEXT_PUBLIC_API_URL}:${PORT}`);
 });

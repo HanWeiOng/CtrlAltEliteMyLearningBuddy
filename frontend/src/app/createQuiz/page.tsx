@@ -63,7 +63,7 @@ export default function CreateQuizPage() {
     setExplanations({});
     try {
       const response = await fetch(
-        `http://localhost:5003/api/createquiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
+        `${process.env.NEXT_PUBLIC_API_URL}/api/createquiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -137,7 +137,7 @@ export default function CreateQuizPage() {
 
     try {
       const res = await fetch(
-        "http://localhost:5003/api/createquiz/postWrongAnswer",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/createquiz/postWrongAnswer`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -193,7 +193,7 @@ export default function CreateQuizPage() {
       });
 
       const response = await fetch(
-        "http://localhost:5003/api/openpracticequiz/saveQuiz",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/openpracticequiz/saveQuiz`,
         {
           method: "POST",
           headers: {
@@ -262,7 +262,7 @@ export default function CreateQuizPage() {
     };
 
     try {
-      const response = await fetch("http://localhost:5003/api/createquiz/saveFolder", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/createquiz/saveFolder", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
