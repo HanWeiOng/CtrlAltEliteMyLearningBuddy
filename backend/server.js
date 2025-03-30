@@ -20,7 +20,7 @@ const client = require("./databasepg");
 // Import Routes
 const ocrRoutes = require("./routes/ocr/ocrRoutes");
 const createQuizRoutes = require("./routes/createquiz/createQuizRoutes");
-const showQuizFolderRoutes = require("./routes/practiceQuiz/showQuizFolder");
+const showQuizFolderRoutes = require("./routes/practiceQuiz/showQuizFolderRoutes");
 const practiceQuizRoutes = require("./routes/practiceQuiz/practiceQuizRoutes");
 
 
