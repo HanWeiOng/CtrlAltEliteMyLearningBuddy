@@ -9,6 +9,7 @@ const subjects = [
   "Mathematics",
   "History",
   "English",
+  "Science",
 ] as const;
 const bandings = ["Combined", "Pure", null] as const;
 const levels = ["PSLE", "Lower Secondary", "O Level", "N Level"] as const;
@@ -20,7 +21,8 @@ interface SidebarProps {
       | "Physics"
       | "Mathematics"
       | "History"
-      | "English",
+      | "English"
+      | "Science",
     banding: (typeof bandings)[number],
     level: (typeof levels)[number]
   ) => void;
@@ -36,15 +38,6 @@ export default function Sidebar({ updateFilters }: SidebarProps) {
   const [selectedLevel, setSelectedLevel] = useState<(typeof levels)[number]>(
     levels[0]
   );
-
-  /*
-  const handleSubjectChange = (subject: string) => {
-    if (subjects.includes(subject as any)) {
-      setLocalSubject(subject as any);
-      setSelectedSubject(subject as any);
-    }
-  };
-  */
 
   return (
     <div className="w-full p-4 bg-white shadow-md rounded-lg">
@@ -100,10 +93,18 @@ export default function Sidebar({ updateFilters }: SidebarProps) {
               options = ["Combined", "Pure"];
             } else if (selectedSubject === "Mathematics") {
               if (selectedLevel === "PSLE") {
-                options = ["Math"]; // Only "Math" for PSLE level
+                options = ["Math"]; // Only "G1" for PSLE level
               } else {
-                options = ["E-Math", "A-Math"];
+                options = [
+                  "G1",
+                  "G2(E-Math)",
+                  "G2(A-Math)",
+                  "G3(E-Math)",
+                  "G3(A-Math)",
+                ];
               }
+            } else if (selectedSubject === "Science") {
+              options = ["N.A","G1", "G2", "G3"]; // Banding options for Science
             } else {
               options = [null]; // Default to "N.A"
             }

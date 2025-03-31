@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Edit, BookOpen, LayoutDashboard } from "lucide-react";
+import { FileText, Edit, BookOpen, LayoutDashboard, FilePlus } from "lucide-react";
 
 export default function Navbar() {
     const pathname = usePathname(); // Get current page path
@@ -11,6 +11,7 @@ export default function Navbar() {
         { name: "OCR", href: "/ocr", icon: <FileText className="w-5 h-5" /> },
         { name: "Create Quiz", href: "/createQuiz", icon: <Edit className="w-5 h-5" /> },
         { name: "Practice Quiz", href: "/practiceQuiz", icon: <BookOpen className="w-5 h-5" /> },
+        { name: "Insert Syllabus", href: "/insertSyllabus", icon: <FilePlus className="w-5 h-5" /> }, // New item
     ];
 
     return (
