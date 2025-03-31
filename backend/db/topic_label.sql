@@ -3,5 +3,7 @@ CREATE TABLE IF NOT EXISTS topic_labelling (
     subject VARCHAR(255) NOT NULL,
     topic_name VARCHAR(255) NOT NULL,
     sub_topic VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL
+    description TEXT NOT NULL,
+    banding VARCHAR(50),
+    level VARCHAR(50),
 );
