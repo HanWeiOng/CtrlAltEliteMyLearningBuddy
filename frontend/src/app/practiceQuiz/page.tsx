@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, Book, FileText, FolderPlus, Plus, Search } from "lucide-react"
+import { FileText, FolderPlus, Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -30,20 +30,20 @@ interface QuizFolder {
   questionCount: number;
 }
 
-interface Question {
-  id: number;
-  paper_name: string;
-  question_text: string;
-  answer_options: Array<{
-    option: string;
-    text: string | Record<string, string>;
-  }>;
-  image_paths: string | null;
-  answer_key: string;
-  subject: string;
-  banding: string;
-  level: string;
-}
+// interface Question {
+//   id: number;
+//   paper_name: string;
+//   question_text: string;
+//   answer_options: Array<{
+//     option: string;
+//     text: string | Record<string, string>;
+//   }>;
+//   image_paths: string | null;
+//   answer_key: string;
+//   subject: string;
+//   banding: string;
+//   level: string;
+// }
 
 const PracticeQuizPage: React.FC = () => {
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false)
@@ -54,10 +54,14 @@ const PracticeQuizPage: React.FC = () => {
   const [folders, setFolders] = useState<QuizFolder[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [selectedSubject, setSelectedSubject] = useState("")
-  const [selectedBanding, setSelectedBanding] = useState("")
-  const [selectedLevel, setSelectedLevel] = useState("")
+  // const [questions, setQuestions] = useState<Question[]>([])
+  // const setQuestions = useRef<Question[]>
+  // const [selectedSubject, setSelectedSubject] = useState("")
+  // const [selectedBanding, setSelectedBanding] = useState("")
+  // const [selectedLevel, setSelectedLevel] = useState("")
+  const selectedSubject=""
+  const selectedBanding=""
+  const selectedLevel=""
 
   // Fetch folders when component mounts
   useEffect(() => {
@@ -82,29 +86,29 @@ const PracticeQuizPage: React.FC = () => {
     }
   }
 
-  const fetchFilteredQuestions = async () => {
-    if (!selectedSubject || !selectedBanding || !selectedLevel) {
-      return;
-    }
+  // const fetchFilteredQuestions = async () => {
+  //   if (!selectedSubject || !selectedBanding || !selectedLevel) {
+  //     return;
+  //   }
 
-    try {
-      setLoading(true)
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/practiceQuiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
-      )
-      if (!response.ok) {
-        throw new Error(`Failed to fetch questions: ${response.statusText}`)
-      }
-      const data = await response.json()
-      setQuestions(data)
-      setError(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch questions')
-      console.error('Error fetching questions:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  //   try {
+  //     setLoading(true)
+  //     const response = await fetch(
+  //       `${process.env.NEXT_PUBLIC_API_URL}/api/practiceQuiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
+  //     )
+  //     if (!response.ok) {
+  //       throw new Error(`Failed to fetch questions: ${response.statusText}`)
+  //     }
+  //     const data = await response.json()
+  //     setQuestions(data)
+  //     setError(null)
+  //   } catch (err) {
+  //     setError(err instanceof Error ? err.message : 'Failed to fetch questions')
+  //     console.error('Error fetching questions:', err)
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
 
   // Get unique subjects from folders for the sidebar
   const uniqueSubjects = ["All Documents", ...new Set(folders.map(folder => folder.subject))]
