@@ -53,7 +53,7 @@ export function FolderActions({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-        <Button
+          <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8 p-0 rounded-full hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 transition-all duration-200"
@@ -93,7 +93,7 @@ export function FolderActions({
           <DialogHeader>
             <DialogTitle className="text-gray-900 dark:text-white">Delete Quiz</DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-300">
-              Are you sure you want to delete "{folderName}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{folderName}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

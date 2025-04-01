@@ -16,12 +16,6 @@ const style = {
   p: 4,
 };
 
-interface ModalProps {
-  title: string; // ✅ Accepts title as a prop
-  isOpen: boolean;
-  onClose: () => void;
-}
-
 export default function BasicModal() {
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setOpen(true);
