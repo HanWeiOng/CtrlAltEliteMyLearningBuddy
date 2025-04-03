@@ -63,7 +63,7 @@ const validateQuizInput = (req, res, next) => {
     }
 
     next();
-};
+};  
 
 // Route to get questions by subject, banding, and level
 router.get('/getQuestionsByFilters', async (req, res) => {
@@ -273,6 +273,51 @@ router.use((err, req, res, next) => {
     });
 });
 
+// 2 person 1 correct 1 wrong
+
+router.post('/updateScore', async (req, res) => {
+    try{
+        const { questionId, questionCorrectness } = req.body
+        console.log("questionId:", questionId)
+        console.log("questionCorrectness",questionCorrectness)
+        const messages = [];
+        if (questionCorrectness == "Correct") {
+            const updateAttemptCount = await client.query(
+                `UPDATE question 
+                SET question_attempt_count = COALESCE(question_attempt_count, 0) + 1 
+                WHERE id = $1`,
+                [questionId]
+            );
+            messages.push("question_attempt_count incremented successfully.")
+        } else if (questionCorrectness === "Wrong") {
+            const updateScore = await client.query(
+                `UPDATE question 
+                SET question_wrong = CASE
+                    WHEN question_wrong IS NULL THEN 0
+                    ELSE question_wrong + 1
+                    END
+                WHERE id = $1`,
+                [questionId]
+            )
+            messages.push("question_wrong updated successfully.")
+            const updateAttemptCount = await client.query(
+                `UPDATE question 
+                SET question_attempt_count = COALESCE(question_attempt_count, 0) + 1 
+                WHERE id = $1`,
+                [questionId]
+            );
+            messages.push("question_attempt_count incremented successfully.")
+        }
+        
+        res.status(200).json({
+            success: true,
+            messages
+        });
+    } catch (error) {
+        console.error("Error updating score:", error);
+        res.status(500).json({ success: false, error: "Something went wrong." });
+    }
+})
 /*
 
 // Helper function for wrong answer explanations

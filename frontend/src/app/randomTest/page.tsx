@@ -44,10 +44,7 @@ export default function CreateQuizPage() {
     const OcrTest = async () => {
         try {
            
-            
             console.log ("This is the data :", staticListOfImages)
-
-
             const response = await fetch('${process.env.NEXT_PUBLIC_API_URL}/api/ocr/processImages', {
                 method: 'POST',
                 headers : { 
@@ -57,9 +54,6 @@ export default function CreateQuizPage() {
                     data: staticListOfImages  // Sending the images and paper name
                 }) 
             });
-             
-
-    
             
             // You can process the response here
             if (response.ok) {
