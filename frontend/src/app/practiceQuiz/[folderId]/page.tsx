@@ -59,7 +59,7 @@ function QuizContent({ folderId }: { folderId: string }) {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/openpracticequiz//getQuestionsByFolderId?folderId=${folderId}`
+        `${process.env.NEXT_PUBLIC_API_URL}/api/openpracticequiz/getQuestionsByFolderId?folderId=${folderId}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch questions");
