@@ -1,7 +1,7 @@
 "use client";
-import { Plus, Trash } from "lucide-react";
+import { Trash } from "lucide-react";
 import Navbar from "../../components/ui/navbar";
-import Sidebar from "../../components/ui/sidebar"; // Import Sidebar
+import Sidebar from "../../components/ui/sidebar";
 import { useState } from "react";
 
 const subjects = [
@@ -14,22 +14,16 @@ const subjects = [
 ] as const;
 
 export default function UploadPage() {
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [progress, setProgress] = useState({ step: 0, message: "" });
-  const TOTAL_STEPS = 5;
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [jsonOutput, setJsonOutput] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<
     (typeof subjects)[number]
   >(subjects[0]);
   const [selectedBanding, setSelectedBanding] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState("PSLE");
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
-  // Function to update filters from Sidebar
+  // Update filters
   const updateFilters = (
     subject: string,
     banding: string | null,
@@ -52,7 +46,6 @@ export default function UploadPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-
     const files = Array.from(e.dataTransfer.files);
     setUploadedFiles([...uploadedFiles, ...files]);
   };
@@ -70,18 +63,16 @@ export default function UploadPage() {
 
   const processFiles = async () => {
     setIsProcessing(true);
-    setSuccessMessage(null); // Reset success message
-    setImageUrls([]); // Reset image state
 
     const formData = new FormData();
 
     if (uploadedFiles.length === 0) {
       alert("❌ No file selected!");
+      setIsProcessing(false);
       return;
     }
 
-    // Append additional data to the form data
-    formData.append("file", uploadedFiles[0]); // Only sending first file
+    formData.append("file", uploadedFiles[0]);
     formData.append("subject", selectedSubject);
     formData.append("banding", selectedBanding || "N.A");
     formData.append("level", selectedLevel);
@@ -97,34 +88,20 @@ export default function UploadPage() {
 
       if (!response.ok) {
         const errorRes = await response.json();
-        // Check for specific status
         if (response.status === 409) {
-          setErrorMessage(errorRes.message || "PDF already exists.");
+          alert(errorRes.message || "PDF already exists.");
         } else {
-          setErrorMessage("Failed to process PDF. Please try again.");
+          alert("Failed to process PDF. Please try again.");
         }
         throw new Error(errorRes.message || "Upload failed");
       }
 
       const result = await response.json();
       console.log("Processed PDF:", result);
-
-      const { images, subject, banding, level } = result;
-
-      setJsonOutput(JSON.stringify(result, null, 2));
-      setSuccessMessage(
-        `Process completed! Subject: ${subject}, Banding: ${banding}, Level: ${level}`
-      );
-      setErrorMessage(null); // Clear any previous errors
-
-      if (images && images.length > 0) {
-        setImageUrls(images);
-      } else {
-        setImageUrls([]);
-      }
+      alert(`✅ Process completed for ${result.subject}!`);
     } catch (error) {
       console.error("Error processing PDF:", error);
-      setJsonOutput(`Error: ${error}`);
+      alert("❌ Error processing file.");
     } finally {
       setIsProcessing(false);
     }
@@ -134,7 +111,6 @@ export default function UploadPage() {
     <div className="container py-8">
       <Navbar />
       <div className="flex flex-col">
-        {/* Main Content */}
         <div className="flex-1 p-6">
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-4 text-gradient">
@@ -142,7 +118,7 @@ export default function UploadPage() {
             </h1>
             <p className="text-muted-foreground">
               Upload your past exam papers or exercise questions for analysis.
-              We'll extract questions, identify topics, and prepare them for
+              We&apos;ll extract questions, identify topics, and prepare them for
               your question bank.
             </p>
           </div>
@@ -151,11 +127,11 @@ export default function UploadPage() {
             <div className="flex-1">
               <div
                 className={`relative group rounded-2xl border-2 border-dashed p-12 text-center transition-all hover-card glass
-                  ${
-                    isDragging
-                      ? "border-primary bg-primary/5"
-                      : "border-muted hover:border-primary/50"
-                  }`}
+                ${
+                  isDragging
+                    ? "border-primary bg-primary/5"
+                    : "border-muted hover:border-primary/50"
+                }`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -165,7 +141,6 @@ export default function UploadPage() {
                 </h3>
                 <p className="text-muted-foreground mb-6">or</p>
 
-                {/* Fixed Browse File Button */}
                 <div className="relative inline-block">
                   <label className="rounded-lg bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 font-medium cursor-pointer">
                     Browse Files
@@ -205,7 +180,6 @@ export default function UploadPage() {
                     ))}
                   </div>
 
-                  {/* Sidebar appears here, above the Process Files button */}
                   <div className="mt-8">
                     <h3 className="text-lg font-semibold mb-4">
                       Filter Options

@@ -8,6 +8,7 @@ interface QuizModalProps {
   onClose: () => void;
   onSave: (quizName: string, description: string) => void;
   savedQuestions: { question: string; options: string[] }[];
+  isSaving:boolean;
 }
 
 export default function QuizModal({ isOpen, onClose, onSave, savedQuestions }: QuizModalProps) {
@@ -24,11 +25,11 @@ export default function QuizModal({ isOpen, onClose, onSave, savedQuestions }: Q
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ 
-        backgroundColor: 'rgba(0, 0, 0, 0.7)', 
-        backdropFilter: 'blur(1px)' 
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backdropFilter: 'blur(1px)'
       }}
     >
       <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
@@ -38,9 +39,15 @@ export default function QuizModal({ isOpen, onClose, onSave, savedQuestions }: Q
         >
           <X className="w-5 h-5" />
         </button>
-        
+
         <h2 className="text-xl font-semibold mb-4">Create New Quiz</h2>
-        
+
+        {savedQuestions.length > 0 && (
+          <p className="mb-4 text-sm text-gray-600">
+            You have {savedQuestions.length} saved question{savedQuestions.length > 1 ? "s" : ""}.
+          </p>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="quizName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -55,7 +62,7 @@ export default function QuizModal({ isOpen, onClose, onSave, savedQuestions }: Q
               required
             />
           </div>
-          
+
           <div className="mb-4">
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
               Description (Optional)
@@ -68,7 +75,7 @@ export default function QuizModal({ isOpen, onClose, onSave, savedQuestions }: Q
               rows={3}
             />
           </div>
-          
+
           <div className="flex justify-end gap-3">
             <button
               type="button"

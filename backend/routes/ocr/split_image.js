@@ -1,9 +1,9 @@
-const { convert } = require('pdf-poppler');
+const { fromBuffer } = require('pdf2pic');
 const sharp = require('sharp');
 const { S3Client, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
 const fs = require('fs/promises');
-const fsSync = require('fs'); // for existsSync + stat
+const fsSync = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
@@ -22,44 +22,23 @@ const bucketRegion = process.env.S3_REGION;
 
 async function split_image(pdfBuffer, paperName, subject, banding, level) {
   const folderName = `${paperName}_${subject}_${banding}_${level}`.replace(/\s+/g, '_');
-
-  // TEMP FILES
-  const tempPdfPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.pdf`);
   const tempOutputDir = path.join(os.tmpdir(), crypto.randomUUID());
   await fs.mkdir(tempOutputDir, { recursive: true });
 
-  // Write buffer to temp file
-  await fs.writeFile(tempPdfPath, pdfBuffer);
-
-  // On Windows, wait a bit to let file system settle
-  if (process.platform === 'win32') {
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  // Check file existence and size
-  if (!fsSync.existsSync(tempPdfPath)) {
-    throw new Error('Temporary PDF file not found.');
-  }
-  const stats = await fs.stat(tempPdfPath);
-  if (stats.size === 0) {
-    throw new Error('Temporary PDF file is empty.');
-  }
-
-  // Convert PDF to PNG using pdf-poppler
-  const options = {
+  // Convert PDF to PNG using pdf2pic
+  const convert = fromBuffer(pdfBuffer, {
+    density: 150,
+    saveFilename: 'page',
+    savePath: tempOutputDir,
     format: 'png',
-    out_dir: tempOutputDir,
-    out_prefix: 'page',
-    page: null, // all pages
-  };
+    width: 1200,
+    height: 1600,
+  });
 
-  await convert(tempPdfPath, options);
-  await fs.unlink(tempPdfPath); // Clean PDF file immediately
-
-  const files = (await fs.readdir(tempOutputDir)).filter(f => f.endsWith('.png')).sort();
+  const totalPages = await convert.bulk(-1); // convert all pages
   const imageUrls = [];
 
-  // Create S3 folder if doesn't exist
+  // Check if folder exists in S3
   const listCommand = new ListObjectsV2Command({
     Bucket: bucketName,
     Prefix: `${folderName}/`,
@@ -81,16 +60,16 @@ async function split_image(pdfBuffer, paperName, subject, banding, level) {
     console.log(`📁 Created folder in S3: ${folderName}/`);
   }
 
+  const files = (await fs.readdir(tempOutputDir)).filter(f => f.endsWith('.png')).sort();
+
   for (const fileName of files) {
     const fullPath = path.join(tempOutputDir, fileName);
     const imageBuffer = await fs.readFile(fullPath);
 
-    // Resize
     const resizedBuffer = await sharp(imageBuffer)
       .resize({ width: 500, height: 500, fit: 'contain' })
       .toBuffer();
 
-    // Upload
     const upload = new Upload({
       client: s3,
       params: {
@@ -109,7 +88,6 @@ async function split_image(pdfBuffer, paperName, subject, banding, level) {
     console.log(`✅ Uploaded: ${imageUrl}`);
   }
 
-  // Cleanup
   await fs.rm(tempOutputDir, { recursive: true, force: true });
 
   return imageUrls;

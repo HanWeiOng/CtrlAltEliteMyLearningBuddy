@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation"; // Import useRouter
+import { useRouter } from "next/navigation"; // Import useRouter
 import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -308,7 +308,7 @@ function QuizContent({ folderId }: { folderId: string }) {
               {explanations[question.id] && (
                 <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 dark:border-yellow-400 text-yellow-900 dark:text-yellow-100 rounded shadow-sm animate-fadeIn whitespace-pre-line">
                   <div className="font-semibold mb-1">
-                    🧠 Tutor's Explanation:
+                    🧠 Tutors Explanation:
                   </div>
                   <div>{explanations[question.id]}</div>
                 </div>
