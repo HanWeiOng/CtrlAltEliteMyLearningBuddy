@@ -40,6 +40,9 @@ client.connect((err) => {
 router.get('/getQuestions', async (req, res) => {
     const { subject, banding, level } = req.query;
     try {
+        console.log(subject)
+        console.log(banding)
+        console.log(level)
         const result = await client.query(`
             SELECT * FROM questions
             WHERE subject = $1 AND banding = $2 AND level = $3
@@ -61,7 +64,7 @@ router.post('/saveFolder', async (req, res) => {
         }
 
         // Select a random username (modify as needed)
-        const usernames = ["alice123", "bob456", "charlie789", "david001", "emma999"];
+        const usernames = ["alice123", "bob456", "charlie789", "david001", "emma999, sharon001"];
         const username = usernames[Math.floor(Math.random() * usernames.length)];
 
         // Convert question IDs array to JSONB format for PostgreSQL

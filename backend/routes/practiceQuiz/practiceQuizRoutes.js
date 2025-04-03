@@ -280,7 +280,7 @@ router.post('/updateScore', async (req, res) => {
         const { questionId, questionCorrectness } = req.body
         console.log("questionId:", questionId)
         console.log("questionCorrectness",questionCorrectness)
-        const messages = [];
+        const messages = []; 
         if (questionCorrectness == "Correct") {
             //updateAttemptCount 
             await client.query(
@@ -321,5 +321,38 @@ router.post('/updateScore', async (req, res) => {
         res.status(500).json({ success: false, error: "Something went wrong." });
     }
 })
+
+router.post('/addAnswerOptionAnalytics', async (req, res) => {
+    try {
+        const { question_id, answer_option, answer_text, correctness } = req.body;
+
+        const result = await client.query(
+            `INSERT INTO question_answer_table (
+                question_id, answer_option, answer_text, selected_option_count, correctness
+            )
+            VALUES ($1, $2, $3, 1, $4)
+            ON CONFLICT (question_id, answer_option)
+            DO UPDATE SET selected_option_count = question_answer_table.selected_option_count + 1
+            RETURNING *;`,
+            [question_id, answer_option, answer_text, correctness]
+        );
+
+        const row = result.rows[0];
+
+        // Decide if it's an insert or update
+        const operation = row.selected_option_count === 1 ? 'inserted' : 'updated';
+
+        res.status(200).json({
+            message: `Answer option ${operation} successfully.`,
+            data: row
+        });
+    } catch (error) {
+        console.error('Error inserting/updating answer option:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+
+
 
 module.exports = router;

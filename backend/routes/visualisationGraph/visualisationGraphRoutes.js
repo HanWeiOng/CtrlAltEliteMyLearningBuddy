@@ -93,5 +93,28 @@ router.get('/getHardestQuestions', async (req, res) => {
     }
 });
 
+router.get('/getAnswerOptionAnalytics/:question_id', async (req, res) => {
+    try {
+        const { question_id } = req.params; // ✅ GET requests use req.query
+
+        const result = await client.query(`
+            SELECT question_id, answer_option, answer_text, selected_option_count, correctness
+            FROM question_answer_table
+            WHERE question_id = $1 AND correctness = 'False'
+            ORDER BY selected_option_count DESC
+            LIMIT 1
+        `, [question_id]);
+
+        const row = result.rows[0];
+
+        res.status(200).json({
+            message: 'Most selected incorrect answer retrieved successfully.',
+            data: row || null
+        });
+    } catch (error) {
+        console.error('Error retrieving answer analytics:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
 
 module.exports = router;

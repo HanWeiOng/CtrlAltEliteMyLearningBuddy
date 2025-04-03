@@ -56,7 +56,7 @@ export default function CreateQuizPage() {
     setExplanations({});
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/createquiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
+        `http://localhost:5003/api/createquiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
       );
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
@@ -120,7 +120,7 @@ export default function CreateQuizPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/createquiz/postWrongAnswer`,
+        `http://localhost:5003/api/createquiz/postWrongAnswer`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -162,7 +162,7 @@ export default function CreateQuizPage() {
       const questionIds = savedQuestions.map((q) => q.id);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/openpracticequiz/saveQuiz`,
+        `http://localhost:5003/api/openpracticequiz/saveQuiz`,
         {
           method: "POST",
           headers: {
