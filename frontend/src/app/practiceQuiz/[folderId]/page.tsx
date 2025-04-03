@@ -59,7 +59,7 @@ function QuizContent({ folderId }: { folderId: string }) {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/openpracticequiz//getQuestionsByFolderId?folderId=${folderId}`
+        `http://localhost:5003/api/openpracticequiz/getQuestionsByFolderId?folderId=${folderId}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch questions");
@@ -121,14 +121,38 @@ function QuizContent({ folderId }: { folderId: string }) {
 
     // Handle explanations
     if (selectedOption === currentQuestion.answer_key) {
+      
       setExplanations((prev) => ({
         ...prev,
         [questionId]: "✅ Correct! Great job!",
       }));
+      
+      try {
+        const updateScore = await fetch(
+          "http://localhost:5003/api/openpracticequiz/updateScore",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              questionId: questionId,
+              result: "Correct",
+            }),
+          }
+        );
+    
+        if (!updateScore.ok) {
+          console.error("Failed to update score:", updateScore.status);
+        }
+      } catch (error) {
+        console.error("Error updating score:", error);
+      }
+
     } else {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/createquiz/postWrongAnswer`,
+          `http://localhost:5003/api/createquiz/postWrongAnswer`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -158,6 +182,28 @@ function QuizContent({ folderId }: { folderId: string }) {
             ...prev,
             [questionId]: data.explanation,
           }));
+          try {
+            const updateScore = await fetch(
+              "http://localhost:5003/api/openpracticequiz/updateScore",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  questionId: questionId,
+                  result: "Wrong",
+                }),
+              }
+            );
+        
+            if (!updateScore.ok) {
+              console.error("Failed to update score:", updateScore.status);
+            }
+          } catch (error) {
+            console.error("Error updating score:", error);
+          }
+
         } else {
           setExplanations((prev) => ({
             ...prev,

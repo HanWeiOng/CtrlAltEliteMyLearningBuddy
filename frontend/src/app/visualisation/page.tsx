@@ -13,11 +13,17 @@ interface PaperDemographic {
   count: number;
 }
 
+interface HardestQuestion {
+  question_text: string;
+  question_difficulty: string; // comes as string from API
+}
+
 export default function DataVisualisationD3() {
   const svgRef = useRef<SVGSVGElement | null>(null); // For hardest topic
   const paperSvgRef = useRef<SVGSVGElement | null>(null); // For paper demographic
   const [hardestTopicBarData, setHardestTopicBarData] = useState<Topic[]>([]);
   const [paperDemographicBarData, setPaperDemographicBarData] = useState<PaperDemographic[]>([]);
+  const [questions, setQuestions] = useState<HardestQuestion[]>([]);
 
   const fetchHardestTopic = async () => {
     try {
@@ -49,9 +55,21 @@ export default function DataVisualisationD3() {
     }
   };
 
+  const fetchHardestQuestion = async () => {
+    try {
+      const response = await fetch("http://localhost:5003/api/visualisationGraph/getHardestQuestions");
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setQuestions(data.slice(0, 6)); // take top 6
+    } catch (error) {
+      console.error("Error occurred while making the request:", error);
+    }
+  };
+
   useEffect(() => {
     fetchHardestTopic();
     fetchPaperDemographic();
+    fetchHardestQuestion();
   }, []);
 
   useEffect(() => {
@@ -269,6 +287,60 @@ export default function DataVisualisationD3() {
       }}>
         <svg ref={paperSvgRef}></svg>
       </div>
+      <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "12px",
+          padding: "24px",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+          maxWidth: "800px",
+          margin: "0 auto"
+        }}
+      >
+        <h2 style={{ marginBottom: "16px" }}>Most Wrong Questions</h2>
+
+        {/* Header */}
+        <div style={{ display: "flex", fontWeight: "bold", marginBottom: "12px", fontSize: "14px" }}>
+          <div style={{ width: "40px" }}>#</div>
+          <div style={{ flex: 1 }}>Questions</div>
+          <div style={{ width: "100px", textAlign: "right" }}>% of wrong</div>
+        </div>
+
+        {/* List */}
+        {questions.map((q, index) => (
+          <div
+            key={index}
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              padding: "10px 0",
+              borderTop: index !== 0 ? "1px solid #eee" : "none",
+              fontSize: "14px"
+            }}
+          >
+            <div
+              style={{
+                width: "40px",
+                height: "30px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: "bold",
+                backgroundColor: "#f0f0f0",
+                borderRadius: "9999px"
+              }}
+            >
+              {index + 1}
+            </div>
+            <div style={{ flex: 1, paddingLeft: "12px", paddingRight: "12px" }}>{q.question_text}</div>
+            <div style={{ width: "100px", textAlign: "right", fontWeight: 500 }}>
+              {(parseFloat(q.question_difficulty) * 100).toFixed(0)}%
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
     </div>
   );
 }

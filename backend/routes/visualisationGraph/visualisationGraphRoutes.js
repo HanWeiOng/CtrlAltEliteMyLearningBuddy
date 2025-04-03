@@ -46,7 +46,8 @@ router.get('/getHardestTopic', async (req, res) => {
             , 2) AS wrong_ratio
             FROM question
             GROUP BY topic_label
-            ORDER BY wrong_ratio DESC;
+            ORDER BY wrong_ratio DESC
+            LIMIT 10;
         `)
         console.log(result);
         res.status(200).json(result.rows);
@@ -75,12 +76,14 @@ router.get('/getPaperDemographic', async (req, res) => {
     }
 });
 
-router.get('/mostWrongQuestions', async (req, res) => {
+router.get('/getHardestQuestions', async (req, res) => {
     try {
         const result = await client.query(`
             SELECT question_text, question_difficulty
             FROM question
-            ORDER BY question_difficulty ASC;
+            WHERE question_difficulty > 0
+            ORDER BY question_difficulty ASC
+            LIMIT 10;
         `)
         console.log(result);
         res.status(200).json(result.rows);
