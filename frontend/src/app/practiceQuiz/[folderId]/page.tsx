@@ -222,7 +222,6 @@ function QuizContent({ folderId }: { folderId: string }) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <Navbar />
         <main className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]"></div>
@@ -238,7 +237,6 @@ function QuizContent({ folderId }: { folderId: string }) {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <Navbar />
         <main className="container mx-auto px-4 py-8">
           <div className="text-center text-red-600 dark:text-red-400">
             <p>{error}</p>
@@ -256,8 +254,6 @@ function QuizContent({ folderId }: { folderId: string }) {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      {/* Navbar */}
-      <Navbar />
       <div className="sticky top-0 bg-gray-50/95 dark:bg-gray-950/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">

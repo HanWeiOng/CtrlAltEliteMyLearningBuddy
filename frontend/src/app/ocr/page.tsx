@@ -1,6 +1,5 @@
 "use client";
 import { Trash } from "lucide-react";
-import Navbar from "../../components/ui/navbar";
 import { useState, useEffect } from "react";
 
 const subjects = [
@@ -162,7 +161,6 @@ export default function UploadPage() {
 
   return (
     <div className="container py-8">
-      <Navbar />
       <div className="flex-1 p-6">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4 text-gradient">

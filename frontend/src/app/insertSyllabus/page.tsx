@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Navbar from "@/components/ui/navbar";
 import Sidebar from "@/components/ui/sidebar";
 
 export default function InsertSyllabusPage() {
@@ -73,9 +72,6 @@ export default function InsertSyllabusPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Navbar */}
-      <Navbar />
-
       <div className="flex flex-1 flex-col p-8">
         <h1 className="text-2xl font-bold mb-4">Insert Syllabus</h1>
 

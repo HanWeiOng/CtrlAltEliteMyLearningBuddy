@@ -14,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import Navbar from "../../components/ui/navbar"
 
 import { FolderActions } from "@/components/ui/folder-actions"
 
@@ -205,7 +204,6 @@ const PracticeQuizPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <Navbar />
         <main className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]"></div>
@@ -219,7 +217,6 @@ const PracticeQuizPage: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <Navbar />
         <main className="container mx-auto px-4 py-8">
           <div className="text-center text-red-600 dark:text-red-400">
             <p>{error}</p>
@@ -237,8 +234,6 @@ const PracticeQuizPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <Navbar/>
-
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>

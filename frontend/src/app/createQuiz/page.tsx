@@ -4,7 +4,6 @@ import { useState, useRef } from "react";
 import { Plus, Trash, Search } from "lucide-react";
 import Image from "next/image";
 import Sidebar from "../../components/ui/sidebar";
-import Navbar from "../../components/ui/navbar";
 import Popup from "../../components/ui/popup";
 import QuizModal from "../../components/ui/quiz-modal";
 
@@ -196,8 +195,6 @@ export default function CreateQuizPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      <Navbar />
-
       <div className="flex flex-grow">
         <div className="w-1/5 p-4 bg-white shadow-md">
           <Sidebar updateFilters={updateFilters} />
