@@ -204,6 +204,7 @@ const PracticeQuizPage: React.FC = () => {
   const handleAssignFolder = async (folderId: number) => {
     try {
       setAssignFolderId(folderId);
+
       setIsAssignPopupOpen(true);
       setLoading(true); // Show loading state while fetching students
 
@@ -243,35 +244,53 @@ const PracticeQuizPage: React.FC = () => {
   };
 
   const handleConfirmAssignFolder = async () => {
-    if (!assignFolderId) return;
+    const teacherId = 5; // hardcoded
+    const quizFolderId = assignFolderId; // replace with your actual folder ID state
+    console.log(quizFolderId)
+    console.log(selectedStudents)
+
+    if (!quizFolderId) {
+      console.error("Quiz folder ID is not set");
+      return;
+    }
 
     try {
-      setLoading(true);
-      const response = await fetch(
-        `http://localhost:5003/api/practiceQuiz/assignFolder/${assignFolderId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: "sharon001", // Replace with dynamic username if needed
-          }),
-        }
-      );
+      for (const student of selectedStudents) {
+        console.log(student['student_id'])
+        console.log(teacherId)
+        console.log(quizFolderId)
+        const response = await fetch(
+          "http://localhost:5003/api/openpracticequiz/assignQuiz",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              student_id: student['student_id'],
+              teacher_id: teacherId,
+              quiz_folder_id: quizFolderId,
+            }),
+          }
+        );
 
-      if (!response.ok) {
-        throw new Error("Failed to assign folder");
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error(
+            `Error assigning quiz to student ${student['student_id']}:`,
+            errorData
+          );
+        } else {
+          console.log(`Assigned quiz to ${student['student_id']}`);
+        }
       }
 
-      console.log("Folder assigned successfully");
+      alert("Quiz assigned to all selected students!");
       setIsAssignPopupOpen(false);
-      setAssignFolderId(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to assign folder");
-      console.error("Error assigning folder:", err);
-    } finally {
-      setLoading(false);
+      setSelectedStudents([]);
+    } catch (error) {
+      console.error("Error assigning quiz:", error);
+      alert("Failed to assign quiz.");
     }
   };
 
