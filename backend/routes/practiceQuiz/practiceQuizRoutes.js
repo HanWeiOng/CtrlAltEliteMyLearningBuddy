@@ -394,6 +394,30 @@ router.post('/assignQuiz', async (req, res) => {
     }
 });
 
+router.get('/getQuizAssigned/:quiz_folder_id', async (req, res) => {
+    try {
+        const { quiz_folder_id } = req.params; // ✅ use req.query for GET
+
+        if (!quiz_folder_id) {
+            return res.status(400).json({ error: 'Missing quiz_folder_id parameter' });
+        }
+
+        const response = await client.query(
+            `SELECT student_id FROM quiz_assignment_table 
+             WHERE quiz_folder_id = $1`,
+            [quiz_folder_id]
+        );
+
+        res.status(200).json(response.rows);
+
+    } catch (error) {
+        console.error("Error retrieving quiz assignment:", error);
+        res.status(500).json({ error: "Internal server error: " + error.message });
+    }
+});
+
+
+
 router.post('/logCompletion', async (req, res) => {
     try {
         const { student_id, folder_id, completed, student_score } = req.body;
