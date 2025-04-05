@@ -246,8 +246,8 @@ const PracticeQuizPage: React.FC = () => {
   const handleConfirmAssignFolder = async () => {
     const teacherId = 5; // hardcoded
     const quizFolderId = assignFolderId; // replace with your actual folder ID state
-    console.log(quizFolderId)
-    console.log(selectedStudents)
+    console.log(quizFolderId);
+    console.log(selectedStudents);
 
     if (!quizFolderId) {
       console.error("Quiz folder ID is not set");
@@ -256,9 +256,9 @@ const PracticeQuizPage: React.FC = () => {
 
     try {
       for (const student of selectedStudents) {
-        console.log(student['student_id'])
-        console.log(teacherId)
-        console.log(quizFolderId)
+        console.log(student["student_id"]);
+        console.log(teacherId);
+        console.log(quizFolderId);
         const response = await fetch(
           "http://localhost:5003/api/openpracticequiz/assignQuiz",
           {
@@ -267,7 +267,7 @@ const PracticeQuizPage: React.FC = () => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              student_id: student['student_id'],
+              student_id: student["student_id"],
               teacher_id: teacherId,
               quiz_folder_id: quizFolderId,
             }),
@@ -277,11 +277,11 @@ const PracticeQuizPage: React.FC = () => {
         if (!response.ok) {
           const errorData = await response.json();
           console.error(
-            `Error assigning quiz to student ${student['student_id']}:`,
+            `Error assigning quiz to student ${student["student_id"]}:`,
             errorData
           );
         } else {
-          console.log(`Assigned quiz to ${student['student_id']}`);
+          console.log(`Assigned quiz to ${student["student_id"]}`);
         }
       }
 
@@ -612,30 +612,22 @@ const PracticeQuizPage: React.FC = () => {
             <div className="space-y-2">
               {!selectAll && (
                 <select
-                  value={individualSelect}
+                  multiple // Make it multi-select
+                  value={selectedStudents.map((s) => s.student_id.toString())} // Convert IDs to strings for select value
                   onChange={(e) => {
-                    const selectedId = parseInt(e.target.value);
-                    const selectedStudent = students.find(
-                      (s) => s.student_id === selectedId
+                    const selectedIds = Array.from(
+                      e.target.selectedOptions,
+                      (option) => parseInt(option.value)
                     );
-                    if (
-                      selectedStudent &&
-                      !selectedStudents.some(
-                        (s) => s.student_id === selectedStudent.student_id
-                      )
-                    ) {
-                      setSelectedStudents([
-                        ...selectedStudents,
-                        selectedStudent,
-                      ]);
-                    }
-                    setIndividualSelect(""); // Reset dropdown
+
+                    const newSelectedStudents = students.filter((student) =>
+                      selectedIds.includes(student.student_id)
+                    );
+
+                    setSelectedStudents(newSelectedStudents);
                   }}
                   className="w-full rounded-lg border-[#7C3AED] dark:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 text-black dark:text-black"
                 >
-                  <option value="" disabled>
-                    -- Select a Student --
-                  </option>
                   {students.map((student) => (
                     <option key={student.student_id} value={student.student_id}>
                       {student.username}
