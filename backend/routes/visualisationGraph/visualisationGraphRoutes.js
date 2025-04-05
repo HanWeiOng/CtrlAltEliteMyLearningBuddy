@@ -239,5 +239,22 @@ router.post('/getCompletionOfQuiz', async (req, res) => {
 });
 
 
+router.get('/getIndividualPaperAllScore', async (req, res) => {
+    try {
+        const response = await client.query(`
+            SELECT student_name, student_score 
+            FROM student_attempt_quiz_table
+            WHERE completed = true OR LOWER(completed::text) = 'true'
+            ORDER BY student_score DESC
+        `);
+
+        res.status(200).json(response.rows);
+
+    } catch (error) {
+        console.error('Error fetching individual quiz score data:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 
 module.exports = router;

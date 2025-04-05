@@ -416,9 +416,9 @@ router.post('/logCompletion', async (req, res) => {
 
         // ✅ Insert the completion data into database
         await client.query(
-            `INSERT INTO student_attempt_quiz_table (student_id, folder_id, completed, student_score)
-             VALUES ($1, $2, $3, $4)`,
-            [student_id, folder_id, completed, scoreToInsert]
+            `INSERT INTO student_attempt_quiz_table (student_id, folder_id, completed, student_score, student_name)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [student_id, folder_id, completed, scoreToInsert, username]
         );
 
         // ✅ Return response
@@ -441,9 +441,4 @@ router.post('/logCompletion', async (req, res) => {
 
 
 
-
 module.exports = router;
-
-
-// getstudentscore
-// u want the median, average score
