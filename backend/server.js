@@ -24,6 +24,7 @@ const createQuizRoutes = require("./routes/createquiz/createQuizRoutes");
 const showQuizFolderRoutes = require("./routes/practiceQuiz/showQuizFolder");
 const practiceQuizRoutes = require("./routes/practiceQuiz/practiceQuizRoutes");
 const visualisationGraphRoutes = require("./routes/visualisationGraph/visualisationGraphRoutes");
+const accountHandlingRoutes =  require("./routes/accountHandling/accountHandlingRoutes");
 
 
 // Attach Routes to API paths
@@ -32,6 +33,7 @@ app.use("/api/createquiz", createQuizRoutes);
 app.use("/api/practicequiz", showQuizFolderRoutes);
 app.use("/api/openpracticequiz", practiceQuizRoutes);
 app.use("/api/visualisationGraph", visualisationGraphRoutes);
+app.use("/api/accountHandling", accountHandlingRoutes);
 
 
 // Start Server
