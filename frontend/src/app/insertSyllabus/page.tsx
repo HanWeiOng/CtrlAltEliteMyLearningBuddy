@@ -41,7 +41,7 @@ export default function InsertSyllabusPage() {
 
         try {
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/ocr/uploadSyllabus`,
+            `http://localhost:5003/api/ocr/uploadSyllabus`,
             {
               method: "POST",
               headers: {

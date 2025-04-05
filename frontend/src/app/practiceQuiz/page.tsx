@@ -71,7 +71,7 @@ const PracticeQuizPage: React.FC = () => {
   const fetchFolders = async () => {
     try {
       setLoading(true)
-      const response = await fetch('${process.env.NEXT_PUBLIC_API_URL}/api/openpracticequiz/getFolders?username=sharon001')
+      const response = await fetch('http://localhost:5003/api/openpracticequiz/getFolders?username=sharon001')
       if (!response.ok) {
         throw new Error(`Failed to fetch folders: ${response.statusText}`)
       }
@@ -94,7 +94,7 @@ const PracticeQuizPage: React.FC = () => {
   //   try {
   //     setLoading(true)
   //     const response = await fetch(
-  //       `${process.env.NEXT_PUBLIC_API_URL}/api/practiceQuiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
+  //       `http://localhost:5003/api/practiceQuiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
   //     )
   //     if (!response.ok) {
   //       throw new Error(`Failed to fetch questions: ${response.statusText}`)
@@ -128,7 +128,7 @@ const PracticeQuizPage: React.FC = () => {
 
     try {
       setLoading(true)
-      const response = await fetch('${process.env.NEXT_PUBLIC_API_URL}/api/openpracticequiz/saveQuiz', {
+      const response = await fetch('http://localhost:5003/api/openpracticequiz/saveQuiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,7 +163,7 @@ const PracticeQuizPage: React.FC = () => {
   const handleDeleteFolder = async (folderId: number) => {
     try {
       setLoading(true)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/practiceQuiz/deleteFolder/${folderId}`, {
+      const response = await fetch(`http://localhost:5003/api/practiceQuiz/deleteFolder/${folderId}`, {
         method: 'DELETE',
       })
       

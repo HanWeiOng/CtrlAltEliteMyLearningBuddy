@@ -59,7 +59,7 @@ function QuizContent({ folderId }: { folderId: string }) {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/openpracticequiz//getQuestionsByFolderId?folderId=${folderId}`
+        `http://localhost:5003/api/openpracticequiz//getQuestionsByFolderId?folderId=${folderId}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch questions");
@@ -128,7 +128,7 @@ function QuizContent({ folderId }: { folderId: string }) {
     } else {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/createquiz/postWrongAnswer`,
+          `http://localhost:5003/api/createquiz/postWrongAnswer`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
