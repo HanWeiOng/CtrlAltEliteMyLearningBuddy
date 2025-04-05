@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS question (
+CREATE TABLE IF NOT EXISTS questions (
     id SERIAL PRIMARY KEY,
     paper_name VARCHAR(255),
     subject VARCHAR(255),  -- Changed to match the first table

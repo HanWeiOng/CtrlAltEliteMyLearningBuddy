@@ -1,6 +1,8 @@
 "use client";
 import { Trash } from "lucide-react";
+import Navbar from "../../components/ui/navbar";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 const subjects = [
   "Biology",
@@ -26,7 +28,7 @@ export default function UploadPage() {
   const [selectedSubject, setSelectedSubject] = useState<(typeof subjects)[number]>(subjects[0]);
   const [selectedLevel, setSelectedLevel] = useState("PSLE");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-
+  const [uploadedQuestions, setUploadedQuestions] = useState<any[]>([]);
   // Function to determine available bandings
   const getBandings = () => {
     if (selectedSubject === "Mathematics") return mathBandings;
@@ -135,12 +137,17 @@ export default function UploadPage() {
       }
     
       const result = await response.json();
+      const paper_name = result.paper_name
+      console.log("Received paper_name from backend: ", paper_name)
+      const questionsRes = await fetch(`http://localhost:5003/api/ocr/retrieve_all_uploaded_questions?paper_name=${paper_name}`);
+      const questionsData = await questionsRes.json();
+      setUploadedQuestions(questionsData);
       console.log("Processed PDF:", result);
     
-      const { images, subject, banding, level } = result;
+      const { images} = result;
     
       setJsonOutput(JSON.stringify(result, null, 2));
-      setSuccessMessage(`Process completed! Subject: ${subject}, Banding: ${banding}, Level: ${level}`);
+      setSuccessMessage(`Process completed! ${paper_name} uploaded successfully!`);
       setErrorMessage(null); // Clear any previous errors
     
       if (images && images.length > 0) {
@@ -161,6 +168,7 @@ export default function UploadPage() {
 
   return (
     <div className="container py-8">
+      <Navbar />
       <div className="flex-1 p-6">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4 text-gradient">
@@ -335,6 +343,63 @@ export default function UploadPage() {
                 {successMessage && (
                   <div className="mt-4 text-green-500">{successMessage}</div>
                 )}
+
+                {uploadedQuestions.length > 0 && (
+                  <div className="mt-10">
+                    <h2 className="text-xl font-bold mb-4">Extracted Questions</h2>
+                    <div className="space-y-6">
+                      {uploadedQuestions.map((q) => (
+                        <div key={q.id} className="p-4 border rounded-lg bg-white shadow relative">
+                          <h2 className="text-lg font-medium">{q.question_text || "⚠️ No question text"}</h2>
+
+                          {q.image_paths && (() => {
+                            try {
+                              const imageArray = JSON.parse(q.image_paths);
+                              const imageUrl = imageArray[0]?.image_url;
+
+                              return imageUrl ? (
+                                <div className="relative w-full h-64 mb-4">
+                                  <Image
+                                    src={imageUrl}
+                                    alt="Question Image"
+                                    layout="fill"
+                                    objectFit="contain"
+                                  />
+                                </div>
+                              ) : null;
+                            } catch (e) {
+                              console.warn("Invalid image_paths format", e);
+                              return null;
+                            }
+                          })()}
+
+                          {Array.isArray(q.answer_options) && q.answer_options.length > 0 ? (
+                            <ul className="mt-2 space-y-2">
+                              {q.answer_options.map((option: any, i: number) => (
+                                <li key={i} className="p-2 border rounded-md bg-gray-50">
+                                  {option.option}:{" "}
+                                  {typeof option.text === "object" && option.text !== null ? (
+                                    Object.entries(option.text).map(([key, value]) => (
+                                      <span key={key}>
+                                        {key}: {String(value)},{" "}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span>{option.text ?? "⚠️ No text"}</span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-gray-500 italic mt-2">⚠️ No answer options available</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+
                 {errorMessage && (
                   <div className="mt-4 text-red-500 font-medium">
                     {errorMessage}
