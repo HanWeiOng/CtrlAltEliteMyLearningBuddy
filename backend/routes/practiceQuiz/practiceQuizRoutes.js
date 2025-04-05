@@ -284,7 +284,7 @@ router.post('/updateScore', async (req, res) => {
         if (questionCorrectness == "Correct") {
             //updateAttemptCount 
             await client.query(
-                `UPDATE question 
+                `UPDATE questions 
                 SET question_attempt_count = COALESCE(question_attempt_count, 0) + 1 
                 WHERE id = $1`,
                 [questionId]
@@ -293,7 +293,7 @@ router.post('/updateScore', async (req, res) => {
         } else if (questionCorrectness === "Wrong") {
             //updateScore 
             await client.query(
-                `UPDATE question 
+                `UPDATE questions 
                 SET question_wrong = CASE
                     WHEN question_wrong IS NULL THEN 0
                     ELSE question_wrong + 1
@@ -304,7 +304,7 @@ router.post('/updateScore', async (req, res) => {
             messages.push("question_wrong updated successfully.")
             //updateAttemptCount 
             await client.query(
-                `UPDATE question 
+                `UPDATE questions
                 SET question_attempt_count = COALESCE(question_attempt_count, 0) + 1 
                 WHERE id = $1`,
                 [questionId]
@@ -351,8 +351,5 @@ router.post('/addAnswerOptionAnalytics', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-
-
-
 
 module.exports = router;

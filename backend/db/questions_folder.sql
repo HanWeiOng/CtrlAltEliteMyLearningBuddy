@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS questions_folder (
     ),
     level VARCHAR(50) CHECK (level IN ('PSLE', 'Lower Secondary', 'O Level', 'N Level')),
     question_ids JSONB NOT NULL,
+    assigned_student INT
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_valid_question_ids CHECK (jsonb_typeof(question_ids) = 'array')
 );
