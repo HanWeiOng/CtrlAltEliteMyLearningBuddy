@@ -349,7 +349,7 @@ export default function UploadPage() {
                     <div className="space-y-6">
                       {uploadedQuestions.map((q) => (
                         <div key={q.id} className="p-4 border rounded-lg bg-white shadow relative">
-                          <h2 className="text-lg font-medium">{q.question_text || "⚠️ No question text"}</h2>
+                          <h2 className="text-lg font-medium">{q.question_number}: {q.question_text || "⚠️ No question text"}</h2>
 
                           {q.image_paths && (() => {
                             try {
@@ -357,12 +357,14 @@ export default function UploadPage() {
                               const imageUrl = imageArray[0]?.image_url;
 
                               return imageUrl ? (
-                                <div className="relative w-full h-64 mb-4">
+                                <div className="relative aspect-[4/3] w-full mb-4">
                                   <Image
                                     src={imageUrl}
                                     alt="Question Image"
-                                    layout="fill"
-                                    objectFit="contain"
+                                    width={1000} // adjust based on your expected resolution
+                                    height={700}
+                                    unoptimized
+                                    style={{ width: "100%", height: "auto", objectFit: "contain" }}
                                   />
                                 </div>
                               ) : null;

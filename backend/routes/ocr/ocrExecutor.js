@@ -21,29 +21,46 @@ const safetySettings = [
   { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
 ];
 
+// const boundingBoxInstructions = `
+// Return a JSON array only. Do not include explanations, markdown, or text outside JSON.
+// Extract all diagrams, graphs, questions, and answer keys** (not just diagrams).
+// - Extract all questions, including plain text questions
+// - If answer options are split from their question, ensure they are associated correctly.
+// - Ensure table content, including borders and internal divisions, is fully captured.
+// - Maintain logical order when extracting text interrupted by diagrams or spanning multiple lines.
+// - Answer Options (A, B, C, D): Label as "box_label": "answer_options".
+// - Do not mark them as "question".
+// - Extract full answer options (not just the first word of each row/column).
+// - If answer options are in a table, extract them row-wise while preserving structure.
+// - Ensure answer options are extracted as separate bounding boxes.
+// - If answer options belong to a previous question (in case of broken text), associate the answer option and question sentence with the correct question.
+// - If the image contains a final answer key, use "box_label": "answer_key".
+// - Ensure all rows of the answer key are captured, not just the top row.
+// - If the answer key is structured in multiple columns, extract them **sequentially from left to right, top to bottom**.
+// Ensure every question has a corresponding question number.
+// Ensure response follows this structure:
+
+// [
+//   {"box_1": [x1, y1, x2, y2], "box_1_label": "diagram", "question_number": "1"},
+//   {"box_2": [x1, y1, x2, y2], "box_2_label": "graph", "question_number": "2"}
+// ]
+// `;
+
 const boundingBoxInstructions = `
-Return a JSON array only. Do not include explanations, markdown, or text outside JSON.
-Extract all diagrams, graphs, questions, and answer keys** (not just diagrams).
-- Extract all questions, including plain text questions
-- If answer options are split from their question, ensure they are associated correctly.
-- Ensure table content, including borders and internal divisions, is fully captured.
-- Maintain logical order when extracting text interrupted by diagrams or spanning multiple lines.
-- Answer Options (A, B, C, D): Label as "box_label": "answer_options".
-- Do not mark them as "question".
-- Extract full answer options (not just the first word of each row/column).
-- If answer options are in a table, extract them row-wise while preserving structure.
-- Ensure answer options are extracted as separate bounding boxes.
-- If answer options belong to a previous question (in case of broken text), associate the answer option and question sentence with the correct question.
-- If the image contains a final answer key, use "box_label": "answer_key".
-- Ensure all rows of the answer key are captured, not just the top row.
-- If the answer key is structured in multiple columns, extract them **sequentially from left to right, top to bottom**.
-Ensure every question has a corresponding question number.
-Ensure response follows this structure:
+Return a JSON array 
+Example:
 
 [
-  {"box_1": [x1, y1, x2, y2], "box_1_label": "diagram", "question_number": "1"},
-  {"box_2": [x1, y1, x2, y2], "box_2_label": "graph", "question_number": "2"}
+  {"box_1": [x1, y1, x2, y2], "box_1_label": "question", "question_number": "xx"},
+  {"box_2": [x1, y1, x2, y2], "box_2_label": "question", "question_number": "xx"},
+  {"box_2=3": [x1, y1, x2, y2], "box_2_label": "answer_key"}
 ]
+
+- each bounding box encapsulates a SINGULAR question strictly
+- use the question number as the upper bounding and the next question as the lower bounding
+- so what ever is below the question number belongs to that question, and once you detect another question number below then cut it off
+- If the image contains a final answer key (e.g., a table of answers at the bottom of the page), mark it separately with "box_label": "answer_key".
+
 `;
 
 const textExtractionInstructions = `
@@ -100,7 +117,7 @@ const OcrExecutionMinor = async (data) => {
         const image = await loadImage(buffer);
 
         const { extractedData, boundingBoxes } = await extractBoundingBoxesAndCrop(image, base64, imageMeta.filename, paperName);
-
+        console.log(boundingBoxes)
         const extractedQuestions = await extractTextFromImage(base64);
         const croppedMap = mapCroppedImages(extractedData);
 
@@ -188,21 +205,26 @@ const extractBoundingBoxDataFromImage = async (img, boundingBoxes, filename, pap
   const ctx = canvas.getContext("2d");
   ctx.drawImage(img, 0, 0, width, height);
 
+
   const extractedData = [];
 
   for (const box of boundingBoxes) {
-    if (!["diagram", "graph"].includes(box.label)) continue;
+    if (!["answer","question"].includes(box.label)) continue;
 
     const [x1, y1, x2, y2] = box.bounding_box;
-    const absX1 = Math.max(0, Math.round((x1 / 1000) * width));
     const absY1 = Math.max(0, Math.round((y1 / 1000) * height));
-    const absX2 = Math.min(width, Math.round((x2 / 1000) * width));
     const absY2 = Math.min(height, Math.round((y2 / 1000) * height));
 
-    const croppedCanvas = createCanvas(absX2 - absX1, absY2 - absY1);
-    const croppedCtx = croppedCanvas.getContext("2d");
-    croppedCtx.drawImage(img, absX1, absY1, absX2 - absX1, absY2 - absY1, 0, 0, absX2 - absX1, absY2 - absY1);
+    const padding = 20;
+    let absX1 = Math.max(0, Math.round((x1 / 1000) * width) - padding);
+    let absX2 = Math.min(width, Math.round((x2 / 1000) * width) + padding);
 
+    if (box.label === "question") {
+      absX1 = 0;
+      absX2 = width;
+    }
+
+    const croppedCanvas = createCanvas(absX2 - absX1, absY2 - absY1);
     const croppedBuffer = croppedCanvas.toBuffer("image/png");
     const s3Key = `${paperName}/${filename.replace(".png", "")}_${box.label}_${box.question_number}.png`;
 
@@ -264,7 +286,7 @@ const safeJsonParse = (text) => {
 
 const extractBoundingBoxes = (json) => {
   return json.map((box) => {
-    const key = Object.keys(box).find((k) => k.startsWith("box_"));
+    const key = Object.keys(box).find(k => Array.isArray(box[k]));
     const coords = box[key];
     const labelKey = Object.keys(box).find((k) => k.endsWith("_label"));
     return {
