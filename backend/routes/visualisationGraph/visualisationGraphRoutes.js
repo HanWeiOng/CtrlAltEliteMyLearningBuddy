@@ -121,6 +121,7 @@ router.post('/getCompletionOfQuiz', async (req, res) => {
     const { teacher_id } = req.body;
 
     try {
+        // Step 1: Get all quizzes owned by the teacher
         const findTeacherOwnedQuiz = await client.query(
             `SELECT id FROM questions_folder WHERE teacher_id = $1`,
             [teacher_id]
@@ -131,13 +132,16 @@ router.post('/getCompletionOfQuiz', async (req, res) => {
 
         const results = {};
 
+        // Step 2: Process each quiz individually
         for (const quizId of quizIds) {
+            // Query 1: Completed attempts
             const completedQuery = client.query(`
                 WITH latest_attempts AS (
                     SELECT 
                         student_id,
                         folder_id,
                         completed,
+                        student_score,
                         id,
                         ROW_NUMBER() OVER (
                             PARTITION BY student_id, folder_id
@@ -148,17 +152,19 @@ router.post('/getCompletionOfQuiz', async (req, res) => {
                     FROM student_attempt_quiz_table
                     WHERE folder_id = $1
                 )
-                SELECT student_id, folder_id, completed, id
+                SELECT student_id, folder_id, completed, student_score, id
                 FROM latest_attempts
                 WHERE rn = 1 AND completed = true
             `, [quizId]);
 
+            // Query 2: Incomplete attempts
             const incompleteQuery = client.query(`
                 WITH latest_attempts AS (
                     SELECT 
                         student_id,
                         folder_id,
                         completed,
+                        student_score,
                         id,
                         ROW_NUMBER() OVER (
                             PARTITION BY student_id, folder_id
@@ -169,25 +175,65 @@ router.post('/getCompletionOfQuiz', async (req, res) => {
                     FROM student_attempt_quiz_table
                     WHERE folder_id = $1
                 )
-                SELECT student_id, folder_id, completed, id
+                SELECT student_id, folder_id, completed, student_score, id
                 FROM latest_attempts
                 WHERE rn = 1 AND completed = false
             `, [quizId]);
 
-            const [completedResult, incompleteResult] = await Promise.all([completedQuery, incompleteQuery]);
+            // Query 3: Average and Median for completed only
+            const scoreStatsQuery = client.query(`
+                WITH latest_attempts AS (
+                    SELECT 
+                        student_id,
+                        folder_id,
+                        completed,
+                        student_score,
+                        id,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY student_id, folder_id
+                            ORDER BY 
+                                (CASE WHEN completed THEN 1 ELSE 2 END),
+                                id DESC
+                        ) AS rn
+                    FROM student_attempt_quiz_table
+                    WHERE folder_id = $1
+                )
+                SELECT 
+                    AVG(student_score) AS average_student_score,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY student_score) AS median_score
+                FROM latest_attempts
+                WHERE rn = 1 AND completed = true
+            `, [quizId]);
 
+            // Execute all queries in parallel
+            const [completedResult, incompleteResult, scoreStatsResult] = await Promise.all([
+                completedQuery,
+                incompleteQuery,
+                scoreStatsQuery
+            ]);
+
+            const scoreStats = scoreStatsResult.rows[0];
+
+            // Step 3: Build result for this quiz
             results[quizId] = {
                 completedCount: completedResult.rows.length,
                 completed: completedResult.rows,
                 notCompletedCount: incompleteResult.rows.length,
-                notCompleted: incompleteResult.rows
+                notCompleted: incompleteResult.rows,
+                averageScoreCompleted: scoreStats.average_student_score !== null
+                    ? parseFloat(scoreStats.average_student_score).toFixed(2)
+                    : null,
+                medianScoreCompleted: scoreStats.median_score !== null
+                    ? parseFloat(scoreStats.median_score).toFixed(2)
+                    : null
             };
         }
 
+        // Step 4: Send response
         res.json(results);
 
     } catch (error) {
-        console.error(error);
+        console.error('Error fetching quiz completion data:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

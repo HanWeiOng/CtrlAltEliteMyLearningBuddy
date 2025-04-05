@@ -396,21 +396,41 @@ router.post('/assignQuiz', async (req, res) => {
 
 router.post('/logCompletion', async (req, res) => {
     try {
-        const { student_id, folder_id, completed } = req.body;
+        const { student_id, folder_id, completed, student_score } = req.body;
 
+        // ✅ Call your other API properly using fetch
+        const response = await fetch(`http://localhost:5003/api/accountHandling/getStudentName/${student_id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const studentData = await response.json();
+        const username = studentData.username;
+
+        console.log('Student Username:', username);
+
+        // ✅ Determine the correct score
+        const scoreToInsert = completed.toLowerCase() === 'true' ? student_score : 0;
+
+        // ✅ Insert the completion data into database
         await client.query(
-            `INSERT INTO student_attempt_quiz_table (student_id, folder_id, completed)
-             VALUES ($1, $2, $3)`,
-            [student_id, folder_id, completed]
+            `INSERT INTO student_attempt_quiz_table (student_id, folder_id, completed, student_score)
+             VALUES ($1, $2, $3, $4)`,
+            [student_id, folder_id, completed, scoreToInsert]
         );
 
+        // ✅ Return response
         if (completed.toLowerCase() === 'true') {
             res.status(200).json({
-                message: `Quiz completed successfully.`,
+                message: `Quiz completed successfully by ${username}.`,
+                score: scoreToInsert
             });
         } else {
             res.status(200).json({
-                message: `Quiz uncompleted, user has left the paper.`,
+                message: `Quiz uncompleted by ${username}, user has left the paper.`,
+                score: scoreToInsert
             });
         }
     } catch (error) {
@@ -420,4 +440,10 @@ router.post('/logCompletion', async (req, res) => {
 });
 
 
+
+
 module.exports = router;
+
+
+// getstudentscore
+// u want the median, average score

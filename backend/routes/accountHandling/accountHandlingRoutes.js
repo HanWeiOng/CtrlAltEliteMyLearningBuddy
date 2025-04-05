@@ -108,4 +108,25 @@ router.get('/getStudentList', async (req, res) => {
     }
 });
 
+
+router.get('/getStudentName/:student_id', async (req, res) => {
+    try {
+        const { student_id } = req.params;
+
+        const result = await client.query(
+            `SELECT username FROM account_table WHERE account_id = $1`,
+            [student_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+
+        res.json({ username: result.rows[0].username });
+    } catch (error) {
+        console.error("Error during retrieving students:", error);
+        res.status(500).json({ error: "Internal server error: " + error.message });
+    }
+});
+
 module.exports = router;
