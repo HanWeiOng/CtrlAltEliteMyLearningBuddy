@@ -63,7 +63,7 @@ const validateQuizInput = (req, res, next) => {
     }
 
     next();
-};
+};  
 
 // Route to get questions by subject, banding, and level
 router.get('/getQuestionsByFilters', async (req, res) => {
@@ -273,88 +273,83 @@ router.use((err, req, res, next) => {
     });
 });
 
-/*
+// 2 person 1 correct 1 wrong
 
-// Helper function for wrong answer explanations
-async function explainWrongAnswer({ question, userAnswer, correctAnswer, options, imageUrl, model }) {
-    let formattedOptions = options
-        .map((opt) => {
-            const text = typeof opt.text === 'string' ? opt.text : JSON.stringify(opt.text);
-            return `${opt.option}: ${text}`;
-        })
-        .join('\n');
-
-    const prompt = `
-You are a helpful tutor explaining why an answer is incorrect. Please provide a clear and concise explanation following this format:
-
-  Here is the full context:
-  - Question: ${question}
-  - Image (if available): ${imageUrl ? imageUrl : "No diagram provided"}
-  - Answer: ${userAnswer.option}: ${userAnswer.text}
-  - Correct answer : ${correctAnswer.option}: ${correctAnswer.text}
-  - Options: ${formattedOptions}
-
-Please provide your explanation following these guidelines:
-1. Start with "❌ ${userAnswer.option} is incorrect because:"
-2. Then explain "✅ Correct Answer: ${correctAnswer.option}"
-3. If the diagram is important, explain its relevance
-4. Keep explanations concise and focused
-5. Use bullet points for clarity
-6. Do not use markdown formatting
-7. Use a new line after every point
-
-
-Format your response like this:
-${imageUrl ? `
-    • [Explain diagram's relevance]` : ''}
-
-❌ ${userAnswer.option} is incorrect because:
-• [First reason]
-• [Second reason]
-
-✅ Correct Answer: ${correctAnswer.option}
-• [First reason]
-• [Second reason]
-• [More reasons if neccesary]
-
-
-Remember:
-1. Each bullet point must be on its own line
-2. Add a blank line after each bullet point
-3. Keep explanations clear and concise
-4. Maintain the exact formatting with line breaks`;
-
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
-}
-
-// Route to handle wrong answer explanations
-router.post("/postWrongAnswer", async (req, res) => {
-    const { question, userAnswer, correctAnswer, options, imageUrl } = req.body;
-
-    if (!question || !userAnswer || !correctAnswer || !options) {
-        return res.status(400).json({ message: 'Missing fields in request body' });
-    }
-
-    try {
-        const explanation = await explainWrongAnswer({
-            question,
-            userAnswer,
-            correctAnswer,
-            options,
-            imageUrl,
-            model,
+router.post('/updateScore', async (req, res) => {
+    try{
+        const { questionId, questionCorrectness } = req.body
+        console.log("questionId:", questionId)
+        console.log("questionCorrectness",questionCorrectness)
+        const messages = []; 
+        if (questionCorrectness == "Correct") {
+            //updateAttemptCount 
+            await client.query(
+                `UPDATE questions 
+                SET question_attempt_count = COALESCE(question_attempt_count, 0) + 1 
+                WHERE id = $1`,
+                [questionId]
+            );
+            messages.push("question_attempt_count incremented successfully.")
+        } else if (questionCorrectness === "Wrong") {
+            //updateScore 
+            await client.query(
+                `UPDATE questions 
+                SET question_wrong = CASE
+                    WHEN question_wrong IS NULL THEN 0
+                    ELSE question_wrong + 1
+                    END
+                WHERE id = $1`,
+                [questionId]
+            )
+            messages.push("question_wrong updated successfully.")
+            //updateAttemptCount 
+            await client.query(
+                `UPDATE questions
+                SET question_attempt_count = COALESCE(question_attempt_count, 0) + 1 
+                WHERE id = $1`,
+                [questionId]
+            );
+            messages.push("question_attempt_count incremented successfully.")
+        }
+        
+        res.status(200).json({
+            success: true,
+            messages
         });
-
-        return res.status(200).json({ explanation });
     } catch (error) {
-        console.error('Gemini error:', error);
-        return res.status(500).json({ message: 'Something went wrong', error: error.message });
+        console.error("Error updating score:", error);
+        res.status(500).json({ success: false, error: "Something went wrong." });
+    }
+})
+
+router.post('/addAnswerOptionAnalytics', async (req, res) => {
+    try {
+        const { question_id, answer_option, answer_text, correctness } = req.body;
+
+        const result = await client.query(
+            `INSERT INTO question_answer_table (
+                question_id, answer_option, answer_text, selected_option_count, correctness
+            )
+            VALUES ($1, $2, $3, 1, $4)
+            ON CONFLICT (question_id, answer_option)
+            DO UPDATE SET selected_option_count = question_answer_table.selected_option_count + 1
+            RETURNING *;`,
+            [question_id, answer_option, answer_text, correctness]
+        );
+
+        const row = result.rows[0];
+
+        // Decide if it's an insert or update
+        const operation = row.selected_option_count === 1 ? 'inserted' : 'updated';
+
+        res.status(200).json({
+            message: `Answer option ${operation} successfully.`,
+            data: row
+        });
+    } catch (error) {
+        console.error('Error inserting/updating answer option:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
-*/
-
 
 module.exports = router;

@@ -11,4 +11,14 @@ CREATE TABLE IF NOT EXISTS question (
     image_paths JSONB,  -- Keeping JSONB as per the second table
     topic_label TEXT,
     answer_key VARCHAR(255)
+    question_wrong INT DEFAULT 0,
+    question_attempt_count INT DEFAULT 0,
+    question_difficulty DECIMAL(3,2) GENERATED ALWAYS AS (
+        CASE 
+            WHEN question_attempt_count = 0 THEN 0 
+            ELSE question_wrong::numeric / question_attempt_count 
+        END
+    ) STORED
 );
+
+

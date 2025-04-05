@@ -94,7 +94,7 @@ const PracticeQuizPage: React.FC = () => {
   //   try {
   //     setLoading(true)
   //     const response = await fetch(
-  //       `http://localhost:5003/api/practiceQuiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
+  //       `${process.env.NEXT_PUBLIC_API_URL}/api/practiceQuiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
   //     )
   //     if (!response.ok) {
   //       throw new Error(`Failed to fetch questions: ${response.statusText}`)

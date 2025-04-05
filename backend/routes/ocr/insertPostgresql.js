@@ -24,7 +24,7 @@ const insertJSONPayload = async (parsedJSON) => {
 
         for (const item of questions) {
             await client.query(
-                `INSERT INTO question (
+                `INSERT INTO questions (
                     paper_name, page_number, question_number, question_text,
                     answer_options, image_paths, topic_label, answer_key,
                     subject, banding, level
