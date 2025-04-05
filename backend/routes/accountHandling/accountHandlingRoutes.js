@@ -96,20 +96,16 @@ router.post('/login', async (req, res) => {
 router.get('/getStudentList', async (req, res) => {
     try {
         const { rows } = await client.query(`
-            SELECT username FROM account_table
+            SELECT id AS student_id, username 
+            FROM account_table
             WHERE position = 'Student' OR position = 'student';
         `);
-        const usernames = rows.map(row => row.username);
 
-        res.status(200).json({ students: usernames });
+        res.status(200).json({ students: rows });
     } catch (error) {
         console.error("Error during retrieving students:", error);
         res.status(500).json({ error: "Internal server error: " + error.message });
     }
 });
-
-
-
-
 
 module.exports = router;

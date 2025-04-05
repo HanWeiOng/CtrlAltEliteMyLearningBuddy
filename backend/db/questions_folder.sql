@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS questions_folder (
     question_ids JSONB NOT NULL,
     assigned_student INT
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_valid_question_ids CHECK (jsonb_typeof(question_ids) = 'array')
+    CONSTRAINT chk_valid_question_ids CHECK (jsonb_typeof(question_ids) = 'array'),
+    teacher_id INT
 );
 
 -- Insert default data if not already present

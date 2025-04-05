@@ -44,7 +44,7 @@ router.get('/getHardestTopic', async (req, res) => {
                     ELSE SUM(question_wrong)::numeric / SUM(question_attempt_count)
                 END
             , 2) AS wrong_ratio
-            FROM question
+            FROM questions
             GROUP BY topic_label
             ORDER BY wrong_ratio DESC
             LIMIT 10;
@@ -63,7 +63,7 @@ router.get('/getPaperDemographic', async (req, res) => {
             SELECT level, COUNT(*) AS count
             FROM (
                 SELECT DISTINCT ON (paper_name) level
-                FROM question
+                FROM questions
                 ORDER BY paper_name, level
             ) AS subquery
             GROUP BY level;
@@ -80,7 +80,7 @@ router.get('/getHardestQuestions', async (req, res) => {
     try {
         const result = await client.query(`
             SELECT question_text, question_difficulty
-            FROM question
+            FROM questions
             WHERE question_difficulty > 0
             ORDER BY question_difficulty ASC
             LIMIT 10;
@@ -116,5 +116,24 @@ router.get('/getAnswerOptionAnalytics/:question_id', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+router.post('/getCompletionOfQuiz', async (req, res) => {
+    const { teacher_id } = req.body; // ✅ body param
+
+    try {
+        const findTeacherOwnedQuiz = await client.query(
+            `SELECT * FROM questions_folder WHERE teacher_id = $1`,
+            [teacher_id]
+        );
+
+        const quizIds = findTeacherOwnedQuiz.rows.map(quiz => quiz.id);
+
+        res.json(quizIds);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 
 module.exports = router;

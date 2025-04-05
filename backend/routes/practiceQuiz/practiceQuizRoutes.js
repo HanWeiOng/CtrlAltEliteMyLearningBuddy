@@ -352,4 +352,72 @@ router.post('/addAnswerOptionAnalytics', async (req, res) => {
     }
 });
 
+
+router.post('/assignQuiz', async (req, res) => {
+    try {
+        const { teacher_id, student_id, quiz_folder_id } = req.body;
+
+        // Check if the assignment already exists
+        const { rows } = await client.query(
+            `SELECT * FROM quiz_assignment_table
+             WHERE teacher_id = $1 AND student_id = $2 AND quiz_folder_id = $3`,
+            [teacher_id, student_id, quiz_folder_id]
+        );
+
+        let operation;
+
+        if (rows.length > 0) {
+            // If exists, unassign (delete)
+            await client.query(
+                `DELETE FROM quiz_assignment_table
+                 WHERE teacher_id = $1 AND student_id = $2 AND quiz_folder_id = $3`,
+                [teacher_id, student_id, quiz_folder_id]
+            );
+            operation = "unassigned";
+        } else {
+            // If not exists, assign (insert)
+            await client.query(
+                `INSERT INTO quiz_assignment_table (student_id, teacher_id, quiz_folder_id) 
+                 VALUES ($1, $2, $3)`,
+                [student_id, teacher_id, quiz_folder_id] // 🔥 corrected order!
+            );
+            operation = "assigned";
+        }
+
+        res.status(200).json({
+            message: `Quiz folder ${operation} successfully.`,
+        });
+
+    } catch (error) {
+        console.error("Error during quiz assignment:", error);
+        res.status(500).json({ error: "Internal server error: " + error.message });
+    }
+});
+
+router.post('/logCompletion', async (req, res) => {
+    try {
+        const { student_id, folder_id, completed } = req.body;
+
+        await client.query(
+            `INSERT INTO student_attempt_quiz_table (student_id, folder_id, completed)
+             VALUES ($1, $2, $3)`,
+            [student_id, folder_id, completed]
+        );
+
+        if (completed.toLowerCase() === 'true') {
+            res.status(200).json({
+                message: `Quiz completed successfully.`,
+            });
+        } else {
+            res.status(200).json({
+                message: `Quiz uncompleted, user has left the paper.`,
+            });
+        }
+    } catch (error) {
+        console.error("Error during quiz completion uploading:", error);
+        res.status(500).json({ error: "Internal server error: " + error.message });
+    }
+});
+
+
 module.exports = router;
