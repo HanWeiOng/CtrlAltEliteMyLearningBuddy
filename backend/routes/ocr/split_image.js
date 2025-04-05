@@ -87,8 +87,8 @@ async function split_image(pdfBuffer, paperName, subject, banding, level) {
 
     // Resize
     const resizedBuffer = await sharp(imageBuffer)
-      .resize({ width: 500, height: 500, fit: 'contain' })
-      .toBuffer();
+      // .resize({ width: 500, height: 500, fit: 'contain' })
+      // .toBuffer();
 
     // Upload
     const upload = new Upload({
