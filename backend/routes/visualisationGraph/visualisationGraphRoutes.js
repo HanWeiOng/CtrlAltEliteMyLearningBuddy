@@ -7,6 +7,12 @@ const cors = require('cors');
 router.use(cors());
 router.use(express.json());
 
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+// Initialize Gemini model
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const modelName = "gemini-2.0-flash";
+const model = genAI.getGenerativeModel({ model: modelName });
+
 const client = new Client({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
