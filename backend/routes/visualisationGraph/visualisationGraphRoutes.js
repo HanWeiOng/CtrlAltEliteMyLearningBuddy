@@ -118,22 +118,80 @@ router.get('/getAnswerOptionAnalytics/:question_id', async (req, res) => {
 });
 
 router.post('/getCompletionOfQuiz', async (req, res) => {
-    const { teacher_id } = req.body; // ✅ body param
+    const { teacher_id } = req.body;
 
     try {
         const findTeacherOwnedQuiz = await client.query(
-            `SELECT * FROM questions_folder WHERE teacher_id = $1`,
+            `SELECT id FROM questions_folder WHERE teacher_id = $1`,
             [teacher_id]
         );
 
         const quizIds = findTeacherOwnedQuiz.rows.map(quiz => quiz.id);
+        console.log('Teacher Quiz IDs:', quizIds);
 
-        res.json(quizIds);
+        const results = {};
+
+        for (const quizId of quizIds) {
+            const completedQuery = client.query(`
+                WITH latest_attempts AS (
+                    SELECT 
+                        student_id,
+                        folder_id,
+                        completed,
+                        id,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY student_id, folder_id
+                            ORDER BY 
+                                (CASE WHEN completed THEN 1 ELSE 2 END),
+                                id DESC
+                        ) AS rn
+                    FROM student_attempt_quiz_table
+                    WHERE folder_id = $1
+                )
+                SELECT student_id, folder_id, completed, id
+                FROM latest_attempts
+                WHERE rn = 1 AND completed = true
+            `, [quizId]);
+
+            const incompleteQuery = client.query(`
+                WITH latest_attempts AS (
+                    SELECT 
+                        student_id,
+                        folder_id,
+                        completed,
+                        id,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY student_id, folder_id
+                            ORDER BY 
+                                (CASE WHEN completed THEN 1 ELSE 2 END),
+                                id DESC
+                        ) AS rn
+                    FROM student_attempt_quiz_table
+                    WHERE folder_id = $1
+                )
+                SELECT student_id, folder_id, completed, id
+                FROM latest_attempts
+                WHERE rn = 1 AND completed = false
+            `, [quizId]);
+
+            const [completedResult, incompleteResult] = await Promise.all([completedQuery, incompleteQuery]);
+
+            results[quizId] = {
+                completedCount: completedResult.rows.length,
+                completed: completedResult.rows,
+                notCompletedCount: incompleteResult.rows.length,
+                notCompleted: incompleteResult.rows
+            };
+        }
+
+        res.json(results);
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 
 
 module.exports = router;
