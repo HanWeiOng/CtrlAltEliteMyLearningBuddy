@@ -256,5 +256,47 @@ router.get('/getIndividualPaperAllScore', async (req, res) => {
     }
 });
 
+// New endpoint to get all quizzes/folders for the dropdown list
+router.get('/getAllQuizzes', async (req, res) => {
+    try {
+        const { teacher_id } = req.query;
+        
+        // Validate teacher_id
+        if (!teacher_id) {
+            return res.status(400).json({ error: 'teacher_id is required' });
+        }
+
+        // Get quiz folders filtered by teacher_id
+        const result = await client.query(`
+            SELECT 
+                id, 
+                folder_name
+            FROM 
+                questions_folder 
+            WHERE 
+                teacher_id = $1
+            ORDER BY 
+                folder_name ASC
+        `, [teacher_id]);
+
+        // Format the response for the frontend dropdown
+        const quizzes = result.rows.map(quiz => ({
+            id: quiz.id,
+            name: quiz.folder_name
+        }));
+
+        // Add an "All Quizzes" option
+        const response = [
+            { id: "all", name: "All Quizzes" },
+            ...quizzes
+        ];
+
+        res.status(200).json(response);
+    } catch (error) {
+        console.error('Error fetching quizzes:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 
 module.exports = router;

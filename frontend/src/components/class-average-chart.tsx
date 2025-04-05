@@ -13,7 +13,13 @@ import {
   Area
 } from 'recharts';
 
-export function ClassAverageChart() {
+// Define the component props
+interface ClassAverageChartProps {
+  quizId?: string;
+  teacherId?: number;
+}
+
+export function ClassAverageChart({ quizId = 'all', teacherId }: ClassAverageChartProps) {
   // Track the hovered point
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   
@@ -23,6 +29,10 @@ export function ClassAverageChart() {
     { quiz: 'Quiz 2', score: 68, change: -2 }, // decreased by 2%
     { quiz: 'Quiz 3', score: 76, change: 8 }   // increased by 8%
   ];
+
+  // In a real app, we would filter or fetch data based on quizId and teacherId
+  // For now, we'll just log it for demonstration
+  console.log(`Rendering ClassAverageChart with quizId: ${quizId}, teacherId: ${teacherId}`);
 
   // Format the data for display in tooltips
   const CustomTooltip = ({ active, payload, label }: any) => {

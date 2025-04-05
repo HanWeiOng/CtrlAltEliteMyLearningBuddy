@@ -13,7 +13,13 @@ import {
   Cell
 } from 'recharts';
 
-export function ConceptMasteryChart() {
+// Define component props
+interface ConceptMasteryChartProps {
+  quizId?: string;
+  teacherId?: number;
+}
+
+export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMasteryChartProps) {
   // Track hovered bar
   const [hoveredBar, setHoveredBar] = useState<string | null>(null);
   
@@ -27,6 +33,10 @@ export function ConceptMasteryChart() {
     { name: 'Probability', mastery: 65 },
     { name: 'Trigonometry', mastery: 52 }
   ];
+
+  // In a real app, we would filter or fetch data based on quizId and teacherId
+  // For now, we'll just log it for demonstration
+  console.log(`Rendering ConceptMasteryChart with quizId: ${quizId}, teacherId: ${teacherId}`);
 
   // Function to determine color based on mastery level
   const getBarColor = (mastery: number) => {

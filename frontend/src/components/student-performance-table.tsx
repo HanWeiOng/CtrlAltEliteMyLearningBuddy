@@ -12,9 +12,19 @@ const initialStudents = [
   { id: 5, name: "Jamie", score: 45, trend: "down" }
 ]
 
-export function StudentPerformanceTable() {
+// Define component props
+interface StudentPerformanceTableProps {
+  quizId?: string;
+  teacherId?: number;
+}
+
+export function StudentPerformanceTable({ quizId = 'all', teacherId }: StudentPerformanceTableProps) {
   const [students, setStudents] = useState(initialStudents)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
+
+  // In a real app, we would filter or fetch data based on quizId and teacherId
+  // For now, we'll just log it for demonstration
+  console.log(`Rendering StudentPerformanceTable with quizId: ${quizId}, teacherId: ${teacherId}`);
 
   // Function to sort students
   const sortStudents = () => {

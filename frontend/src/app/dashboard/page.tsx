@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
   LayoutDashboard, 
   BarChart3, 
@@ -11,19 +11,296 @@ import {
   Flag, 
   BookOpen, 
   Lightbulb, 
-  ArrowUp, 
+  ArrowUp,
+  ArrowDown,
   CheckCircle,
   User,
+  Filter,
+  ChevronDown,
+  Loader2
 } from "lucide-react";
 import { ClassAverageChart } from "@/components/class-average-chart";
 import { ConceptMasteryChart } from "@/components/concept-mastery-chart";
 import { StudentPerformanceTable } from "@/components/student-performance-table";
 import { ProgressRing } from "@/components/progress-ring";
 
+// Quiz data structure
+type Quiz = {
+  id: string;
+  name: string;
+}
+
+// Completion rate data type
+type CompletionRateData = {
+  completionRate: number;
+  change: number;
+};
+
+// Average score data type
+type AverageScoreData = {
+  score: number | null;
+  change: number;
+};
+
+// Median score data type
+type MedianScoreData = {
+  score: number | null;
+  change: number;
+};
+
+// Global constant for teacher ID (hardcoded until auth is implemented)
+const TEACHER_ID = 5;
+
 export default function DashboardPage() {
+  // State for quizzes and selected quiz
+  const [quizzes, setQuizzes] = useState<Quiz[]>([
+    { id: "all", name: "All Quizzes" } // Default option while loading
+  ]);
+  const [selectedQuiz, setSelectedQuiz] = useState<Quiz>({ id: "all", name: "All Quizzes" });
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [completionRate, setCompletionRate] = useState<CompletionRateData>({ completionRate: 0, change: 0 });
+  const [averageScore, setAverageScore] = useState<AverageScoreData>({ score: null, change: 0 });
+  const [medianScore, setMedianScore] = useState<MedianScoreData>({ score: null, change: 0 });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingQuizzes, setIsLoadingQuizzes] = useState(true);
+  
+  // Function to fetch quizzes from API
+  const fetchQuizzes = async () => {
+    setIsLoadingQuizzes(true);
+    try {
+      // Pass teacher_id query parameter if needed by your API
+      const response = await fetch(`http://localhost:5003/api/visualisationGraph/getAllQuizzes?teacher_id=${TEACHER_ID}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch quizzes');
+      }
+      
+      const data = await response.json();
+      setQuizzes(data);
+      // If there are quizzes (beyond the "All Quizzes" option), select the first one
+      if (data.length > 1) {
+        setSelectedQuiz(data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching quizzes:', error);
+      // Fallback to default quizzes in case of error
+      setQuizzes([
+        { id: "all", name: "All Quizzes" },
+        { id: "quiz-1", name: "Quiz 1: Linear Functions" },
+        { id: "quiz-2", name: "Quiz 2: Quadratic Equations" },
+        { id: "quiz-3", name: "Quiz 3: Inequalities" },
+        { id: "quiz-4", name: "Quiz 4: Polynomials" },
+      ]);
+    } finally {
+      setIsLoadingQuizzes(false);
+    }
+  };
+  
+  // Function to handle quiz selection
+  const handleQuizSelect = (quiz: Quiz) => {
+    setSelectedQuiz(quiz);
+    setIsDropdownOpen(false);
+    // fetchQuizData will be called via the useEffect
+  };
+
+  // Function to fetch completion rate data
+  const fetchCompletionRate = async (quizId: string) => {
+    setIsLoading(true);
+    try {
+      // Using the POST endpoint with teacher_id
+      const response = await fetch('http://localhost:5003/api/visualisationGraph/getCompletionOfQuiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teacher_id: TEACHER_ID,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      
+      const data = await response.json();
+      
+      if (quizId === 'all') {
+        // For "All Quizzes", calculate the overall stats
+        let totalCompleted = 0;
+        let totalAttempts = 0;
+        let totalScore = 0;
+        let totalScoreCount = 0;
+        
+        // This is a simplification for median across quizzes
+        // For a true median calculation, we would need all individual scores
+        let allMedians: number[] = [];
+        
+        Object.values(data).forEach((quizData: any) => {
+          // Completion rate calculation
+          totalCompleted += quizData.completedCount || 0;
+          totalAttempts += (quizData.completedCount || 0) + (quizData.notCompletedCount || 0);
+          
+          // Average score calculation
+          if (quizData.averageScoreCompleted && !isNaN(parseFloat(quizData.averageScoreCompleted))) {
+            totalScore += parseFloat(quizData.averageScoreCompleted) * (quizData.completedCount || 0);
+            totalScoreCount += quizData.completedCount || 0;
+          }
+          
+          // Collect median scores
+          if (quizData.medianScoreCompleted && !isNaN(parseFloat(quizData.medianScoreCompleted))) {
+            allMedians.push(parseFloat(quizData.medianScoreCompleted));
+          }
+        });
+        
+        const overallRate = totalAttempts > 0 ? Math.round((totalCompleted / totalAttempts) * 100) : 0;
+        const overallAverage = totalScoreCount > 0 ? parseFloat((totalScore / totalScoreCount).toFixed(2)) : null;
+        
+        // For all quizzes, we'll use a simple average of medians as an approximation
+        const overallMedian = allMedians.length > 0 
+          ? parseFloat((allMedians.reduce((a, b) => a + b, 0) / allMedians.length).toFixed(2)) 
+          : null;
+        
+        setCompletionRate({
+          completionRate: overallRate,
+          change: 0 // We don't have change data for the overall completion
+        });
+        
+        setAverageScore({
+          score: overallAverage,
+          change: 0 // For now, no change data for overall average
+        });
+        
+        setMedianScore({
+          score: overallMedian,
+          change: 0 // For now, no change data for overall median
+        });
+      } else {
+        // For specific quiz, use that quiz's data
+        const quizData = data[quizId];
+        if (quizData) {
+          // Completion rate
+          const total = (quizData.completedCount || 0) + (quizData.notCompletedCount || 0);
+          const rate = total > 0 ? Math.round((quizData.completedCount / total) * 100) : 0;
+          
+          // Average score
+          let avgScore = null;
+          if (quizData.averageScoreCompleted && !isNaN(parseFloat(quizData.averageScoreCompleted))) {
+            avgScore = parseFloat(quizData.averageScoreCompleted);
+          }
+          
+          // Median score
+          let medScore = null;
+          if (quizData.medianScoreCompleted && !isNaN(parseFloat(quizData.medianScoreCompleted))) {
+            medScore = parseFloat(quizData.medianScoreCompleted);
+          }
+          
+          setCompletionRate({
+            completionRate: rate,
+            change: 0 // For now, no change data for individual quizzes
+          });
+          
+          setAverageScore({
+            score: avgScore,
+            change: 0 // For now, no change data for individual quizzes
+          });
+          
+          setMedianScore({
+            score: medScore,
+            change: 0 // For now, no change data for individual quizzes
+          });
+        } else {
+          // Fallback if no data found for this quiz
+          setCompletionRate({ completionRate: 0, change: 0 });
+          setAverageScore({ score: null, change: 0 });
+          setMedianScore({ score: null, change: 0 });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching completion rate:', error);
+      // Fallback to default values in case of error
+      setCompletionRate({ completionRate: 50, change: 5 });
+      setAverageScore({ score: 78, change: 2 });
+      setMedianScore({ score: 76, change: 3 });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch quizzes on initial load
+  useEffect(() => {
+    fetchQuizzes();
+  }, []);
+
+  // Fetch completion rate when quiz selection changes
+  useEffect(() => {
+    if (selectedQuiz) {
+      fetchCompletionRate(selectedQuiz.id);
+    }
+  }, [selectedQuiz]);
+
   return (
     <div className="flex w-full flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <main className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
+        {/* Quiz Selector */}
+        <div className="w-full flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <LayoutDashboard className="h-6 w-6" />
+            Dashboard
+          </h1>
+          
+          <div className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              disabled={isLoadingQuizzes}
+              className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            >
+              {isLoadingQuizzes ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading Quizzes...
+                </>
+              ) : (
+                <>
+                  <Filter className="h-4 w-4" />
+                  {selectedQuiz.name}
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </>
+              )}
+            </button>
+            
+            {isDropdownOpen && !isLoadingQuizzes && (
+              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-10">
+                <ul className="py-1 max-h-96 overflow-auto">
+                  {quizzes.map((quiz) => (
+                    <li key={quiz.id}>
+                      <button
+                        onClick={() => handleQuizSelect(quiz)}
+                        className={`w-full text-left px-4 py-2 text-sm ${
+                          selectedQuiz.id === quiz.id
+                            ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400"
+                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                        }`}
+                      >
+                        <div className="font-medium">{quiz.name}</div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Selected Quiz Info */}
+        {selectedQuiz.id !== "all" && (
+          <div className="w-full bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30 rounded-lg p-3 mb-2">
+            <div className="flex items-center text-indigo-700 dark:text-indigo-400">
+              <span className="text-sm font-medium">Viewing analytics for: </span>
+              <span className="ml-2 font-bold">{selectedQuiz.name}</span>
+            </div>
+          </div>
+        )}
+
         {/* KPI Cards */}
         <div className="grid gap-6 md:grid-cols-5">
           <div className="md:col-span-5 md:grid md:grid-cols-3 md:gap-6">
@@ -38,17 +315,33 @@ export default function DashboardPage() {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
                     <div className="h-[60px] w-[60px] flex items-center justify-center">
-                      <ProgressRing value={50} size={60} strokeWidth={6} />
+                      {isLoading ? (
+                        <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-[60px] w-[60px] rounded-full"></div>
+                      ) : (
+                        <ProgressRing value={completionRate.completionRate} size={60} strokeWidth={6} />
+                      )}
                     </div>
                     <div>
-                      <div className="text-3xl font-bold text-slate-800 dark:text-slate-200">50%</div>
+                      <div className="text-3xl font-bold text-slate-800 dark:text-slate-200">
+                        {isLoading ? (
+                          <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 w-16 rounded"></div>
+                        ) : (
+                          `${completionRate.completionRate}%`
+                        )}
+                      </div>
                       <div className="text-xs text-slate-500">of students completed</div>
                     </div>
                   </div>
-                  <div className="text-xs text-emerald-500 font-medium flex items-center bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-full">
-                    <ArrowUp className="h-3 w-3 mr-1" />
-                    5% from last quiz
-                  </div>
+                  {completionRate.change !== 0 && (
+                    <div className={`text-xs ${completionRate.change > 0 ? 'text-emerald-500' : 'text-red-500'} font-medium flex items-center ${completionRate.change > 0 ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-red-50 dark:bg-red-950/30'} px-2 py-1 rounded-full`}>
+                      {completionRate.change > 0 ? (
+                        <ArrowUp className="h-3 w-3 mr-1" />
+                      ) : (
+                        <ArrowDown className="h-3 w-3 mr-1" />
+                      )}
+                      {Math.abs(completionRate.change)}% from last quiz
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -64,16 +357,39 @@ export default function DashboardPage() {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
                     <div className="h-[60px] w-[60px] flex items-center justify-center">
-                      <ProgressRing value={80} size={60} strokeWidth={6} color="#818cf8" textColor="#818cf8" />
+                      {isLoading ? (
+                        <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-[60px] w-[60px] rounded-full"></div>
+                      ) : (
+                        <ProgressRing 
+                          value={averageScore.score !== null ? averageScore.score : 0} 
+                          size={60} 
+                          strokeWidth={6} 
+                          color="#818cf8" 
+                          textColor="#818cf8" 
+                        />
+                      )}
                     </div>
                     <div>
-                      <div className="text-3xl font-bold text-slate-800 dark:text-slate-200">24/30</div>
-                      <div className="text-xs text-slate-500">points on average</div>
+                      <div className="text-3xl font-bold text-slate-800 dark:text-slate-200">
+                        {isLoading ? (
+                          <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 w-16 rounded"></div>
+                        ) : (
+                          averageScore.score !== null ? `${averageScore.score}%` : 'N/A'
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-500">average score</div>
                     </div>
                   </div>
-                  <div className="text-xs text-emerald-500 font-medium flex items-center bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-full">
-                    <ArrowUp className="h-3 w-3 mr-1" />2 points from last quiz
-                  </div>
+                  {averageScore.change !== 0 && (
+                    <div className={`text-xs ${averageScore.change > 0 ? 'text-emerald-500' : 'text-red-500'} font-medium flex items-center ${averageScore.change > 0 ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-red-50 dark:bg-red-950/30'} px-2 py-1 rounded-full`}>
+                      {averageScore.change > 0 ? (
+                        <ArrowUp className="h-3 w-3 mr-1" />
+                      ) : (
+                        <ArrowDown className="h-3 w-3 mr-1" />
+                      )}
+                      {Math.abs(averageScore.change)} points from last quiz
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -89,17 +405,39 @@ export default function DashboardPage() {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
                     <div className="h-[60px] w-[60px] flex items-center justify-center">
-                      <ProgressRing value={78} size={60} strokeWidth={6} color="#a855f7" textColor="#a855f7" />
+                      {isLoading ? (
+                        <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-[60px] w-[60px] rounded-full"></div>
+                      ) : (
+                        <ProgressRing 
+                          value={medianScore.score !== null ? medianScore.score : 0} 
+                          size={60} 
+                          strokeWidth={6} 
+                          color="#a855f7" 
+                          textColor="#a855f7" 
+                        />
+                      )}
                     </div>
                     <div>
-                      <div className="text-3xl font-bold text-slate-800 dark:text-slate-200">78%</div>
+                      <div className="text-3xl font-bold text-slate-800 dark:text-slate-200">
+                        {isLoading ? (
+                          <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 w-16 rounded"></div>
+                        ) : (
+                          medianScore.score !== null ? `${medianScore.score}%` : 'N/A'
+                        )}
+                      </div>
                       <div className="text-xs text-slate-500">median performance</div>
                     </div>
                   </div>
-                  <div className="text-xs text-emerald-500 font-medium flex items-center bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-full">
-                    <ArrowUp className="h-3 w-3 mr-1" />
-                    3% from last quiz
-                  </div>
+                  {medianScore.change !== 0 && (
+                    <div className={`text-xs ${medianScore.change > 0 ? 'text-emerald-500' : 'text-red-500'} font-medium flex items-center ${medianScore.change > 0 ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-red-50 dark:bg-red-950/30'} px-2 py-1 rounded-full`}>
+                      {medianScore.change > 0 ? (
+                        <ArrowUp className="h-3 w-3 mr-1" />
+                      ) : (
+                        <ArrowDown className="h-3 w-3 mr-1" />
+                      )}
+                      {Math.abs(medianScore.change)} points from last quiz
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -128,7 +466,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="p-4">
-              <ClassAverageChart />
+              <ClassAverageChart quizId={selectedQuiz.id} teacherId={TEACHER_ID} />
             </div>
           </div>
           
@@ -152,7 +490,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="p-4">
-              <ConceptMasteryChart />
+              <ConceptMasteryChart quizId={selectedQuiz.id} teacherId={TEACHER_ID} />
             </div>
           </div>
           
@@ -175,7 +513,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="p-3">
-              <StudentPerformanceTable />
+              <StudentPerformanceTable quizId={selectedQuiz.id} teacherId={TEACHER_ID} />
             </div>
           </div>
         </div>
