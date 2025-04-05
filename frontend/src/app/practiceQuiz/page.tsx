@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { FileText, FolderPlus, Plus, Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import * as React from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { FileText, FolderPlus, Plus, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +13,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
-import { FolderActions } from "@/components/ui/folder-actions"
+import { FolderActions } from "@/components/ui/folder-actions";
 
 // Define types for our data
 interface QuizFolder {
@@ -45,45 +45,54 @@ interface QuizFolder {
 // }
 
 const PracticeQuizPage: React.FC = () => {
-  const [showNewFolderDialog, setShowNewFolderDialog] = useState(false)
-  const [newFolderName, setNewFolderName] = useState("")
-  const [activeFolder, setActiveFolder] = useState("All Documents")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [folders, setFolders] = useState<QuizFolder[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [activeFolder, setActiveFolder] = useState("All Documents");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [folders, setFolders] = useState<QuizFolder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isAssignPopupOpen, setIsAssignPopupOpen] = useState(false);
+  const [assignFolderId, setAssignFolderId] = useState<number | null>(null);
+  const [students, setStudents] = useState<string[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [individualSelect, setIndividualSelect] = useState("");
+
   // const [questions, setQuestions] = useState<Question[]>([])
   // const setQuestions = useRef<Question[]>
   // const [selectedSubject, setSelectedSubject] = useState("")
   // const [selectedBanding, setSelectedBanding] = useState("")
   // const [selectedLevel, setSelectedLevel] = useState("")
-  const selectedSubject=""
-  const selectedBanding=""
-  const selectedLevel=""
+  const selectedSubject = "";
+  const selectedBanding = "";
+  const selectedLevel = "";
 
   // Fetch folders when component mounts
   useEffect(() => {
-    fetchFolders()
-  }, [])
+    fetchFolders();
+  }, []);
 
   const fetchFolders = async () => {
     try {
-      setLoading(true)
-      const response = await fetch('http://localhost:5003/api/openpracticequiz/getFolders?username=sharon001')
+      setLoading(true);
+      const response = await fetch(
+        "http://localhost:5003/api/openpracticequiz/getFolders?username=sharon001"
+      );
       if (!response.ok) {
-        throw new Error(`Failed to fetch folders: ${response.statusText}`)
+        throw new Error(`Failed to fetch folders: ${response.statusText}`);
       }
-      const data = await response.json()
-      setFolders(data)
-      setError(null)
+      const data = await response.json();
+      setFolders(data);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch folders')
-      console.error('Error fetching folders:', err)
+      setError(err instanceof Error ? err.message : "Failed to fetch folders");
+      console.error("Error fetching folders:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // const fetchFilteredQuestions = async () => {
   //   if (!selectedSubject || !selectedBanding || !selectedLevel) {
@@ -110,96 +119,186 @@ const PracticeQuizPage: React.FC = () => {
   // }
 
   // Get unique subjects from folders for the sidebar
-  const uniqueSubjects = ["All Documents", ...new Set(folders.map(folder => folder.subject))]
+  const uniqueSubjects = [
+    "All Documents",
+    ...new Set(folders.map((folder) => folder.subject)),
+  ];
 
   // Filter folders based on search and active folder
   const filteredFolders = folders.filter((folder) => {
-    const matchesFolder = activeFolder === "All Documents" || folder.subject === activeFolder
-    const matchesSearch = folder.folder_name.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesFolder && matchesSearch
-  })
+    const matchesFolder =
+      activeFolder === "All Documents" || folder.subject === activeFolder;
+    const matchesSearch = folder.folder_name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    return matchesFolder && matchesSearch;
+  });
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) {
-      setError("Folder name is required")
-      return
+      setError("Folder name is required");
+      return;
     }
 
     try {
-      setLoading(true)
-      const response = await fetch('http://localhost:5003/api/openpracticequiz/saveQuiz', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: 'sharon001',
-          folder_name: newFolderName,
-          subject: selectedSubject || 'General',
-          banding: selectedBanding || 'All',
-          level: selectedLevel || 'All',
-          question_ids: []
-        }),
-      })
+      setLoading(true);
+      const response = await fetch(
+        "http://localhost:5003/api/openpracticequiz/saveQuiz",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: "sharon001",
+            folder_name: newFolderName,
+            subject: selectedSubject || "General",
+            banding: selectedBanding || "All",
+            level: selectedLevel || "All",
+            question_ids: [],
+          }),
+        }
+      );
 
       if (!response.ok) {
-        const errorData = await response.text()
-        throw new Error(`Failed to create folder: ${response.status} ${response.statusText}\n${errorData}`)
+        const errorData = await response.text();
+        throw new Error(
+          `Failed to create folder: ${response.status} ${response.statusText}\n${errorData}`
+        );
       }
 
-      await fetchFolders() // Refresh the folders list
-      setShowNewFolderDialog(false)
-      setNewFolderName("")
-      setError(null)
+      await fetchFolders(); // Refresh the folders list
+      setShowNewFolderDialog(false);
+      setNewFolderName("");
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create folder')
-      console.error('Error creating folder:', err)
+      setError(err instanceof Error ? err.message : "Failed to create folder");
+      console.error("Error creating folder:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDeleteFolder = async (folderId: number) => {
     try {
-      setLoading(true)
-      const response = await fetch(`http://localhost:5003/api/practiceQuiz/deleteFolder/${folderId}`, {
-        method: 'DELETE',
-      })
-      
+      setLoading(true);
+      const response = await fetch(
+        `http://localhost:5003/api/practiceQuiz/deleteFolder/${folderId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to delete folder')
+        throw new Error("Failed to delete folder");
       }
-      
-      await fetchFolders()
+
+      await fetchFolders();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete folder')
+      setError(err instanceof Error ? err.message : "Failed to delete folder");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  const handleAssignFolder = async (folderId: number) => {
+    try {
+      setAssignFolderId(folderId);
+      setIsAssignPopupOpen(true);
+      setLoading(true); // Show loading state while fetching students
+
+      const response = await fetch(
+        "http://localhost:5003/api/accountHandling/getStudentList"
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to fetch students: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setStudents(data["students"]);
+      console.log(data);
+      console.log(`student : ${students}`);
+    } catch (err) {
+      console.error("Error fetching students:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch students");
+    } finally {
+      setLoading(false); // Hide loading state after fetching
+    }
+  };
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedStudents([...students]);
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+
+  const handleToggleStudent = (student: string) => {
+    if (selectedStudents.includes(student)) {
+      setSelectedStudents(selectedStudents.filter((s) => s !== student));
+    } else {
+      setSelectedStudents([...selectedStudents, student]);
+    }
+  };
+
+  const handleConfirmAssignFolder = async () => {
+    if (!assignFolderId) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `http://localhost:5003/api/practiceQuiz/assignFolder/${assignFolderId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: "sharon001", // Replace with dynamic username if needed
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to assign folder");
+      }
+
+      console.log("Folder assigned successfully");
+      setIsAssignPopupOpen(false);
+      setAssignFolderId(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to assign folder");
+      console.error("Error assigning folder:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleShareFolder = (folderId: number) => {
     // Implement share functionality
-    console.log('Sharing folder:', folderId)
-  }
+    console.log("Sharing folder:", folderId);
+  };
 
   const handleDownloadFolder = (folderId: number) => {
     // Implement download functionality
-    console.log('Downloading folder:', folderId)
-  }
+    console.log("Downloading folder:", folderId);
+  };
 
   // Function to format the relative time
   const getRelativeTime = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
-    
-    if (diffInDays === 0) return "Today"
-    if (diffInDays === 1) return "Yesterday"
-    if (diffInDays < 7) return `${diffInDays} days ago`
-    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`
-    return `${Math.floor(diffInDays / 30)} months ago`
-  }
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInDays = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (diffInDays === 0) return "Today";
+    if (diffInDays === 1) return "Yesterday";
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+    return `${Math.floor(diffInDays / 30)} months ago`;
+  };
 
   if (loading) {
     return (
@@ -207,11 +306,13 @@ const PracticeQuizPage: React.FC = () => {
         <main className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7C3AED]"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">
+              Loading...
+            </span>
           </div>
         </main>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -220,8 +321,8 @@ const PracticeQuizPage: React.FC = () => {
         <main className="container mx-auto px-4 py-8">
           <div className="text-center text-red-600 dark:text-red-400">
             <p>{error}</p>
-            <Button 
-              onClick={fetchFolders} 
+            <Button
+              onClick={fetchFolders}
               className="mt-4 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:from-[#6D28D9] hover:to-[#5B21B6] text-white transition-all duration-200 shadow-sm hover:shadow-md"
             >
               Retry
@@ -229,7 +330,7 @@ const PracticeQuizPage: React.FC = () => {
           </div>
         </main>
       </div>
-    )
+    );
   }
 
   return (
@@ -237,13 +338,17 @@ const PracticeQuizPage: React.FC = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Practice Quiz</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage and organize your quiz folders</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Practice Quiz
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Manage and organize your quiz folders
+            </p>
           </div>
           <div className="flex gap-3">
-            <Button 
-              variant="outline" 
-              className="gap-2 rounded-lg border-[#7C3AED] dark:border-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 text-[#7C3AED] dark:text-[#7C3AED] transition-all duration-200" 
+            <Button
+              variant="outline"
+              className="gap-2 rounded-lg border-[#7C3AED] dark:border-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 text-[#7C3AED] dark:text-[#7C3AED] transition-all duration-200"
               onClick={() => setShowNewFolderDialog(true)}
             >
               <FolderPlus className="h-4 w-4" />
@@ -261,22 +366,25 @@ const PracticeQuizPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Subjects</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                Subjects
+              </h3>
               <ul className="space-y-1">
-                {uniqueSubjects && uniqueSubjects.map((subject) => (
-                  <li key={subject}>
-                    <button
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                        activeFolder === subject
-                          ? "bg-gradient-to-r from-[#7C3AED]/10 to-[#7C3AED]/20 dark:from-[#7C3AED]/20 dark:to-[#7C3AED]/30 text-[#7C3AED] dark:text-[#7C3AED] font-medium shadow-sm"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-[#7C3AED]/5 dark:hover:bg-[#7C3AED]/10"
-                      }`}
-                      onClick={() => setActiveFolder(subject)}
-                    >
-                      {subject}
-                    </button>
-                  </li>
-                ))}
+                {uniqueSubjects &&
+                  uniqueSubjects.map((subject) => (
+                    <li key={subject}>
+                      <button
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                          activeFolder === subject
+                            ? "bg-gradient-to-r from-[#7C3AED]/10 to-[#7C3AED]/20 dark:from-[#7C3AED]/20 dark:to-[#7C3AED]/30 text-[#7C3AED] dark:text-[#7C3AED] font-medium shadow-sm"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-[#7C3AED]/5 dark:hover:bg-[#7C3AED]/10"
+                        }`}
+                        onClick={() => setActiveFolder(subject)}
+                      >
+                        {subject}
+                      </button>
+                    </li>
+                  ))}
               </ul>
             </div>
           </div>
@@ -343,7 +451,9 @@ const PracticeQuizPage: React.FC = () => {
 
             {filteredFolders.length === 0 ? (
               <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-8 text-center">
-                <p className="text-gray-500 dark:text-gray-400">No quizzes found. Create a new folder to get started.</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  No quizzes found. Create a new folder to get started.
+                </p>
               </div>
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -355,7 +465,9 @@ const PracticeQuizPage: React.FC = () => {
                     <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <FileText className="h-5 w-5 text-[#7C3AED] dark:text-[#7C3AED]" />
-                        <h4 className="font-medium text-gray-900 dark:text-white truncate">{folder.folder_name}</h4>
+                        <h4 className="font-medium text-gray-900 dark:text-white truncate">
+                          {folder.folder_name}
+                        </h4>
                       </div>
                       <FolderActions
                         folderId={folder.id}
@@ -363,16 +475,19 @@ const PracticeQuizPage: React.FC = () => {
                         onDelete={handleDeleteFolder}
                         onShare={handleShareFolder}
                         onDownload={handleDownloadFolder}
+                        onAssign={handleAssignFolder}
                       />
                     </div>
                     <div className="p-4">
                       <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-4">
                         <span>{folder.questionCount} questions</span>
-                        <span>Modified {getRelativeTime(folder.created_at)}</span>
+                        <span>
+                          Modified {getRelativeTime(folder.created_at)}
+                        </span>
                       </div>
                       <Link href={`/practiceQuiz/${folder.id}`}>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="w-full rounded-lg border-[#7C3AED] dark:border-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 text-[#7C3AED] dark:text-[#7C3AED] transition-all duration-200"
                         >
                           Open Quiz
@@ -406,11 +521,16 @@ const PracticeQuizPage: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                     {filteredFolders.map((folder) => (
-                      <tr key={folder.id} className="hover:bg-[#7C3AED]/5 dark:hover:bg-[#7C3AED]/10 transition-all duration-200">
+                      <tr
+                        key={folder.id}
+                        className="hover:bg-[#7C3AED]/5 dark:hover:bg-[#7C3AED]/10 transition-all duration-200"
+                      >
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center">
                             <FileText className="h-5 w-5 text-[#7C3AED] dark:text-[#7C3AED] mr-2" />
-                            <span className="font-medium text-gray-900 dark:text-white">{folder.folder_name}</span>
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {folder.folder_name}
+                            </span>
                           </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-300">
@@ -419,7 +539,9 @@ const PracticeQuizPage: React.FC = () => {
                         <td className="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-300">
                           {getRelativeTime(folder.created_at)}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-300">{folder.subject}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-300">
+                          {folder.subject}
+                        </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right">
                           <FolderActions
                             folderId={folder.id}
@@ -427,6 +549,7 @@ const PracticeQuizPage: React.FC = () => {
                             onDelete={handleDeleteFolder}
                             onShare={handleShareFolder}
                             onDownload={handleDownloadFolder}
+                            onAssign={handleAssignFolder}
                           />
                         </td>
                       </tr>
@@ -438,17 +561,128 @@ const PracticeQuizPage: React.FC = () => {
           </div>
         </div>
       </main>
+      <Dialog open={isAssignPopupOpen} onOpenChange={setIsAssignPopupOpen}>
+        <DialogContent className="bg-white dark:bg-gray-900 border-[#7C3AED] dark:border-[#7C3AED] rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 dark:text-white">
+              Assign Folder
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-300">
+              Select a student to assign this folder.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-4">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block">
+              <input
+                type="checkbox"
+                checked={selectAll}
+                onChange={(e) => {
+                  setSelectAll(e.target.checked);
+                  if (e.target.checked) {
+                    setSelectedStudents(students); // select all student objects
+                  } else {
+                    setSelectedStudents([]);
+                  }
+                }}
+                className="mr-2"
+              />
+              Select All Students
+            </label>
+
+            <div className="space-y-2">
+              {!selectAll && (
+                <select
+                  value={individualSelect}
+                  onChange={(e) => {
+                    const selectedId = parseInt(e.target.value);
+                    const selectedStudent = students.find(
+                      (s) => s.student_id === selectedId
+                    );
+                    if (
+                      selectedStudent &&
+                      !selectedStudents.some(
+                        (s) => s.student_id === selectedStudent.student_id
+                      )
+                    ) {
+                      setSelectedStudents([
+                        ...selectedStudents,
+                        selectedStudent,
+                      ]);
+                    }
+                    setIndividualSelect(""); // Reset dropdown
+                  }}
+                  className="w-full rounded-lg border-[#7C3AED] dark:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 text-black dark:text-black"
+                >
+                  <option value="" disabled>
+                    -- Select a Student --
+                  </option>
+                  {students.map((student) => (
+                    <option key={student.student_id} value={student.student_id}>
+                      {student.username}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {selectedStudents.map((student) => (
+                <div
+                  key={student.student_id}
+                  className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 rounded px-3 py-1"
+                >
+                  <span className="text-gray-800 dark:text-gray-200">
+                    {student.username}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setSelectedStudents(
+                        selectedStudents.filter(
+                          (s) => s.student_id !== student.student_id
+                        )
+                      )
+                    }
+                    className="text-red-500 hover:text-red-700 text-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAssignPopupOpen(false)}
+              className="rounded-lg border-[#7C3AED] dark:border-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 text-[#7C3AED] dark:text-[#7C3AED] transition-all duration-200"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmAssignFolder}
+              className="rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:from-[#6D28D9] hover:to-[#5B21B6] text-white transition-all duration-200 shadow-sm hover:shadow-md"
+              disabled={loading || selectedStudents.length === 0}
+            >
+              {loading ? "Assigning..." : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showNewFolderDialog} onOpenChange={setShowNewFolderDialog}>
         <DialogContent className="bg-white dark:bg-gray-900 border-[#7C3AED] dark:border-[#7C3AED] rounded-xl">
           <DialogHeader>
-            <DialogTitle className="text-gray-900 dark:text-white">Create New Folder</DialogTitle>
+            <DialogTitle className="text-gray-900 dark:text-white">
+              Create New Folder
+            </DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-300">
               Create a new folder to organize your quizzes.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Folder Name</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">
+              Folder Name
+            </label>
             <Input
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
@@ -457,9 +691,9 @@ const PracticeQuizPage: React.FC = () => {
             />
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowNewFolderDialog(false)} 
+            <Button
+              variant="outline"
+              onClick={() => setShowNewFolderDialog(false)}
               className="rounded-lg border-[#7C3AED] dark:border-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 text-[#7C3AED] dark:text-[#7C3AED] transition-all duration-200"
             >
               Cancel
@@ -475,7 +709,7 @@ const PracticeQuizPage: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};
 
-export default PracticeQuizPage
+export default PracticeQuizPage;

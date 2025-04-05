@@ -25,6 +25,7 @@ interface FolderActionsProps {
   onDelete: (folderId: number) => void;
   onShare: (folderId: number) => void;
   onDownload: (folderId: number) => void;
+  onAssign?: (folderId: number) => void
 }
 
 export function FolderActions({
@@ -33,6 +34,7 @@ export function FolderActions({
   onDelete,
   onShare,
   onDownload,
+  onAssign,
 }: FolderActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
@@ -63,6 +65,13 @@ export function FolderActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48 border-[#7C3AED] dark:border-[#7C3AED]">
+         <DropdownMenuItem
+            onClick={() => onAssign && onAssign(folderId)}
+            className="cursor-pointer text-[#7C3AED] dark:text-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 transition-all duration-200"
+          >
+            <Share2 className="mr-2 h-4 w-4 text-[#7C3AED] dark:text-[#7C3AED]" />
+            Assign Quiz
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => onShare(folderId)}
             className="cursor-pointer text-[#7C3AED] dark:text-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 transition-all duration-200"
