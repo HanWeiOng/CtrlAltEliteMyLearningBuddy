@@ -10,6 +10,7 @@ export default function InsertSyllabusPage() {
   );
   const [selectedLevel, setSelectedLevel] = useState<string>("PSLE");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  
 
   const updateFilters = (
     subject: string,

@@ -23,6 +23,7 @@ import { ClassAverageChart } from "@/components/class-average-chart";
 import { ConceptMasteryChart } from "@/components/concept-mastery-chart";
 import { StudentPerformanceTable } from "@/components/student-performance-table";
 import { ProgressRing } from "@/components/progress-ring";
+import withRoleRestriction from "@/components/withRoleRestriction";
 
 // Quiz data structure
 type Quiz = {
@@ -761,3 +762,7 @@ export default function DashboardPage() {
     </div>
   );
 } 
+export const getServerSideProps = withRoleRestriction(
+  DashboardPage,
+  ["teacher"]
+);

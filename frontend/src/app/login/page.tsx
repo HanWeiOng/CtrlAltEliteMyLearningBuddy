@@ -1,5 +1,6 @@
 'use client'
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const App: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -7,6 +8,7 @@ const App: React.FC = () => {
   const [loggedInUser, setLoggedInUser] = useState<{ username: string; position: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +22,7 @@ const App: React.FC = () => {
         body: JSON.stringify({ username, password }),
       });
 
-      console.log(response)
+      console.log(response);
 
       const data = await response.json();
 
@@ -29,7 +31,12 @@ const App: React.FC = () => {
         setLoading(false);
         return;
       }
-
+      // Store account_id in localStorage
+      console.log(data.account.position);
+      localStorage.setItem('session_id', data.account_id);
+      localStorage.setItem('user_position', data.account.position);
+      // Redirect to the dashboard or another page
+      router.push('/practiceQuiz');
       setLoggedInUser({ username: data.account.username, position: data.account.position });
       setUsername('');
       setPassword('');
@@ -40,26 +47,12 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    setLoggedInUser(null);
-    setUsername('');
-    setPassword('');
-    setError(null);
-  };
-
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
         {loggedInUser ? (
           <>
-            <h2 className="text-2xl font-bold mb-4">Welcome, {loggedInUser.username}!</h2>
-            <p className="mb-6 text-gray-700">Position: {loggedInUser.position}</p>
-            <button
-              onClick={handleLogout}
-              className="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600 transition"
-            >
-              Logout
-            </button>
+    
           </>
         ) : (
           <>
