@@ -205,11 +205,11 @@ router.post('/saveQuiz', validateQuizInput, async (req, res) => {
 
 // Route to get all folders for a user 
 router.get('/getFolders', async (req, res) => {
-    const { username } = req.query;
+    const { teacherId } = req.query;
 
-    if (!username) {
+    if (!teacherId) {
         return res.status(400).json({
-            message: 'Username is required'
+            message: 'TeacherID is required'
         });
     }
 
@@ -224,9 +224,9 @@ router.get('/getFolders', async (req, res) => {
                 question_ids,
                 created_at
             FROM questions_folder 
-            WHERE username = $1
+            WHERE teacher_id = $1
             ORDER BY created_at DESC
-        `, [username]);
+        `, [teacherId]);
 
         // For each folder, get the count of questions
         const foldersWithQuestionCount = result.rows.map(folder => ({

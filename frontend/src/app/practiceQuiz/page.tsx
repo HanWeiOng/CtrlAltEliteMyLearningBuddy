@@ -87,15 +87,25 @@ const PracticeQuizPage: React.FC = () => {
     } else {
       setSessionId(storedSessionId);
       setUserPosition(storedUserPosition);
-      fetchFolders();
     }
   }, [router]);
 
+  useEffect(() => {
+    if (sessionId) {
+      fetchFolders();
+    }
+  }, [sessionId]);
+  console.log("sessionId", sessionId);
   const fetchFolders = async () => {
+    if (!sessionId) {
+      console.error("Session ID is null or undefined");
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await fetch(
-        "http://localhost:5003/api/openpracticequiz/getFolders?username=sharon001"
+        `http://localhost:5003/api/openpracticequiz/getFolders?teacherId=${sessionId}`
       );
       if (!response.ok) {
         throw new Error(`Failed to fetch folders: ${response.statusText}`);
