@@ -285,7 +285,7 @@ export default function DashboardPage() {
   }, [selectedQuiz]);
 
   return (
-    <RoleRestrictionWrapper allowedRoles={["Teacher"]}>
+    <RoleRestrictionWrapper allowedRoles={["teacher"]}>
       <div className="flex w-full flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
         <main className="flex flex-col gap-6 p-4 md:gap-8 md:p-8">
           {/* Quiz Selector */}

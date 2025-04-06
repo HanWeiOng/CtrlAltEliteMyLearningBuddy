@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   FileText,
   Edit,
@@ -13,6 +14,13 @@ import {
 
 export default function Navbar() {
   const pathname = usePathname(); // Get current page path
+  const [role, setRole] = useState<string | null>(null);
+
+  // Get user role from localStorage after client renders
+  useEffect(() => {
+    const storedRole = localStorage.getItem("user_position");
+    setRole(storedRole);
+  }, []);
 
   const navItems = [
     {

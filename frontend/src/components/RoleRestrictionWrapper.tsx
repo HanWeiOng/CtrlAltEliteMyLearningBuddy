@@ -17,7 +17,6 @@ export default function RoleRestrictionWrapper({
   useEffect(() => {
     // Check if the user's position is stored in session storage
     const userPosition = localStorage.getItem("user_position");
-    console.log("User Position:", userPosition);
 
     // If no position is set, redirect to practiceQuiz as a fallback
     if (!userPosition) {

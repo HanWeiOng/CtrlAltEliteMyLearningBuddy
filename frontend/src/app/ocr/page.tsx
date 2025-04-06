@@ -176,7 +176,7 @@ export default function UploadPage() {
   };
 
   return (
-    <RoleRestrictionWrapper allowedRoles={["Teacher"]}>
+    <RoleRestrictionWrapper allowedRoles={["teacher"]}>
       <div className="container py-8">
         <div className="flex-1 p-6">
           <div className="mb-8">

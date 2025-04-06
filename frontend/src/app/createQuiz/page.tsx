@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Plus, Trash, Search } from "lucide-react";
 import Image from "next/image";
 import Sidebar from "../../components/ui/sidebar";
 import Popup from "../../components/ui/popup";
 import QuizModal from "../../components/ui/quiz-modal";
 import RoleRestrictionWrapper from "@/components/RoleRestrictionWrapper";
+import { useRouter } from "next/navigation";
+
 
 export default function CreateQuizPage() {
   const [selectedSubject, setSelectedSubject] = useState<string>("");
@@ -15,7 +17,20 @@ export default function CreateQuizPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const router = useRouter();
+  useEffect(() => {
+    const storedSessionId = localStorage.getItem("session_id");
+    const storedUsername = localStorage.getItem("username");
+    if (!storedSessionId) {
+      router.push("/");
+    } else {
+      setSessionId(storedSessionId);
+      setUsername(storedUsername);
+    }
+  }, [router]);
+  
   const updateFilters = (
     subject:
       | "Biology"
@@ -178,6 +193,8 @@ export default function CreateQuizPage() {
     try {
       setIsSaving(true);
       const questionIds = savedQuestions.map((q) => q.id);
+      console.log(username);
+      console.log(sessionId)
 
       const response = await fetch(
         `http://localhost:5003/api/openpracticequiz/saveQuiz`,
@@ -187,12 +204,13 @@ export default function CreateQuizPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            username: "sharon001",
+            username: username,
             folder_name: quizName,
             subject: selectedSubject,
             banding: selectedBanding,
             level: selectedLevel,
             question_ids: questionIds,
+            teacher_id : sessionId
           }),
         }
       );
@@ -215,7 +233,7 @@ export default function CreateQuizPage() {
   };
 
   return (
-    <RoleRestrictionWrapper allowedRoles={["Teacher"]}>
+    <RoleRestrictionWrapper allowedRoles={["teacher"]}>
       <div className="flex flex-col min-h-screen bg-gray-100">
         <div className="flex flex-grow">
           <div className="w-1/5 p-4 bg-white shadow-md">

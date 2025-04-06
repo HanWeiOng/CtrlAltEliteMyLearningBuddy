@@ -73,7 +73,7 @@ export default function InsertSyllabusPage() {
   };
 
   return (
-    <RoleRestrictionWrapper allowedRoles={["Teacher"]}>
+    <RoleRestrictionWrapper allowedRoles={["teacher"]}>
     <div className="min-h-screen flex flex-col">
       <div className="flex flex-1 flex-col p-8">
         <h1 className="text-2xl font-bold mb-4">Insert Syllabus</h1>

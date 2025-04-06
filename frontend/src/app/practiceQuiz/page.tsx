@@ -95,7 +95,6 @@ const PracticeQuizPage: React.FC = () => {
       fetchFolders();
     }
   }, [sessionId]);
-  console.log("sessionId", sessionId);
   const fetchFolders = async () => {
     if (!sessionId) {
       console.error("Session ID is null or undefined");
