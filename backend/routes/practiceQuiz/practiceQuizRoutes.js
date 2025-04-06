@@ -379,7 +379,9 @@ router.post('/assignQuiz', async (req, res) => {
             // If not exists, assign (insert)
             await client.query(
                 `INSERT INTO quiz_assignment_table (student_id, teacher_id, quiz_folder_id) 
-                 VALUES ($1, $2, $3)`,
+                 VALUES ($1, $2, $3)`
+
+                 ,
                 [student_id, teacher_id, quiz_folder_id] // 🔥 corrected order!
             );
             operation = "assigned";
@@ -404,7 +406,8 @@ router.get('/getQuizAssigned/:quiz_folder_id', async (req, res) => {
         }
     
         const all_account_name = await client.query(
-            `SELECT account_id, username FROM account_table`
+            `SELECT account_id, username FROM account_table
+            where position = 'student'`
         );
     
         const student_assigned = await client.query(

@@ -46,6 +46,11 @@ interface QuizFolder {
 // }
 
 const PracticeQuizPage: React.FC = () => {
+  interface Student {
+    account_id: number;
+    username: string;
+    assigned: boolean; // Indicates if the student is assigned
+  }
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [activeFolder, setActiveFolder] = useState("All Documents");
@@ -56,7 +61,7 @@ const PracticeQuizPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isAssignPopupOpen, setIsAssignPopupOpen] = useState(false);
   const [assignFolderId, setAssignFolderId] = useState<number | null>(null);
-  const [students, setStudents] = useState<string[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [individualSelect, setIndividualSelect] = useState("");
@@ -86,7 +91,7 @@ const PracticeQuizPage: React.FC = () => {
       fetchFolders();
     }
   }, [router]);
- 
+
   const fetchFolders = async () => {
     try {
       setLoading(true);
@@ -217,21 +222,34 @@ const PracticeQuizPage: React.FC = () => {
   const handleAssignFolder = async (folderId: number) => {
     try {
       setAssignFolderId(folderId);
-
       setIsAssignPopupOpen(true);
       setLoading(true); // Show loading state while fetching students
 
       const response = await fetch(
-        "http://localhost:5003/api/accountHandling/getStudentList"
+        `http://localhost:5003/api/openpracticequiz/getQuizAssigned/${folderId}`
       );
       if (!response.ok) {
         throw new Error(`Failed to fetch students: ${response.statusText}`);
       }
 
       const data = await response.json();
-      setStudents(data["students"]);
-      console.log(data);
-      console.log(`student : ${students}`);
+
+      // Combine assigned and unassigned students into one list
+      const allStudents = [
+        ...data.assignedStudents.map((student: any) => ({
+          ...student,
+          assigned: true, // Mark as assigned
+        })),
+        ...data.unassignedStudents.map((student: any) => ({
+          ...student,
+          assigned: false, // Mark as unassigned
+        })),
+      ];
+
+      setStudents(allStudents); // Update the students state
+      setSelectedStudents(
+        data.assignedStudents.map((student: any) => student.account_id) // Pre-select assigned students
+      );
     } catch (err) {
       console.error("Error fetching students:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch students");
@@ -239,71 +257,84 @@ const PracticeQuizPage: React.FC = () => {
       setLoading(false); // Hide loading state after fetching
     }
   };
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = async (checked: boolean) => {
     setSelectAll(checked);
+
     if (checked) {
-      setSelectedStudents([...students]);
+      // Select all students
+      const allStudentIds = students.map((student) => student.account_id);
+
+      // Filter out students who are already assigned
+      const unassignedStudentIds = allStudentIds.filter(
+        (studentId) => !selectedStudents.includes(studentId)
+      );
+
+      // Call the backend only for unassigned students
+      await Promise.all(
+        unassignedStudentIds.map(
+          (studentId) => handleToggleStudent(studentId, true) // Pass `true` to indicate assigning
+        )
+      );
+
+      // Update the state in bulk after all backend calls are completed
+      setSelectedStudents(allStudentIds);
     } else {
+      // Deselect all students
+      const allStudentIds = selectedStudents; // Currently selected students
+
+      // Call the backend for each student to unassign them
+      await Promise.all(
+        allStudentIds.map(
+          (studentId) => handleToggleStudent(studentId, false) // Pass `false` to indicate unassigning
+        )
+      );
+
+      // Clear the state in bulk after all backend calls are completed
       setSelectedStudents([]);
     }
   };
 
-  const handleToggleStudent = (student: string) => {
-    if (selectedStudents.includes(student)) {
-      setSelectedStudents(selectedStudents.filter((s) => s !== student));
-    } else {
-      setSelectedStudents([...selectedStudents, student]);
-    }
-  };
-
-  const handleConfirmAssignFolder = async () => {
-    const teacherId = 5; // hardcoded
-    const quizFolderId = assignFolderId; // replace with your actual folder ID state
-    console.log(quizFolderId);
-    console.log(selectedStudents);
-
-    if (!quizFolderId) {
-      console.error("Quiz folder ID is not set");
-      return;
-    }
-
+  const handleToggleStudent = async (studentId: number) => {
+    const isCurrentlyAssigned = selectedStudents.includes(studentId);
+    console.log(studentId);
     try {
-      for (const student of selectedStudents) {
-        console.log(student["student_id"]);
-        console.log(teacherId);
-        console.log(quizFolderId);
-        const response = await fetch(
-          "http://localhost:5003/api/openpracticequiz/assignQuiz",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              student_id: student["student_id"],
-              teacher_id: teacherId,
-              quiz_folder_id: quizFolderId,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error(
-            `Error assigning quiz to student ${student["student_id"]}:`,
-            errorData
-          );
-        } else {
-          console.log(`Assigned quiz to ${student["student_id"]}`);
+      // Update the backend to assign or unassign the student
+      const response = await fetch(
+        "http://localhost:5003/api/openpracticequiz/assignQuiz",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            student_id: studentId,
+            teacher_id: sessionId, // Use the sessionId as the teacher ID
+            quiz_folder_id: assignFolderId, // Use the current folder ID
+          }),
         }
+      );
+      console.log(response);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error(
+          `Error updating assignment for student ${studentId}:`,
+
+          errorData
+        );
+        return;
       }
 
-      alert("Quiz assigned to all selected students!");
-      setIsAssignPopupOpen(false);
-      setSelectedStudents([]);
+      // Update the local state based on the current assignment status
+      if (isCurrentlyAssigned) {
+        // If the student is currently assigned, unassign them
+        setSelectedStudents(selectedStudents.filter((id) => id !== studentId));
+      } else {
+        // If the student is currently unassigned, assign them
+        setSelectedStudents([...selectedStudents, studentId]);
+      }
     } catch (error) {
-      console.error("Error assigning quiz:", error);
-      alert("Failed to assign quiz.");
+      console.error("Error updating student assignment:", error);
     }
   };
 
@@ -594,94 +625,72 @@ const PracticeQuizPage: React.FC = () => {
         </div>
       </main>
       <Dialog open={isAssignPopupOpen} onOpenChange={setIsAssignPopupOpen}>
-        <DialogContent className="bg-white dark:bg-gray-900 border-[#7C3AED] dark:border-[#7C3AED] rounded-xl">
+        <DialogContent className="bg-white dark:bg-gray-900 border-[#7C3AED] dark:border-[#7C3AED] rounded-xl max-w-4xl">
           <DialogHeader>
             <DialogTitle className="text-gray-900 dark:text-white">
               Assign Folder
             </DialogTitle>
             <DialogDescription className="text-gray-600 dark:text-gray-300">
-              Select a student to assign this folder.
+              Select students to assign this folder.
             </DialogDescription>
           </DialogHeader>
-
-          <div className="py-4 space-y-4">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block">
+          <div className="py-4 max-h-96 overflow-y-auto">
+            {/* Add Select All checkbox */}
+            <div className="flex items-center mb-4">
               <input
                 type="checkbox"
-                checked={selectAll}
-                onChange={(e) => {
-                  setSelectAll(e.target.checked);
-                  if (e.target.checked) {
-                    setSelectedStudents(students); // select all student objects
-                  } else {
-                    setSelectedStudents([]);
-                  }
-                }}
-                className="mr-2"
+                checked={
+                  students.length > 0 &&
+                  selectedStudents.length === students.length
+                }
+                onChange={(e) => handleSelectAll(e.target.checked)}
+                className="h-4 w-4 text-[#7C3AED] border-gray-300 rounded focus:ring-[#7C3AED]"
               />
-              Select All Students
-            </label>
-
-            <div className="space-y-2">
-              {!selectAll && (
-                <select
-                  value={individualSelect}
-                  onChange={(e) => {
-                    const selectedId = parseInt(e.target.value);
-                    const selectedStudent = students.find(
-                      (s) => s.student_id === selectedId
-                    );
-                    if (
-                      selectedStudent &&
-                      !selectedStudents.some(
-                        (s) => s.student_id === selectedStudent.student_id
-                      )
-                    ) {
-                      setSelectedStudents([
-                        ...selectedStudents,
-                        selectedStudent,
-                      ]);
-                    }
-                    setIndividualSelect(""); // Reset dropdown
-                  }}
-                  className="w-full rounded-lg border-[#7C3AED] dark:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 text-black dark:text-black"
-                >
-                  <option value="" disabled>
-                    -- Select a Student --
-                  </option>
-                  {students.map((student) => (
-                    <option key={student.student_id} value={student.student_id}>
-                      {student.username}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              {selectedStudents.map((student) => (
-                <div
-                  key={student.student_id}
-                  className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 rounded px-3 py-1"
-                >
-                  <span className="text-gray-800 dark:text-gray-200">
-                    {student.username}
-                  </span>
-                  <button
-                    onClick={() =>
-                      setSelectedStudents(
-                        selectedStudents.filter(
-                          (s) => s.student_id !== student.student_id
-                        )
-                      )
-                    }
-                    className="text-red-500 hover:text-red-700 text-sm"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+              <label className="ml-2 text-sm text-gray-900 dark:text-white">
+                Select All
+              </label>
             </div>
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Student Name
+                  </th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                {students.map((student) => (
+                  <tr
+                    key={student.account_id}
+                    className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    <td className="px-4 py-2 text-gray-900 dark:text-white">
+                      {student.username}
+                    </td>
+                    <td className="px-4 py-2">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedStudents.includes(
+                            student.account_id
+                          )}
+                          onChange={() =>
+                            handleToggleStudent(student.account_id)
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#7C3AED] dark:peer-focus:ring-[#7C3AED] rounded-full peer dark:bg-gray-700 peer-checked:bg-[#7C3AED]"></div>
+                        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                      </label>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-
           <DialogFooter>
             <Button
               variant="outline"
@@ -689,13 +698,6 @@ const PracticeQuizPage: React.FC = () => {
               className="rounded-lg border-[#7C3AED] dark:border-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 text-[#7C3AED] dark:text-[#7C3AED] transition-all duration-200"
             >
               Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmAssignFolder}
-              className="rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:from-[#6D28D9] hover:to-[#5B21B6] text-white transition-all duration-200 shadow-sm hover:shadow-md"
-              disabled={loading || selectedStudents.length === 0}
-            >
-              {loading ? "Assigning..." : "Confirm"}
             </Button>
           </DialogFooter>
         </DialogContent>
