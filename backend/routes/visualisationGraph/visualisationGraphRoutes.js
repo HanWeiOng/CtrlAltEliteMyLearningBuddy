@@ -53,7 +53,7 @@ router.get('/getHardestTopic', async (req, res) => {
             FROM questions
             GROUP BY topic_label
             ORDER BY wrong_ratio DESC
-            LIMIT 10;
+            LIMIT 7;
         `)
         console.log(result);
         res.status(200).json(result.rows);
