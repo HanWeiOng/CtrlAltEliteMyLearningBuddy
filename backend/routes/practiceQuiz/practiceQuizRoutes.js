@@ -375,6 +375,7 @@ router.post('/assignQuiz', async (req, res) => {
             );
             operation = "unassigned";
         } else {
+            
             // If not exists, assign (insert)
             await client.query(
                 `INSERT INTO quiz_assignment_table (student_id, teacher_id, quiz_folder_id) 
@@ -396,25 +397,44 @@ router.post('/assignQuiz', async (req, res) => {
 
 router.get('/getQuizAssigned/:quiz_folder_id', async (req, res) => {
     try {
-        const { quiz_folder_id } = req.params; // ✅ use req.query for GET
-
+        const { quiz_folder_id } = req.params;
+    
         if (!quiz_folder_id) {
             return res.status(400).json({ error: 'Missing quiz_folder_id parameter' });
         }
-
-        const response = await client.query(
+    
+        const all_account_name = await client.query(
+            `SELECT account_id, username FROM account_table`
+        );
+    
+        const student_assigned = await client.query(
             `SELECT student_id FROM quiz_assignment_table 
-             WHERE quiz_folder_id = $1`,
+            WHERE quiz_folder_id = $1`,
             [quiz_folder_id]
         );
 
-        res.status(200).json(response.rows);
-
+        const assignedIds = new Set(student_assigned.rows.map(row => row.student_id));
+    
+        const assignedStudents = all_account_name.rows.filter(student =>
+            assignedIds.has(student.account_id)
+        );
+    
+        const unassignedStudents = all_account_name.rows.filter(student =>
+            !assignedIds.has(student.account_id)
+        );
+    
+        res.status(200).json({
+            assignedStudents,
+            unassignedStudents
+        });
+  
     } catch (error) {
-        console.error("Error retrieving quiz assignment:", error);
-        res.status(500).json({ error: "Internal server error: " + error.message });
+      console.error("Error retrieving quiz assignment:", error);
+      res.status(500).json({ error: "Internal server error: " + error.message });
     }
 });
+
+  
 
 
 
