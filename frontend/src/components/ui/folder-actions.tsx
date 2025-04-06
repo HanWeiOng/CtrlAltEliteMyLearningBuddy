@@ -39,6 +39,19 @@ export function FolderActions({
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
 
+  // ✅ Add session state
+  const [sessionId, setSessionId] = React.useState<string | null>(null);
+  const [userPosition, setUserPosition] = React.useState<string | null>(null);
+
+  // ✅ Fetch session from localStorage on mount
+  React.useEffect(() => {
+    const storedSessionId = localStorage.getItem("session_id");
+    const storedUserPosition = localStorage.getItem("user_position");
+
+    setSessionId(storedSessionId);
+    setUserPosition(storedUserPosition);
+  }, []);
+
   const handleDelete = async () => {
     try {
       setIsDeleting(true)
@@ -64,14 +77,17 @@ export function FolderActions({
             <MoreHorizontal className="h-4 w-4 text-[#7C3AED] dark:text-[#7C3AED]" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 border-[#7C3AED] dark:border-[#7C3AED]">
-         <DropdownMenuItem
-            onClick={() => onAssign && onAssign(folderId)}
-            className="cursor-pointer text-[#7C3AED] dark:text-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 transition-all duration-200"
-          >
-            <Share2 className="mr-2 h-4 w-4 text-[#7C3AED] dark:text-[#7C3AED]" />
-            Assign Quiz
-          </DropdownMenuItem>
+        <DropdownMenuContent align="end" className="w-48 border-[#7C3AED] dark:border-[#7C3AED]  bg-white dark:bg-gray-900">
+          {/* ✅ Only show Assign Quiz if user is not a student */}
+          {userPosition !== "student" && (
+            <DropdownMenuItem
+              onClick={() => onAssign && onAssign(folderId)}
+              className="cursor-pointer text-[#7C3AED] dark:text-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 transition-all duration-200"
+            >
+              <Share2 className="mr-2 h-4 w-4 text-[#7C3AED] dark:text-[#7C3AED]" />
+              Assign Quiz
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             onClick={() => onShare(folderId)}
             className="cursor-pointer text-[#7C3AED] dark:text-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 transition-all duration-200"
