@@ -64,7 +64,6 @@ const PracticeQuizPage: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
-  const [individualSelect, setIndividualSelect] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [userPosition, setUserPosition] = useState<string | null>(null);
   const router = useRouter();
@@ -74,9 +73,9 @@ const PracticeQuizPage: React.FC = () => {
   // const [selectedSubject, setSelectedSubject] = useState("")
   // const [selectedBanding, setSelectedBanding] = useState("")
   // const [selectedLevel, setSelectedLevel] = useState("")
-  const selectedSubject = "";
-  const selectedBanding = "";
-  const selectedLevel = "";
+  // const selectedSubject = "";
+  // const selectedBanding = "";
+  // const selectedLevel = "";
 
   // Fetch folders when component mounts
   useEffect(() => {
