@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/ui/navbar"; // Import Navbar for consistency
+import Image from "next/image";
+import { use } from "react";
 
 interface Question {
   id: number;
@@ -26,23 +28,40 @@ interface QuizProgress {
   };
 }
 
-// Server Component
+// Global Session Management
 export default function TakeQuizPage({
   params,
 }: {
-  params: { folderId: string };
+  params: Promise<{ folderId: string }>;
 }) {
-  return <QuizContent folderId={params.folderId} />;
+  const router = useRouter();
+  const { folderId } = use(params);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  // Get session ID from local storage on mount
+  useEffect(() => {
+    const storedSessionId = localStorage.getItem("session_id");
+    if (!storedSessionId) {
+      router.push("/login");
+    } else {
+      setSessionId(storedSessionId);
+    }
+  }, [router]);
+
+  // Render QuizContent when sessionId is available
+  if (!sessionId) {
+    return null; // Optional: You can show a loading spinner here
+  }
+
+  return <QuizContent folderId={folderId} studentId={sessionId} />;
 }
 
 // Client Component
-function QuizContent({ folderId }: { folderId: string }) {
+function QuizContent({ folderId, studentId }: { folderId: string ; studentId: string}) {
   const router = useRouter();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
-  const [explanations, setExplanations] = useState<{ [key: number]: string }>(
-    {}
-  );
+  const [explanations, setExplanations] = useState<{ [key: number]: string }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isComplete, setIsComplete] = useState(false);
@@ -78,17 +97,75 @@ function QuizContent({ folderId }: { folderId: string }) {
     }
   };
 
+  const sendAnswerAnalytics = async (questionId: number, selectedOption: string, selectedOptionText: string | Record<string, string>, correctness: string) => {
+    try {
+      await fetch("http://localhost:5003/api/openpracticequiz/addAnswerOptionAnalytics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question_id: questionId,
+          answer_option: selectedOption,
+          answer_text: selectedOptionText,
+          correctness,
+        }),
+      });
+    } catch (error) {
+      console.error("Error sending answer analytics:", error);
+    }
+  };
+
   useEffect(() => {
     if (folderId) {
       fetchQuestions();
     }
   }, [folderId]);
 
+  // Handle page unload (user exits early)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      fetch("http://localhost:5003/api/openpracticequiz/logCompletion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_id: studentId,
+          folder_id: folderId,
+          completed: "false",
+          student_score: 0,
+        }),
+      });
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [studentId, folderId]);
+
+  // Log completion when finished
+  useEffect(() => {
+    if (isComplete) {
+      fetch("http://localhost:5003/api/openpracticequiz/logCompletion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_id: studentId,
+          folder_id: folderId,
+          completed: "true",
+          student_score: progress.score.percentage,
+        }),
+      });
+    }
+  }, [isComplete, studentId, folderId, progress.score.percentage]);
+
   const selectAnswer = async (questionId: number, selectedOption: string) => {
     if (userAnswers[questionId]) return; // Prevent multiple answers
 
     const currentQuestion = questions.find((q) => q.id === questionId);
     if (!currentQuestion) return;
+
+    const selectedOptionText = currentQuestion.answer_options.find(
+      (opt) => opt.option === selectedOption
+    )?.text ?? "";
+
+    const correctness = selectedOption === currentQuestion.answer_key ? "True" : "False";
 
     // Update answers and progress immediately
     setUserAnswers((prev) => {
@@ -119,6 +196,8 @@ function QuizContent({ folderId }: { folderId: string }) {
       return newAnswers;
     });
 
+    await sendAnswerAnalytics(questionId, selectedOption, selectedOptionText, correctness);
+
     // Handle explanations
     if (selectedOption === currentQuestion.answer_key) {
       
@@ -137,7 +216,7 @@ function QuizContent({ folderId }: { folderId: string }) {
             },
             body: JSON.stringify({
               questionId: questionId,
-              result: "Correct",
+              questionCorrectness: "Correct",
             }),
           }
         );
@@ -192,7 +271,7 @@ function QuizContent({ folderId }: { folderId: string }) {
                 },
                 body: JSON.stringify({
                   questionId: questionId,
-                  result: "Wrong",
+                  questionCorrectness: "Wrong",
                 }),
               }
             );
@@ -289,11 +368,16 @@ function QuizContent({ folderId }: { folderId: string }) {
                 Question {index + 1}: {question.question_text}
               </h2>
               {question.image_paths && (
-                <img
-                  src={question.image_paths}
-                  alt="Question"
-                  className="mb-6 max-w-full rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
-                />
+                <div className="relative w-full h-64 mb-6">
+                  <Image
+                    src={question.image_paths}
+                    alt="Question"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 600px"
+                    unoptimized
+                    className="object-contain rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+                  />
+                </div>
               )}
               <div className="space-y-3">
                 {question.answer_options.map((option, optionIndex) => {

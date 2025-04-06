@@ -62,7 +62,7 @@ const PracticeQuizPage: React.FC = () => {
   const [isAssignPopupOpen, setIsAssignPopupOpen] = useState(false);
   const [assignFolderId, setAssignFolderId] = useState<number | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [userPosition, setUserPosition] = useState<string | null>(null);
@@ -70,9 +70,9 @@ const PracticeQuizPage: React.FC = () => {
 
   // const [questions, setQuestions] = useState<Question[]>([])
   // const setQuestions = useRef<Question[]>
-  // const [selectedSubject, setSelectedSubject] = useState("")
-  // const [selectedBanding, setSelectedBanding] = useState("")
-  // const [selectedLevel, setSelectedLevel] = useState("")
+  const [selectedSubject, setSelectedSubject] = useState("")
+  const [selectedBanding, setSelectedBanding] = useState("")
+  const [selectedLevel, setSelectedLevel] = useState("")
   // const selectedSubject = "";
   // const selectedBanding = "";
   // const selectedLevel = "";
@@ -285,7 +285,7 @@ const PracticeQuizPage: React.FC = () => {
       // Call the backend only for unassigned students
       await Promise.all(
         unassignedStudentIds.map(
-          (studentId) => handleToggleStudent(studentId, true) // Pass `true` to indicate assigning
+          (studentId) => handleToggleStudent(studentId) // Pass `true` to indicate assigning
         )
       );
 
@@ -298,7 +298,7 @@ const PracticeQuizPage: React.FC = () => {
       // Call the backend for each student to unassign them
       await Promise.all(
         allStudentIds.map(
-          (studentId) => handleToggleStudent(studentId, false) // Pass `false` to indicate unassigning
+          (studentId) => handleToggleStudent(studentId) // Pass `false` to indicate unassigning
         )
       );
 
