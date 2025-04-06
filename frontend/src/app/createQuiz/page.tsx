@@ -24,7 +24,7 @@ export default function CreateQuizPage() {
     const storedSessionId = localStorage.getItem("session_id");
     const storedUsername = localStorage.getItem("username");
     if (!storedSessionId) {
-      router.push("/");
+      router.push("/login");
     } else {
       setSessionId(storedSessionId);
       setUsername(storedUsername);

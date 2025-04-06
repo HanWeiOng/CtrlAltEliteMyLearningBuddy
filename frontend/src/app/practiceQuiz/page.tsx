@@ -83,7 +83,7 @@ const PracticeQuizPage: React.FC = () => {
     const storedUserPosition = localStorage.getItem("user_position");
 
     if (!storedSessionId) {
-      router.push("/");
+      router.push("/login");
     } else {
       setSessionId(storedSessionId);
       setUserPosition(storedUserPosition);
@@ -103,8 +103,13 @@ const PracticeQuizPage: React.FC = () => {
 
     try {
       setLoading(true);
+      const queryParam =
+        userPosition === "student"
+          ? `studentId=${sessionId}`
+          : `teacherId=${sessionId}`;
+
       const response = await fetch(
-        `http://localhost:5003/api/openpracticequiz/getFolders?teacherId=${sessionId}`
+        `http://localhost:5003/api/openpracticequiz/getFolders?${queryParam}`
       );
       if (!response.ok) {
         throw new Error(`Failed to fetch folders: ${response.statusText}`);

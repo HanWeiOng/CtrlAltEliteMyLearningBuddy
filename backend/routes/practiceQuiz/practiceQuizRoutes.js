@@ -175,7 +175,6 @@ router.get("/getQuestionsByFolderId", async (req, res) => {
   }
 });
 
-
 router.post("/saveQuiz", validateQuizInput, async (req, res) => {
   console.log("Received saveQuiz request:", req.body);
 
@@ -219,10 +218,9 @@ router.post("/saveQuiz", validateQuizInput, async (req, res) => {
         banding,
         level,
         JSON.stringify(question_ids),
-        teacher_id // hardcoded for testing
+        teacher_id, // hardcoded for testing
       ]
     );
-    
 
     console.log("Quiz folder created:", result.rows[0]);
     res.status(201).json({
@@ -238,31 +236,56 @@ router.post("/saveQuiz", validateQuizInput, async (req, res) => {
 });
 // Route to get all folders for a user
 router.get("/getFolders", async (req, res) => {
-  const { teacherId } = req.query;
+  const { teacherId, studentId } = req.query;
 
-  if (!teacherId) {
+  if (!teacherId && !studentId) {
     return res.status(400).json({
-      message: "TeacherID is required",
+      message: "Either teacherId or studentId is required",
     });
   }
 
   try {
-    const result = await client.query(
-      `
-            SELECT 
-                id,
-                folder_name,
-                subject,
-                banding,
-                level,
-                question_ids,
-                created_at
-            FROM questions_folder 
-            WHERE teacher_id = $1
-            ORDER BY created_at DESC
+    let result;
+
+    if (teacherId) {
+      // Fetch folders for the teacher
+      result = await client.query(
+        `
+          SELECT 
+              id,
+              folder_name,
+              subject,
+              banding,
+              level,
+              question_ids,
+              created_at
+          FROM questions_folder 
+          WHERE teacher_id = $1
+          ORDER BY created_at DESC
         `,
-      [teacherId]
-    );
+        [teacherId]
+      );
+    } else if (studentId) {
+      // Fetch folders assigned to the student
+      result = await client.query(
+        `
+          SELECT 
+              qf.id,
+              qf.folder_name,
+              qf.subject,
+              qf.banding,
+              qf.level,
+              qf.question_ids,
+              qf.created_at
+          FROM questions_folder qf
+          INNER JOIN quiz_assignment_table qat
+          ON qf.id = qat.quiz_folder_id
+          WHERE qat.student_id = $1
+          ORDER BY qf.created_at DESC
+        `,
+        [studentId]
+      );
+    }
 
     // For each folder, get the count of questions
     const foldersWithQuestionCount = result.rows.map((folder) => ({
