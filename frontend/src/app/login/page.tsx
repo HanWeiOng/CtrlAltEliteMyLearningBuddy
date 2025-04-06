@@ -33,8 +33,10 @@ const App: React.FC = () => {
       }
       // Store account_id in localStorage
       console.log(data.account.position);
-      localStorage.setItem('session_id', data.account_id);
+      console.log(data.account.id)
+      localStorage.setItem('session_id', data.account.id);
       localStorage.setItem('user_position', data.account.position);
+      
       // Redirect to the dashboard or another page
       router.push('/practiceQuiz');
       setLoggedInUser({ username: data.account.username, position: data.account.position });

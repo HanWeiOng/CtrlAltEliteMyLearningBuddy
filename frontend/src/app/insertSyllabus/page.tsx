@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Sidebar from "@/components/ui/sidebar";
+import RoleRestrictionWrapper from "@/components/RoleRestrictionWrapper";
 
 export default function InsertSyllabusPage() {
   const [selectedSubject, setSelectedSubject] = useState<string>("Biology");
@@ -72,6 +73,7 @@ export default function InsertSyllabusPage() {
   };
 
   return (
+    <RoleRestrictionWrapper allowedRoles={["Teacher"]}>
     <div className="min-h-screen flex flex-col">
       <div className="flex flex-1 flex-col p-8">
         <h1 className="text-2xl font-bold mb-4">Insert Syllabus</h1>
@@ -104,5 +106,6 @@ export default function InsertSyllabusPage() {
         </button>
       </div>
     </div>
+    </RoleRestrictionWrapper>
   );
 }

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { FileText, FolderPlus, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,9 @@ const PracticeQuizPage: React.FC = () => {
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [individualSelect, setIndividualSelect] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [userPosition, setUserPosition] = useState<string | null>(null);
+  const router = useRouter();
 
   // const [questions, setQuestions] = useState<Question[]>([])
   // const setQuestions = useRef<Question[]>
@@ -71,9 +75,18 @@ const PracticeQuizPage: React.FC = () => {
 
   // Fetch folders when component mounts
   useEffect(() => {
-    fetchFolders();
-  }, []);
+    const storedSessionId = localStorage.getItem("session_id");
+    const storedUserPosition = localStorage.getItem("user_position");
 
+    if (!storedSessionId) {
+      router.push("/");
+    } else {
+      setSessionId(storedSessionId);
+      setUserPosition(storedUserPosition);
+      fetchFolders();
+    }
+  }, [router]);
+ 
   const fetchFolders = async () => {
     try {
       setLoading(true);
@@ -246,8 +259,8 @@ const PracticeQuizPage: React.FC = () => {
   const handleConfirmAssignFolder = async () => {
     const teacherId = 5; // hardcoded
     const quizFolderId = assignFolderId; // replace with your actual folder ID state
-    console.log(quizFolderId)
-    console.log(selectedStudents)
+    console.log(quizFolderId);
+    console.log(selectedStudents);
 
     if (!quizFolderId) {
       console.error("Quiz folder ID is not set");
@@ -256,9 +269,9 @@ const PracticeQuizPage: React.FC = () => {
 
     try {
       for (const student of selectedStudents) {
-        console.log(student['student_id'])
-        console.log(teacherId)
-        console.log(quizFolderId)
+        console.log(student["student_id"]);
+        console.log(teacherId);
+        console.log(quizFolderId);
         const response = await fetch(
           "http://localhost:5003/api/openpracticequiz/assignQuiz",
           {
@@ -267,7 +280,7 @@ const PracticeQuizPage: React.FC = () => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              student_id: student['student_id'],
+              student_id: student["student_id"],
               teacher_id: teacherId,
               quiz_folder_id: quizFolderId,
             }),
@@ -277,11 +290,11 @@ const PracticeQuizPage: React.FC = () => {
         if (!response.ok) {
           const errorData = await response.json();
           console.error(
-            `Error assigning quiz to student ${student['student_id']}:`,
+            `Error assigning quiz to student ${student["student_id"]}:`,
             errorData
           );
         } else {
-          console.log(`Assigned quiz to ${student['student_id']}`);
+          console.log(`Assigned quiz to ${student["student_id"]}`);
         }
       }
 

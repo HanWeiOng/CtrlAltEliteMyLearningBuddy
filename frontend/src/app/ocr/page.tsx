@@ -3,6 +3,7 @@ import { Trash } from "lucide-react";
 import Navbar from "../../components/ui/navbar";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import RoleRestrictionWrapper from "@/components/RoleRestrictionWrapper";
 
 const subjects = [
   "Biology",
@@ -10,7 +11,7 @@ const subjects = [
   "Mathematics",
   "History",
   "English",
-  'Science'
+  "Science",
 ] as const;
 
 const mathBandings = ["Math", "E Math", "A Math"];
@@ -25,7 +26,9 @@ export default function UploadPage() {
   const [jsonOutput, setJsonOutput] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null); // New state for success message
-  const [selectedSubject, setSelectedSubject] = useState<(typeof subjects)[number]>(subjects[0]);
+  const [selectedSubject, setSelectedSubject] = useState<
+    (typeof subjects)[number]
+  >(subjects[0]);
   const [selectedLevel, setSelectedLevel] = useState("PSLE");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploadedQuestions, setUploadedQuestions] = useState<any[]>([]);
@@ -53,18 +56,20 @@ export default function UploadPage() {
   }, [selectedSubject]);
 
   useEffect(() => {
-    const eventSource = new EventSource("http://localhost:5003/api/ocr/progress-stream");
-  
+    const eventSource = new EventSource(
+      "http://localhost:5003/api/ocr/progress-stream"
+    );
+
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setProgress(data);
     };
-  
+
     eventSource.onerror = () => {
       console.error("❌ SSE connection closed.");
       eventSource.close();
     };
-  
+
     return () => {
       eventSource.close();
     };
@@ -103,28 +108,31 @@ export default function UploadPage() {
     setSuccessMessage(null); // Reset success message
     setImageUrls([]); // Reset image state
 
-
     const formData = new FormData();
- 
+
     if (uploadedFiles.length === 0) {
       alert("❌ No file selected!");
       return;
-  }
-
-
+    }
 
     // Append additional data to the form data
-    formData.append("file", uploadedFiles[0]);  // Only sending first file
+    formData.append("file", uploadedFiles[0]); // Only sending first file
     formData.append("subject", selectedSubject);
-    formData.append("banding", selectedBanding || (selectedSubject === "Mathematics" ? mathBandings[0] : scienceBandings[0]));
+    formData.append(
+      "banding",
+      selectedBanding ||
+        (selectedSubject === "Mathematics"
+          ? mathBandings[0]
+          : scienceBandings[0])
+    );
     formData.append("level", selectedLevel);
-  
+
     try {
       const response = await fetch("http://localhost:5003/api/ocr/split_pdf", {
         method: "POST",
         body: formData,
       });
-    
+
       if (!response.ok) {
         const errorRes = await response.json();
         // Check for specific status
@@ -135,21 +143,25 @@ export default function UploadPage() {
         }
         throw new Error(errorRes.message || "Upload failed");
       }
-    
+
       const result = await response.json();
-      const paper_name = result.paper_name
-      console.log("Received paper_name from backend: ", paper_name)
-      const questionsRes = await fetch(`http://localhost:5003/api/ocr/retrieve_all_uploaded_questions?paper_name=${paper_name}`);
+      const paper_name = result.paper_name;
+      console.log("Received paper_name from backend: ", paper_name);
+      const questionsRes = await fetch(
+        `http://localhost:5003/api/ocr/retrieve_all_uploaded_questions?paper_name=${paper_name}`
+      );
       const questionsData = await questionsRes.json();
       setUploadedQuestions(questionsData);
       console.log("Processed PDF:", result);
-    
-      const { images} = result;
-    
+
+      const { images } = result;
+
       setJsonOutput(JSON.stringify(result, null, 2));
-      setSuccessMessage(`Process completed! ${paper_name} uploaded successfully!`);
+      setSuccessMessage(
+        `Process completed! ${paper_name} uploaded successfully!`
+      );
       setErrorMessage(null); // Clear any previous errors
-    
+
       if (images && images.length > 0) {
         setImageUrls(images);
       } else {
@@ -161,257 +173,290 @@ export default function UploadPage() {
     } finally {
       setIsProcessing(false);
     }
-  }
-    
-
-
+  };
 
   return (
-    <div className="container py-8">
-      <div className="flex-1 p-6">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4 text-gradient">
-            Upload Documents
-          </h1>
-          <p className="text-muted-foreground">
-            Upload your past exam papers or exercise questions for analysis.
-            We will extract questions, identify topics, and prepare them for your
-            question bank.
-          </p>
-        </div>
+    <RoleRestrictionWrapper allowedRoles={["Teacher"]}>
+      <div className="container py-8">
+        <div className="flex-1 p-6">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold mb-4 text-gradient">
+              Upload Documents
+            </h1>
+            <p className="text-muted-foreground">
+              Upload your past exam papers or exercise questions for analysis.
+              We will extract questions, identify topics, and prepare them for
+              your question bank.
+            </p>
+          </div>
 
-        <div className="flex flex-col gap-10">
-          <div className="flex-1">
-            <div
-              className={`relative group rounded-2xl border-2 border-dashed p-12 text-center transition-all hover-card glass
+          <div className="flex flex-col gap-10">
+            <div className="flex-1">
+              <div
+                className={`relative group rounded-2xl border-2 border-dashed p-12 text-center transition-all hover-card glass
                 ${
                   isDragging
                     ? "border-primary bg-primary/5"
                     : "border-muted hover:border-primary/50"
                 }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <h3 className="text-xl font-semibold mb-2">
-                Drag & Drop Files Here
-              </h3>
-              <p className="text-muted-foreground mb-6">or</p>
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <h3 className="text-xl font-semibold mb-2">
+                  Drag & Drop Files Here
+                </h3>
+                <p className="text-muted-foreground mb-6">or</p>
 
-              {/* Fixed Browse File Button */}
-              <div className="relative inline-block">
-                <label className="rounded-lg bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 font-medium cursor-pointer">
-                  Browse Files
-                  <input
-                    id="file-upload"
-                    type="file"
-                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                    multiple
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleFileChange}
-                  />
-                </label>
-              </div>
-
-              <p className="text-sm text-muted-foreground mt-4">
-                Supported formats: PDF, DOC, DOCX
-              </p>
-            </div>
-
-            {uploadedFiles.length > 0 && (
-              <div className="mt-8 space-y-4">
-                <h3 className="text-lg font-semibold">Uploaded Files</h3>
-                <div className="space-y-3">
-                  {uploadedFiles.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 border rounded-xl"
-                    >
-                      <span>{file.name}</span>
-                      <button
-                        onClick={() => removeFile(file.name)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ))}
+                {/* Fixed Browse File Button */}
+                <div className="relative inline-block">
+                  <label className="rounded-lg bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 font-medium cursor-pointer">
+                    Browse Files
+                    <input
+                      id="file-upload"
+                      type="file"
+                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                      multiple
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileChange}
+                    />
+                  </label>
                 </div>
 
-                {/* Filter Options */}
-                <div className="mt-8 p-4 bg-white shadow-md rounded-lg">
-                  <h3 className="text-lg font-semibold mb-4">Filter Options</h3>
-                  <div className="space-y-4">
-                    {/* Subject Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Subject
-                      </label>
-                      <select
-                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                        value={selectedSubject}
-                        onChange={(e) => {
-                          setSelectedSubject(
-                            e.target.value as (typeof subjects)[number]
-                          );
-                          setSelectedBanding(""); // Reset banding on subject change
-                        }}
-                      >
-                        {subjects.map((subject) => (
-                          <option key={subject} value={subject}>
-                            {subject}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                <p className="text-sm text-muted-foreground mt-4">
+                  Supported formats: PDF, DOC, DOCX
+                </p>
+              </div>
 
-                    {/* Banding Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Banding
-                      </label>
-                      <select
-                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                        value={selectedBanding}
-                        onChange={(e) => setSelectedBanding(e.target.value)}
-                        disabled={availableBandings.length === 0}
+              {uploadedFiles.length > 0 && (
+                <div className="mt-8 space-y-4">
+                  <h3 className="text-lg font-semibold">Uploaded Files</h3>
+                  <div className="space-y-3">
+                    {uploadedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 border rounded-xl"
                       >
-                        {availableBandings.length > 0 ? (
-                          availableBandings.map((banding) => (
-                            <option key={banding} value={banding}>
-                              {banding}
+                        <span>{file.name}</span>
+                        <button
+                          onClick={() => removeFile(file.name)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Filter Options */}
+                  <div className="mt-8 p-4 bg-white shadow-md rounded-lg">
+                    <h3 className="text-lg font-semibold mb-4">
+                      Filter Options
+                    </h3>
+                    <div className="space-y-4">
+                      {/* Subject Selection */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Subject
+                        </label>
+                        <select
+                          className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                          value={selectedSubject}
+                          onChange={(e) => {
+                            setSelectedSubject(
+                              e.target.value as (typeof subjects)[number]
+                            );
+                            setSelectedBanding(""); // Reset banding on subject change
+                          }}
+                        >
+                          {subjects.map((subject) => (
+                            <option key={subject} value={subject}>
+                              {subject}
                             </option>
-                          ))
-                        ) : (
-                          <option value="">N/A</option>
-                        )}
-                      </select>
-                    </div>
+                          ))}
+                        </select>
+                      </div>
 
-                    {/* Level Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Level
-                      </label>
-                      <select
-                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                        value={selectedLevel}
-                        onChange={(e) => setSelectedLevel(e.target.value)}
-                      >
-                        {["PSLE", "Lower Secondary", "O Level", "N Level"].map(
-                          (level) => (
+                      {/* Banding Selection */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Banding
+                        </label>
+                        <select
+                          className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                          value={selectedBanding}
+                          onChange={(e) => setSelectedBanding(e.target.value)}
+                          disabled={availableBandings.length === 0}
+                        >
+                          {availableBandings.length > 0 ? (
+                            availableBandings.map((banding) => (
+                              <option key={banding} value={banding}>
+                                {banding}
+                              </option>
+                            ))
+                          ) : (
+                            <option value="">N/A</option>
+                          )}
+                        </select>
+                      </div>
+
+                      {/* Level Selection */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Level
+                        </label>
+                        <select
+                          className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                          value={selectedLevel}
+                          onChange={(e) => setSelectedLevel(e.target.value)}
+                        >
+                          {[
+                            "PSLE",
+                            "Lower Secondary",
+                            "O Level",
+                            "N Level",
+                          ].map((level) => (
                             <option key={level} value={level}>
                               {level}
                             </option>
-                          )
-                        )}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={processFiles}
-                  disabled={isProcessing}
-                  className="w-full bg-blue-500 hover:bg-blue-700 text-white py-2 rounded-lg mt-4"
-                >
-                  {isProcessing ? "Processing..." : "Process Files"}
-                </button>
-
-                {/* Progress status section - OUTSIDE the button */}
-                <div className="mt-4">
-                  {!isProcessing && progress.step === 0 && (
-                    <p className="text-gray-500 text-sm italic">Ready to process PDF.</p>
-                  )}
-
-                  {isProcessing && (
-                    <>
-                      <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-500 transition-all duration-500 ease-in-out"
-                          style={{ width: `${(progress.step / TOTAL_STEPS) * 100}%` }}
-                        />
+                          ))}
+                        </select>
                       </div>
-                      <p className="text-sm text-blue-600 mt-2">
-                        Step {progress.step}/{TOTAL_STEPS} — {progress.message}
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                {successMessage && (
-                  <div className="mt-4 text-green-500">{successMessage}</div>
-                )}
-
-                {uploadedQuestions.length > 0 && (
-                  <div className="mt-10">
-                    <h2 className="text-xl font-bold mb-4">Extracted Questions</h2>
-                    <div className="space-y-6">
-                      {uploadedQuestions.map((q) => (
-                        <div key={q.id} className="p-4 border rounded-lg bg-white shadow relative">
-                          <h2 className="text-lg font-medium">{q.question_number}: {q.question_text || "⚠️ No question text"}</h2>
-
-                          {q.image_paths && (() => {
-                            try {
-                              const imageArray = JSON.parse(q.image_paths);
-                              const imageUrl = imageArray[0]?.image_url;
-
-                              return imageUrl ? (
-                                <div className="relative aspect-[4/3] w-full mb-4">
-                                  <Image
-                                    src={imageUrl}
-                                    alt="Question Image"
-                                    width={1000} // adjust based on your expected resolution
-                                    height={700}
-                                    unoptimized
-                                    style={{ width: "100%", height: "auto", objectFit: "contain" }}
-                                  />
-                                </div>
-                              ) : null;
-                            } catch (e) {
-                              console.warn("Invalid image_paths format", e);
-                              return null;
-                            }
-                          })()}
-
-                          {Array.isArray(q.answer_options) && q.answer_options.length > 0 ? (
-                            <ul className="mt-2 space-y-2">
-                              {q.answer_options.map((option: any, i: number) => (
-                                <li key={i} className="p-2 border rounded-md bg-gray-50">
-                                  {option.option}:{" "}
-                                  {typeof option.text === "object" && option.text !== null ? (
-                                    Object.entries(option.text).map(([key, value]) => (
-                                      <span key={key}>
-                                        {key}: {String(value)},{" "}
-                                      </span>
-                                    ))
-                                  ) : (
-                                    <span>{option.text ?? "⚠️ No text"}</span>
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-gray-500 italic mt-2">⚠️ No answer options available</p>
-                          )}
-                        </div>
-                      ))}
                     </div>
                   </div>
-                )}
 
+                  <button
+                    onClick={processFiles}
+                    disabled={isProcessing}
+                    className="w-full bg-blue-500 hover:bg-blue-700 text-white py-2 rounded-lg mt-4"
+                  >
+                    {isProcessing ? "Processing..." : "Process Files"}
+                  </button>
 
-                {errorMessage && (
-                  <div className="mt-4 text-red-500 font-medium">
-                    {errorMessage}
+                  {/* Progress status section - OUTSIDE the button */}
+                  <div className="mt-4">
+                    {!isProcessing && progress.step === 0 && (
+                      <p className="text-gray-500 text-sm italic">
+                        Ready to process PDF.
+                      </p>
+                    )}
+
+                    {isProcessing && (
+                      <>
+                        <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-500 transition-all duration-500 ease-in-out"
+                            style={{
+                              width: `${(progress.step / TOTAL_STEPS) * 100}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="text-sm text-blue-600 mt-2">
+                          Step {progress.step}/{TOTAL_STEPS} —{" "}
+                          {progress.message}
+                        </p>
+                      </>
+                    )}
                   </div>
-                )}
 
-              </div>
-            )}
+                  {successMessage && (
+                    <div className="mt-4 text-green-500">{successMessage}</div>
+                  )}
+
+                  {uploadedQuestions.length > 0 && (
+                    <div className="mt-10">
+                      <h2 className="text-xl font-bold mb-4">
+                        Extracted Questions
+                      </h2>
+                      <div className="space-y-6">
+                        {uploadedQuestions.map((q) => (
+                          <div
+                            key={q.id}
+                            className="p-4 border rounded-lg bg-white shadow relative"
+                          >
+                            <h2 className="text-lg font-medium">
+                              {q.question_number}:{" "}
+                              {q.question_text || "⚠️ No question text"}
+                            </h2>
+
+                            {q.image_paths &&
+                              (() => {
+                                try {
+                                  const imageArray = JSON.parse(q.image_paths);
+                                  const imageUrl = imageArray[0]?.image_url;
+
+                                  return imageUrl ? (
+                                    <div className="relative aspect-[4/3] w-full mb-4">
+                                      <Image
+                                        src={imageUrl}
+                                        alt="Question Image"
+                                        width={1000} // adjust based on your expected resolution
+                                        height={700}
+                                        unoptimized
+                                        style={{
+                                          width: "100%",
+                                          height: "auto",
+                                          objectFit: "contain",
+                                        }}
+                                      />
+                                    </div>
+                                  ) : null;
+                                } catch (e) {
+                                  console.warn("Invalid image_paths format", e);
+                                  return null;
+                                }
+                              })()}
+
+                            {Array.isArray(q.answer_options) &&
+                            q.answer_options.length > 0 ? (
+                              <ul className="mt-2 space-y-2">
+                                {q.answer_options.map(
+                                  (option: any, i: number) => (
+                                    <li
+                                      key={i}
+                                      className="p-2 border rounded-md bg-gray-50"
+                                    >
+                                      {option.option}:{" "}
+                                      {typeof option.text === "object" &&
+                                      option.text !== null ? (
+                                        Object.entries(option.text).map(
+                                          ([key, value]) => (
+                                            <span key={key}>
+                                              {key}: {String(value)},{" "}
+                                            </span>
+                                          )
+                                        )
+                                      ) : (
+                                        <span>
+                                          {option.text ?? "⚠️ No text"}
+                                        </span>
+                                      )}
+                                    </li>
+                                  )
+                                )}
+                              </ul>
+                            ) : (
+                              <p className="text-gray-500 italic mt-2">
+                                ⚠️ No answer options available
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {errorMessage && (
+                    <div className="mt-4 text-red-500 font-medium">
+                      {errorMessage}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </RoleRestrictionWrapper>
   );
 }

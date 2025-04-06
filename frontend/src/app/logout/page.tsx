@@ -8,6 +8,8 @@ export default function LogoutPage() {
 
   useEffect(() => {
     // Clear session data
+    const userPosition = localStorage.getItem("user_position");
+    console.log("User Position:", userPosition);
     localStorage.removeItem("session_id");
     localStorage.removeItem("user_position");
 
