@@ -82,6 +82,7 @@ router.get('/getPaperDemographic', async (req, res) => {
     }
 });
 
+// General 
 router.get('/getHardestQuestions', async (req, res) => {
     try {
         const result = await client.query(`
@@ -99,6 +100,8 @@ router.get('/getHardestQuestions', async (req, res) => {
     }
 });
 
+
+// Get the answer option that has the most wrong in a question
 router.get('/getAnswerOptionAnalytics/:question_id', async (req, res) => {
     try {
         const { question_id } = req.params; // ✅ GET requests use req.query
@@ -245,15 +248,19 @@ router.post('/getCompletionOfQuiz', async (req, res) => {
 });
 
 
-router.get('/getIndividualPaperAllScore', async (req, res) => {
+router.post('/getIndividualPaperAllScore/:folder_id', async (req, res) => {
     try {
+        const {folder_id} = req.params
         const response = await client.query(`
-            SELECT student_name, student_score 
-            FROM student_attempt_quiz_table
-            WHERE completed = true OR LOWER(completed::text) = 'true'
+            SELECT student_name, student_score
+            FROM (
+                SELECT DISTINCT ON (student_name) student_name, student_score, id
+                FROM student_attempt_quiz_table
+                WHERE folder_id = $1 AND completed = true
+                ORDER BY student_name, id ASC
+            ) AS first_attempts
             ORDER BY student_score DESC
-        `);
-
+        `, [folder_id]);
         res.status(200).json(response.rows);
 
     } catch (error) {
