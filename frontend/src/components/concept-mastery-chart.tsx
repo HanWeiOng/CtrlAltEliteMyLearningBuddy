@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -13,6 +13,13 @@ import {
   Cell
 } from 'recharts';
 
+// Define topic data structure
+type Topic = {
+  name: string;
+  mastery: number;
+  wrong_ratio: number;
+}
+
 // Define component props
 interface ConceptMasteryChartProps {
   quizId?: string;
@@ -23,20 +30,56 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
   // Track hovered bar
   const [hoveredBar, setHoveredBar] = useState<string | null>(null);
   
-  // Sample data for the concept mastery
-  const concepts = [
-    { name: 'Algebra', mastery: 65 },
-    { name: 'Geometry', mastery: 19 },
-    { name: 'Functions', mastery: 58 },
-    { name: 'Statistics', mastery: 82 },
-    { name: 'Calculus', mastery: 45 },
-    { name: 'Probability', mastery: 65 },
-    { name: 'Trigonometry', mastery: 52 }
-  ];
+  // State for topics data
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // In a real app, we would filter or fetch data based on quizId and teacherId
-  // For now, we'll just log it for demonstration
-  console.log(`Rendering ConceptMasteryChart with quizId: ${quizId}, teacherId: ${teacherId}`);
+  // Fetch topic data from API
+  useEffect(() => {
+    const fetchTopicsData = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const response = await fetch('http://localhost:5003/api/visualisationGraph/getHardestTopic');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch topic data');
+        }
+        
+        const data = await response.json();
+        
+        // Transform the data - convert wrong_ratio to mastery score (100 - wrong_ratio*100)
+        const transformedData = data.map((topic: any) => ({
+          name: topic.topic_label,
+          wrong_ratio: parseFloat(topic.wrong_ratio),
+          // Lower wrong ratio means higher mastery
+          mastery: Math.round(100 - parseFloat(topic.wrong_ratio) * 100)
+        }));
+        
+        setTopics(transformedData);
+      } catch (err) {
+        console.error('Error fetching topic data:', err);
+        setError('Failed to load topic data');
+        
+        // Fallback to sample data
+        setTopics([
+          { name: 'Algebra', mastery: 65, wrong_ratio: 0.35 },
+          { name: 'Geometry', mastery: 19, wrong_ratio: 0.81 },
+          { name: 'Functions', mastery: 58, wrong_ratio: 0.42 },
+          { name: 'Statistics', mastery: 82, wrong_ratio: 0.18 },
+          { name: 'Calculus', mastery: 45, wrong_ratio: 0.55 },
+          { name: 'Probability', mastery: 65, wrong_ratio: 0.35 },
+          { name: 'Trigonometry', mastery: 52, wrong_ratio: 0.48 }
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchTopicsData();
+  }, [quizId, teacherId]);
 
   // Function to determine color based on mastery level
   const getBarColor = (mastery: number) => {
@@ -59,18 +102,23 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const { name, mastery } = payload[0].payload;
+      const { name, mastery, wrong_ratio } = payload[0].payload;
       return (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-3 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center mb-1.5">
             <span className="rounded-full w-3 h-3 bg-indigo-500 mr-2"></span>
-            <span className="font-semibold text-[0.8125rem]">Concept</span>
+            <span className="font-semibold text-[0.8125rem]">Topic</span>
             <span className="ml-auto text-[0.8125rem]">{name}</span>
           </div>
           <div className="flex items-center mb-1.5">
             <span className="rounded-full w-3 h-3 bg-indigo-500 mr-2"></span>
             <span className="font-semibold text-[0.8125rem]">Mastery</span>
             <span className="ml-auto text-[0.8125rem] font-medium">{mastery}%</span>
+          </div>
+          <div className="flex items-center mb-1.5">
+            <span className="rounded-full w-3 h-3 bg-red-500 mr-2"></span>
+            <span className="font-semibold text-[0.8125rem]">Error Rate</span>
+            <span className="ml-auto text-[0.8125rem] font-medium">{(wrong_ratio * 100).toFixed(1)}%</span>
           </div>
           <div className="flex items-center">
             <span className="rounded-full w-3 h-3 bg-indigo-500 mr-2"></span>
@@ -103,19 +151,46 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
     );
   };
 
-  // Styling constants shared with class average chart
-  const chartHeight = 300; // Same height for both charts
-  const chartPadding = 4;
+  // Styling constants
+  const chartHeight = 300;
   const axisWidth = 40;
   const yAxisTicks = [0, 20, 40, 60, 80, 100];
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="w-full bg-white dark:bg-slate-800 p-4 rounded-lg">
+        <div className="h-[300px] w-full flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+            <p className="mt-2 text-sm text-slate-500">Loading topic data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="w-full bg-white dark:bg-slate-800 p-4 rounded-lg">
+        <div className="h-[300px] w-full flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <p className="text-red-500">❌ {error}</p>
+            <p className="mt-1 text-sm text-slate-500">Please try again later</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full bg-white dark:bg-slate-800 p-4 rounded-lg">
+    <div className="w-full bg-white dark:bg-slate-800 p-4 pb-2 rounded-lg">
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={concepts}
-            margin={{ top: 5, right: 40, left: 0, bottom: 30 }}
+            data={topics}
+            margin={{ top: 2, right: 40, left: 0, bottom: 30 }}
             barGap={0}
             barCategoryGap={0}
           >
@@ -176,7 +251,7 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
               maxBarSize={40}
               animationDuration={1000}
             >
-              {concepts.map((entry, index) => (
+              {topics.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`}
                   fill={getBarColor(entry.mastery)}
