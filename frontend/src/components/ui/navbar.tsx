@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   FileText,
   Edit,
@@ -13,15 +13,6 @@ import {
 
 export default function Navbar() {
   const pathname = usePathname(); // Get current page path
-  const router = useRouter();
-
-  const handleLogout = () => {
-    // Clear session data
-    localStorage.removeItem("session_id");
-    localStorage.removeItem("user_position");
-    // Redirect to login page
-    router.push("/login");
-  };
 
   const navItems = [
     {
@@ -85,13 +76,13 @@ export default function Navbar() {
           })}
 
           {/* Logout Icon */}
-          <button
-            onClick={handleLogout}
+          <Link
+            href="/logout"
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-600 hover:text-red-600 transition"
             title="Logout"
           >
             <LogOut className="w-5 h-5" />
-          </button>
+          </Link>
         </div>
       )}
     </nav>
