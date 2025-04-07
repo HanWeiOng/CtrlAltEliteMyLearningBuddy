@@ -171,6 +171,94 @@ router.post('/insertIntoPostgresql', async (req, res) => {
   }
 });
 
+// router.get("/retrieve_all_uploaded_questions", async (req, res) => {
+//   try {
+//     let paperName = req.query.paper_name;
+//     paperName = paperName.replace(/\s+/g, "_");
+
+//     const result = await client.query(
+//       "SELECT * FROM questions WHERE paper_name = $1",
+//       [paperName]
+//     );
+
+//     const validQuestions = result.rows.filter((q) => {
+//       // Top-level checks
+//       const hasQuestionText = q.question_text?.trim() !== "";
+//       const hasQuestionNumber = q.question_number?.toString().trim() !== "";
+//       const hasAnswerKey = q.answer_key?.trim() !== "";
+//       const hasTopicLabel = q.topic_label?.trim() !== "";
+//       const hasSubject = q.subject?.trim() !== "";
+//       const hasBanding = q.banding?.trim() !== "";
+//       const hasLevel = q.level?.trim() !== "";
+
+//       // Answer Options (parse if stringified)
+//       let answerOptions = q.answer_options;
+//       if (typeof answerOptions === "string") {
+//         try {
+//           answerOptions = JSON.parse(answerOptions);
+//         } catch {
+//           return false;
+//         }
+//       }
+
+//       const hasValidOptions =
+//         Array.isArray(answerOptions) &&
+//         answerOptions.length > 0 &&
+//         answerOptions.every(
+//           (opt) =>
+//             opt &&
+//             typeof opt.option === "string" &&
+//             opt.option.trim() !== "" &&
+//             (typeof opt.text === "string"
+//               ? opt.text.trim() !== ""
+//               : opt.text !== null && typeof opt.text === "object")
+//         );
+
+//       // Image Paths (parse if stringified)
+//       let imagePaths = q.image_paths;
+//       if (typeof imagePaths === "string") {
+//         try {
+//           imagePaths = JSON.parse(imagePaths);
+//         } catch {
+//           return false;
+//         }
+//       }
+
+//       const hasValidImages =
+//         Array.isArray(imagePaths) &&
+//         imagePaths.every(
+//           (img) =>
+//             img &&
+//             typeof img.image_url === "string" &&
+//             img.image_url.startsWith("http")
+//         );
+
+//       // You can also allow imagePaths to be optional:
+//       // const imageOk = imagePaths.length === 0 || hasValidImages;
+//       const imageOk = hasValidImages; // force image to be present and valid
+
+//       return (
+//         hasQuestionText &&
+//         hasQuestionNumber &&
+//         hasAnswerKey &&
+//         hasTopicLabel &&
+//         hasSubject &&
+//         hasBanding &&
+//         hasLevel &&
+//         hasValidOptions &&
+//         imageOk
+//       );
+//     });
+
+//     console.log("✅ Valid Questions:", validQuestions);
+//     console.log(`📤 Retrieved ${validQuestions.length} valid questions out of ${result.rows.length}`);
+//     res.status(200).json(validQuestions);
+//   } catch (error) {
+//     console.error("❌ Error retrieving uploaded questions:", error);
+//     res.status(500).json({ message: "Questions not in database: " + error.message });
+//   }
+// });
+
 router.get("/retrieve_all_uploaded_questions", async (req, res) => {
   try {
     let paperName = req.query.paper_name;
@@ -181,46 +269,51 @@ router.get("/retrieve_all_uploaded_questions", async (req, res) => {
       [paperName]
     );
 
-    const validQuestions = result.rows.filter((q) => {
-      // Top-level checks
-      const hasQuestionText = q.question_text?.trim() !== "";
-      const hasQuestionNumber = q.question_number?.toString().trim() !== "";
-      const hasAnswerKey = q.answer_key?.trim() !== "";
-      const hasTopicLabel = q.topic_label?.trim() !== "";
-      const hasSubject = q.subject?.trim() !== "";
-      const hasBanding = q.banding?.trim() !== "";
-      const hasLevel = q.level?.trim() !== "";
+    const validQuestions = [];
+    const invalidQuestions = [];
 
-      // Answer Options (parse if stringified)
-      let answerOptions = q.answer_options;
-      if (typeof answerOptions === "string") {
-        try {
-          answerOptions = JSON.parse(answerOptions);
-        } catch {
-          return false;
-        }
-      }
+    for (const q of result.rows) {
+      const invalidFields = [];
+
+      if (!q.question_text?.trim()) invalidFields.push("question_text");
+      if (!q.question_number?.toString().trim()) invalidFields.push("question_number");
+      if (!q.answer_key?.trim()) invalidFields.push("answer_key");
+      if (!q.topic_label?.trim()) invalidFields.push("topic_label");
+      if (!q.subject?.trim()) invalidFields.push("subject");
+      if (!q.banding?.trim()) invalidFields.push("banding");
+      if (!q.level?.trim()) invalidFields.push("level");
+
+      // Answer options
+      let answerOptions = JSON.parse(q.answer_options);
+      // if (typeof answerOptions === "string") {
+      //   try {
+      //     answerOptions = JSON.parse(answerOptions);
+      //   } catch {
+      //     invalidFields.push("answer_options (invalid JSON)");
+      //   }
+      // }
 
       const hasValidOptions =
         Array.isArray(answerOptions) &&
         answerOptions.length > 0 &&
-        answerOptions.every(
-          (opt) =>
-            opt &&
-            typeof opt.option === "string" &&
-            opt.option.trim() !== "" &&
-            (typeof opt.text === "string"
-              ? opt.text.trim() !== ""
-              : opt.text !== null && typeof opt.text === "object")
+        answerOptions.every((opt) =>
+          opt &&
+          typeof opt.option === "string" &&
+          opt.option.trim() !== "" &&
+          (typeof opt.text === "string"
+            ? opt.text.trim() !== ""
+            : opt.text !== null && typeof opt.text === "object")
         );
 
-      // Image Paths (parse if stringified)
+      if (!hasValidOptions) invalidFields.push("answer_options");
+
+      // Image paths
       let imagePaths = q.image_paths;
       if (typeof imagePaths === "string") {
         try {
           imagePaths = JSON.parse(imagePaths);
         } catch {
-          return false;
+          invalidFields.push("image_paths (invalid JSON)");
         }
       }
 
@@ -233,31 +326,31 @@ router.get("/retrieve_all_uploaded_questions", async (req, res) => {
             img.image_url.startsWith("http")
         );
 
-      // You can also allow imagePaths to be optional:
-      // const imageOk = imagePaths.length === 0 || hasValidImages;
-      const imageOk = hasValidImages; // force image to be present and valid
+      if (!hasValidImages) invalidFields.push("image_paths");
 
-      return (
-        hasQuestionText &&
-        hasQuestionNumber &&
-        hasAnswerKey &&
-        hasTopicLabel &&
-        hasSubject &&
-        hasBanding &&
-        hasLevel &&
-        hasValidOptions &&
-        imageOk
-      );
+      // Categorize the question
+      if (invalidFields.length === 0) {
+        validQuestions.push(q);
+      } else {
+        invalidQuestions.push({
+          question_number: q.question_number,
+          invalid_fields: invalidFields,
+        });
+      }
+    }
+
+    console.log("✅ Valid Questions:", validQuestions.length);
+    console.log("❌ Invalid Questions:", invalidQuestions);
+
+    res.status(200).json({
+      valid_questions: validQuestions,
+      invalid_questions: invalidQuestions,
+      total: result.rows.length,
     });
-
-    console.log("✅ Valid Questions:", validQuestions);
-    console.log(`📤 Retrieved ${validQuestions.length} valid questions out of ${result.rows.length}`);
-    res.status(200).json(validQuestions);
   } catch (error) {
     console.error("❌ Error retrieving uploaded questions:", error);
-    res.status(500).json({ message: "Questions not in database: " + error.message });
+    res.status(500).json({ message: "Error retrieving questions: " + error.message });
   }
 });
-
 
 module.exports = router;
