@@ -234,9 +234,9 @@ const extractTextFromImage = async (base64) => {
 const extractBoundingBoxDataFromImage = async (img, boundingBoxes, filename, paperName) => {
   const width = img.width;
   const height = img.height;
-  const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0, width, height);
+  // const canvas = createCanvas(width, height);
+  // const ctx = canvas.getContext("2d");
+  // ctx.drawImage(img, 0, 0, width, height);
 
 
   const extractedData = [];
@@ -244,20 +244,27 @@ const extractBoundingBoxDataFromImage = async (img, boundingBoxes, filename, pap
   for (const box of boundingBoxes) {
     if (!["question"].includes(box.label)) continue;
 
-    const [x1, y1, x2, y2] = box.bounding_box;
-    const absY1 = Math.max(0, Math.round((y1 / 1000) * height));
-    const absY2 = Math.min(height, Math.round((y2 / 1000) * height));
+    // const [x1, y1, x2, y2] = box.bounding_box;
+    // const absY1 = Math.max(0, Math.round((y1 / 1000) * height));
+    // const absY2 = Math.min(height, Math.round((y2 / 1000) * height));
 
-    const padding = 20;
-    let absX1 = Math.max(0, Math.round((x1 / 1000) * width) - padding);
-    let absX2 = Math.min(width, Math.round((x2 / 1000) * width) + padding);
+    // const padding = 20;
+    // let absX1 = Math.max(0, Math.round((x1 / 1000) * width) - padding);
+    // let absX2 = Math.min(width, Math.round((x2 / 1000) * width) + padding);
 
-    if (box.label === "question") {
-      absX1 = 0;
-      absX2 = width;
-    }
+    // if (box.label === "question") {
+    //   absX1 = 0;
+    //   absX2 = width;
+    // }
+
+    // const croppedCanvas = createCanvas(absX2 - absX1, absY2 - absY1);
+    const absX1 = 0;
+    const absY1 = 0;
+    const absX2 = width;
+    const absY2 = height;
 
     const croppedCanvas = createCanvas(absX2 - absX1, absY2 - absY1);
+
     const croppedBuffer = croppedCanvas.toBuffer("image/png");
     const s3Key = `${paperName}/${filename.replace(".png", "")}_${box.label}_${box.question_number}.png`;
 
