@@ -413,7 +413,82 @@ router.post('/getCompletionOfQuiz', async (req, res) => {
     }
 });
 
-router.post('/getQuizScoresFor3Quiz', async (req, res) => {
+router.post('/getAllAverageQuizScores', async (req, res) => {
+  try {
+    const { teacher_id, subject, banding, level } = req.body;
+
+    if (!teacher_id || !subject || !banding || !level) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    // Step 1: Get all paper IDs for the teacher
+    const paperResult = await client.query(
+      `
+      SELECT id FROM questions_folder
+      WHERE teacher_id = $1
+        AND subject = $2
+        AND banding = $3
+        AND level = $4
+      ORDER BY id ASC
+      `,
+      [teacher_id, subject, banding, level]
+    );
+
+    const papers = paperResult.rows.map(row => row.id);
+
+    if (papers.length === 0) {
+      return res.status(200).json({
+        message: "No papers found for the given teacher.",
+        data: []
+      });
+    }
+
+    // Step 2: Query completed attempts for all papers
+    const scoresResult = await client.query(
+      `
+      SELECT DISTINCT ON (student_id, folder_id)
+        folder_id AS paper_id,
+        student_id,
+        student_score
+      FROM student_attempt_quiz_table
+      WHERE folder_id = ANY($1)
+        AND completed = true
+      ORDER BY student_id, folder_id, id ASC
+      `,
+      [papers]
+    );
+
+    const scores = scoresResult.rows;
+
+    // Step 3: Calculate total completed and average score for each paper
+    const paperScores = papers.map(paper => {
+      const paperEntries = scores.filter(entry => entry.paper_id === paper);
+      const totalCompleted = paperEntries.length;
+      const totalScore = paperEntries.reduce((sum, entry) => sum + Number(entry.student_score || 0), 0);
+      const averageScore = totalCompleted > 0 ? (totalScore / totalCompleted).toFixed(2) : "0.00";
+
+      return {
+        paper_id: paper,
+        total_number_of_completed: totalCompleted,
+        average_student_score: averageScore
+      };
+    });
+
+    // Step 4: Return the results
+    res.status(200).json({
+      message: "All quiz scores retrieved successfully.",
+      selected_papers: papers,
+      scores: paperScores
+    });
+
+  } catch (error) {
+    console.error('Error fetching quiz scores:', error);
+    res.status(500).json({ message: 'Internal server error: ' + error.message });
+  }
+});
+
+
+router.post('/getAverageQuizScoresFor3Quiz', async (req, res) => {
   try {
     const { paper_id, teacher_id, subject, banding, level } = req.body;
 

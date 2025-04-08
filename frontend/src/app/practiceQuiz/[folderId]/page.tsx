@@ -103,6 +103,7 @@ function QuizContent({ folderId, studentId }: { folderId: string ; studentId: st
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          paper_id: folderId, // ✅ Add this!
           question_id: questionId,
           answer_option: selectedOption,
           answer_text: selectedOptionText,
