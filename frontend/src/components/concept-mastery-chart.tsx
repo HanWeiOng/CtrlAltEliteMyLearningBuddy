@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import {
   BarChart,
   Bar,
@@ -14,26 +13,11 @@ import {
   Cell
 } from 'recharts';
 
-// Define topic data structure based on backend response
-interface TopicData {
-  topic_label: string;
-  total_wrong_attempts: string;
-  total_attempts_per_topic: string;
-  selected_percentage_wrong: string;
-}
-
-interface ApiResponse {
-  message: string;
-  paper_id: string;
-  data: TopicData[];
-}
-
+// Define topic data structure
 type Topic = {
   name: string;
   mastery: number;
-  total_wrong_attempts: number;
-  total_attempts: number;
-  selected_percentage_wrong: number;
+  wrong_ratio: number;
 }
 
 // Define component props
@@ -41,51 +25,6 @@ interface ConceptMasteryChartProps {
   quizId?: string;
   teacherId?: number;
 }
-
-const BASE_URL = 'http://localhost:5003';
-
-// Create a custom axios instance
-const axiosInstance = axios.create({
-  baseURL: BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-    'Pragma': 'no-cache',
-    'Expires': '0',
-    'Surrogate-Control': 'no-store'
-  }
-});
-
-// Add request interceptor
-axiosInstance.interceptors.request.use(
-  (config) => {
-    console.log('Making request:', {
-      method: config.method,
-      url: config.url,
-      data: config.data
-    });
-    return config;
-  },
-  (error) => {
-    console.error('Request error:', error);
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor
-axiosInstance.interceptors.response.use(
-  (response) => {
-    console.log('Response received:', {
-      status: response.status,
-      data: response.data
-    });
-    return response;
-  },
-  (error) => {
-    console.error('Response error:', error);
-    return Promise.reject(error);
-  }
-);
 
 export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMasteryChartProps) {
   // Track hovered bar
@@ -99,71 +38,48 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
   // Fetch topic data from API
   useEffect(() => {
     const fetchTopicsData = async () => {
-      if (!quizId || quizId === 'all') {
-        console.log('No quiz selected or "all" selected, skipping fetch');
-        setIsLoading(false);
-        setTopics([]);
-        setError(null);
-        return;
-      }
-
       setIsLoading(true);
       setError(null);
       
       try {
-        console.log('Fetching topic data for quiz:', quizId);
+        const response = await fetch('http://localhost:5003/api/visualisationGraph/getHardestTopic');
         
-        const response = await axiosInstance.post('http://localhost:5003/api/visualisationGraph/getHardestTopicByPaper', {
-          paper_id: quizId
-        });
-        
-        if (!response.data || !Array.isArray(response.data.data)) {
-          console.error('Invalid response format:', response.data);
-          throw new Error('Invalid data format received from server');
+        if (!response.ok) {
+          throw new Error('Failed to fetch topic data');
         }
         
-        if (response.data.data.length === 0) {
-          console.log('No topic data available for this quiz');
-          setTopics([]);
-          return;
-        }
+        const data = await response.json();
         
-        // Transform the data
-        const transformedData = response.data.data
-          .filter((topic: TopicData) => topic.topic_label && topic.selected_percentage_wrong)
-          .map((topic: TopicData) => ({
-            name: topic.topic_label,
-            total_wrong_attempts: parseInt(topic.total_wrong_attempts),
-            total_attempts: parseInt(topic.total_attempts_per_topic),
-            selected_percentage_wrong: parseFloat(topic.selected_percentage_wrong),
-            mastery: Math.round(100 - parseFloat(topic.selected_percentage_wrong))
-          }))
-          .sort((a: Topic, b: Topic) => b.mastery - a.mastery);
+        // Transform the data - convert wrong_ratio to mastery score (100 - wrong_ratio*100)
+        const transformedData = data.map((topic: any) => ({
+          name: topic.topic_label,
+          wrong_ratio: parseFloat(topic.wrong_ratio),
+          // Lower wrong ratio means higher mastery
+          mastery: Math.round(100 - parseFloat(topic.wrong_ratio) * 100)
+        }));
         
-        console.log('Setting topics with data:', transformedData);
         setTopics(transformedData);
       } catch (err) {
         console.error('Error fetching topic data:', err);
-        if (axios.isAxiosError(err)) {
-          const errorMessage = err.response?.data?.message || 'Failed to load topic data';
-          console.error('Server error details:', {
-            status: err.response?.status,
-            statusText: err.response?.statusText,
-            data: err.response?.data,
-            config: err.config
-          });
-          setError(errorMessage);
-        } else {
-          setError('Failed to load topic data');
-        }
-        setTopics([]);
+        setError('Failed to load topic data');
+        
+        // Fallback to sample data
+        setTopics([
+          { name: 'Algebra', mastery: 65, wrong_ratio: 0.35 },
+          { name: 'Geometry', mastery: 19, wrong_ratio: 0.81 },
+          { name: 'Functions', mastery: 58, wrong_ratio: 0.42 },
+          { name: 'Statistics', mastery: 82, wrong_ratio: 0.18 },
+          { name: 'Calculus', mastery: 45, wrong_ratio: 0.55 },
+          { name: 'Probability', mastery: 65, wrong_ratio: 0.35 },
+          { name: 'Trigonometry', mastery: 52, wrong_ratio: 0.48 }
+        ]);
       } finally {
         setIsLoading(false);
       }
     };
     
     fetchTopicsData();
-  }, [quizId]);
+  }, [quizId, teacherId]);
 
   // Function to determine color based on mastery level
   const getBarColor = (mastery: number) => {
@@ -186,33 +102,28 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const { name, mastery, wrong_ratio } = payload[0].payload;
       return (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-3 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center mb-1.5">
             <span className="rounded-full w-3 h-3 bg-indigo-500 mr-2"></span>
             <span className="font-semibold text-[0.8125rem]">Topic</span>
-            <span className="ml-auto text-[0.8125rem]">{data.name}</span>
+            <span className="ml-auto text-[0.8125rem]">{name}</span>
           </div>
           <div className="flex items-center mb-1.5">
             <span className="rounded-full w-3 h-3 bg-indigo-500 mr-2"></span>
             <span className="font-semibold text-[0.8125rem]">Mastery</span>
-            <span className="ml-auto text-[0.8125rem] font-medium">{data.mastery}%</span>
+            <span className="ml-auto text-[0.8125rem] font-medium">{mastery}%</span>
           </div>
           <div className="flex items-center mb-1.5">
             <span className="rounded-full w-3 h-3 bg-red-500 mr-2"></span>
             <span className="font-semibold text-[0.8125rem]">Error Rate</span>
-            <span className="ml-auto text-[0.8125rem] font-medium">{data.selected_percentage_wrong.toFixed(1)}%</span>
-          </div>
-          <div className="flex items-center mb-1.5">
-            <span className="rounded-full w-3 h-3 bg-blue-500 mr-2"></span>
-            <span className="font-semibold text-[0.8125rem]">Wrong Attempts</span>
-            <span className="ml-auto text-[0.8125rem] font-medium">{data.total_wrong_attempts} / {data.total_attempts}</span>
+            <span className="ml-auto text-[0.8125rem] font-medium">{(wrong_ratio * 100).toFixed(1)}%</span>
           </div>
           <div className="flex items-center">
             <span className="rounded-full w-3 h-3 bg-indigo-500 mr-2"></span>
             <span className="font-semibold text-[0.8125rem]">Status</span>
-            <span className="ml-auto text-[0.8125rem]">{getStatus(data.mastery)}</span>
+            <span className="ml-auto text-[0.8125rem]">{getStatus(mastery)}</span>
           </div>
         </div>
       );
@@ -244,23 +155,6 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
   const chartHeight = 300;
   const axisWidth = 40;
   const yAxisTicks = [0, 20, 40, 60, 80, 100];
-
-  // Show empty state when no quiz is selected or no data is available
-  if (!isLoading && topics.length === 0) {
-    return (
-      <div className="w-full bg-white dark:bg-slate-800 p-4 rounded-lg">
-        <div className="h-[300px] w-full flex items-center justify-center">
-          <div className="flex flex-col items-center text-center">
-            <p className="text-slate-500">
-              {quizId === 'all' 
-                ? 'Please select a specific quiz to view concept mastery data'
-                : 'No concept mastery data available for this quiz'}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Show loading state
   if (isLoading) {
