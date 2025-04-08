@@ -13,75 +13,74 @@ import {
   Cell
 } from 'recharts';
 
-// Define topic data structure
 type Topic = {
   name: string;
   mastery: number;
   wrong_ratio: number;
-}
+};
 
-// Define component props
 interface ConceptMasteryChartProps {
   quizId?: string;
   teacherId?: number;
 }
 
 export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMasteryChartProps) {
-  // Track hovered bar
   const [hoveredBar, setHoveredBar] = useState<string | null>(null);
-  
-  // State for topics data
   const [topics, setTopics] = useState<Topic[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch topic data from API
   useEffect(() => {
     const fetchTopicsData = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
-        const response = await fetch('http://localhost:5003/api/visualisationGraph/getHardestTopic');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch topic data');
+        let response;
+
+        if (quizId === 'all') {
+          if (!teacherId) throw new Error("Missing teacherId for overview query");
+          response = await fetch('http://localhost:5003/api/visualisationGraph/getHardestTopicOverview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ teacher_id: teacherId }),
+          });
+        } else {
+          response = await fetch('http://localhost:5003/api/visualisationGraph/getHardestTopicByPaper', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paper_id: Number(quizId) }),
+          });
         }
-        
-        const data = await response.json();
-        
-        // Transform the data - convert wrong_ratio to mastery score (100 - wrong_ratio*100)
-        const transformedData = data.map((topic: any) => ({
-          name: topic.topic_label,
-          wrong_ratio: parseFloat(topic.wrong_ratio),
-          // Lower wrong ratio means higher mastery
-          mastery: Math.round(100 - parseFloat(topic.wrong_ratio) * 100)
-        }));
-        
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const data = result.data || [];
+
+        const transformedData: Topic[] = data.map((topic: any) => {
+          const wrongRatio = parseFloat(topic.selected_percentage_wrong) / 100;
+          return {
+            name: topic.topic_label,
+            wrong_ratio: wrongRatio,
+            mastery: Math.round(100 - wrongRatio * 100),
+          };
+        });
+
         setTopics(transformedData);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching topic data:', err);
         setError('Failed to load topic data');
-        
-        // Fallback to sample data
-        setTopics([
-          { name: 'Algebra', mastery: 65, wrong_ratio: 0.35 },
-          { name: 'Geometry', mastery: 19, wrong_ratio: 0.81 },
-          { name: 'Functions', mastery: 58, wrong_ratio: 0.42 },
-          { name: 'Statistics', mastery: 82, wrong_ratio: 0.18 },
-          { name: 'Calculus', mastery: 45, wrong_ratio: 0.55 },
-          { name: 'Probability', mastery: 65, wrong_ratio: 0.35 },
-          { name: 'Trigonometry', mastery: 52, wrong_ratio: 0.48 }
-        ]);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchTopicsData();
   }, [quizId, teacherId]);
 
-  // Function to determine color based on mastery level
   const getBarColor = (mastery: number) => {
     if (mastery >= 80) return '#10b981'; // emerald-500
     if (mastery >= 70) return '#6366f1'; // indigo-500
@@ -89,8 +88,7 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
     if (mastery >= 50) return '#f59e0b'; // amber-500
     return '#ef4444'; // red-500
   };
-  
-  // Function to determine status based on mastery level
+
   const getStatus = (mastery: number) => {
     if (mastery >= 80) return 'Excellent';
     if (mastery >= 70) return 'Good';
@@ -99,8 +97,7 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
     return 'Needs Improvement';
   };
 
-  // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const { name, mastery, wrong_ratio } = payload[0].payload;
       return (
@@ -131,7 +128,6 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
     return null;
   };
 
-  // Custom axis tick for X axis (rotated)
   const CustomAxisTick = (props: any) => {
     const { x, y, payload } = props;
     return (
@@ -151,12 +147,10 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
     );
   };
 
-  // Styling constants
   const chartHeight = 300;
   const axisWidth = 40;
   const yAxisTicks = [0, 20, 40, 60, 80, 100];
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="w-full bg-white dark:bg-slate-800 p-4 rounded-lg">
@@ -170,7 +164,6 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <div className="w-full bg-white dark:bg-slate-800 p-4 rounded-lg">
@@ -263,4 +256,4 @@ export function ConceptMasteryChart({ quizId = 'all', teacherId }: ConceptMaster
       </div>
     </div>
   );
-} 
+}
