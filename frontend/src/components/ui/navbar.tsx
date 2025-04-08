@@ -52,7 +52,7 @@ export default function Navbar() {
   return (
     <nav className="flex items-center justify-between p-4 bg-white shadow-md">
       {/* Logo */}
-      <Link href="/" className="flex items-center gap-2 text-xl font-bold">
+      <Link href="" className="flex items-center gap-2 text-xl font-bold">
         <LayoutDashboard className="w-6 h-6 text-purple-500" />
         <span className="bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text">
           MyLearningBuddy
