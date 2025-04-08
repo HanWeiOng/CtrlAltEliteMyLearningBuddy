@@ -413,6 +413,93 @@ router.post('/getCompletionOfQuiz', async (req, res) => {
     }
 });
 
+router.post('/getQuizScoresFor3Quiz', async (req, res) => {
+  try {
+    const { paper_id, teacher_id, subject, banding, level } = req.body;
+
+    if (!paper_id || !teacher_id || !subject || !banding || !level) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    // Step 1: Get all paper IDs for the teacher
+    const paperResult = await client.query(
+      `
+      SELECT id FROM questions_folder
+      WHERE teacher_id = $1
+        AND subject = $2
+        AND banding = $3
+        AND level = $4
+      ORDER BY id ASC
+      `,
+      [teacher_id, subject, banding, level]
+    );
+
+    const papers = paperResult.rows.map(row => row.id);
+
+    if (!papers.includes(paper_id)) {
+      return res.status(404).json({ message: "Provided paper_id not found in teacher's papers." });
+    }
+
+    // Step 2: Find index of current paper_id
+    const currentIndex = papers.indexOf(paper_id);
+
+    // Step 3: Get previous, current, next paper IDs
+    const selectedPapers = papers.filter((_, index) =>
+      index === currentIndex - 1 || index === currentIndex || index === currentIndex + 1
+    );
+
+    if (selectedPapers.length === 0) {
+      return res.status(200).json({
+        message: "No adjacent papers found.",
+        selected_papers: [],
+        scores: []
+      });
+    }
+
+    // Step 4: Query first attempts with completed = true
+    const scoresResult = await client.query(
+      `
+      SELECT DISTINCT ON (student_id, folder_id)
+        folder_id AS paper_id,
+        student_id,
+        student_score
+      FROM student_attempt_quiz_table
+      WHERE folder_id = ANY($1)
+        AND completed = true
+      ORDER BY student_id, folder_id, id ASC
+      `,
+      [selectedPapers]
+    );
+
+    const scores = scoresResult.rows;
+
+    // Step 5: Process results to match your format
+    const paperScores = selectedPapers.map(paper => {
+      const paperEntries = scores.filter(entry => entry.paper_id === paper);
+      const totalCompleted = paperEntries.length;
+      const totalScore = paperEntries.reduce((sum, entry) => sum + Number(entry.student_score || 0), 0);
+      const averageScore = totalCompleted > 0 ? (totalScore / totalCompleted).toFixed(2) : "0.00";
+
+      return {
+        paper_id: paper,
+        total_number_of_completed: totalCompleted,
+        average_student_score: averageScore
+      };
+    });
+
+    // Step 6: Respond
+    res.status(200).json({
+      message: "Quiz scores retrieved successfully.",
+      selected_papers: selectedPapers,
+      scores: paperScores
+    });
+
+  } catch (error) {
+    console.error('Error fetching quiz scores:', error);
+    res.status(500).json({ message: 'Internal server error: ' + error.message });
+  }
+});
+
 
 router.post('/getIndividualPaperAllScore/:folder_id', async (req, res) => {
     try {
@@ -434,6 +521,7 @@ router.post('/getIndividualPaperAllScore/:folder_id', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 
 // New endpoint to get all quizzes/folders for the dropdown list
 router.get('/getAllQuizzes', async (req, res) => {
