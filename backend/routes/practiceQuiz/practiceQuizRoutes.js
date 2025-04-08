@@ -548,7 +548,7 @@ router.post("/logCompletion", async (req, res) => {
       res.status(200).json({
         message: `Quiz uncompleted by ${username}, user has left the paper.`,
         score: scoreToInsert,
-      });
+      }); 
     }
   } catch (error) {
     console.error("Error during quiz completion uploading:", error);
