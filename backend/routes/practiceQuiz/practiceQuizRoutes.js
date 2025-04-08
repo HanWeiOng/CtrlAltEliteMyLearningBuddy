@@ -556,4 +556,31 @@ router.post("/logCompletion", async (req, res) => {
   }
 });
 
+
+router.post('/deleteFolder/:folderId', async (req, res) => {
+  try {
+    const { folderId } = req.params;
+
+    if (!folderId) {
+      return res.status(400).json({ error: 'folderId is required' });
+    }
+
+    const response = await client.query(
+      `DELETE FROM questions_folder WHERE id = $1`,
+      [folderId]
+    );
+
+    if (response.rowCount === 0) {
+      return res.status(404).json({ message: 'Folder not found' });
+    }
+
+    return res.status(200).json({ message: 'Folder deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting folder:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 module.exports = router;
+ 

@@ -19,6 +19,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
+
+
 interface FolderActionsProps {
   folderId: number;
   folderName: string;
@@ -26,6 +28,7 @@ interface FolderActionsProps {
   onShare: (folderId: number) => void;
   onDownload: (folderId: number) => void;
   onAssign?: (folderId: number) => void
+  onDeleteSuccess?: () => void; // Optional: to refresh list or UI
 }
 
 export function FolderActions({
@@ -35,6 +38,7 @@ export function FolderActions({
   onShare,
   onDownload,
   onAssign,
+  onDeleteSuccess,
 }: FolderActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
@@ -55,10 +59,27 @@ export function FolderActions({
   const handleDelete = async () => {
     try {
       setIsDeleting(true)
-      await onDelete(folderId)
+
+      const response = await fetch(`http://localhost:5003/api/openpracticequiz/deleteFolder/${folderId}`, {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete folder')
+      }
+
       setShowDeleteDialog(false)
+
+      // ✅ Optional: refresh folder list or UI
+      if (onDeleteSuccess) {
+        onDeleteSuccess()
+      }
+
     } catch (error) {
       console.error('Error deleting folder:', error)
+
     } finally {
       setIsDeleting(false)
     }
@@ -103,13 +124,16 @@ export function FolderActions({
             Download Quiz
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-[#7C3AED]/10 dark:bg-[#7C3AED]/20" />
-          <DropdownMenuItem
-            onClick={() => setShowDeleteDialog(true)}
-            className="cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-200"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Quiz
-          </DropdownMenuItem>
+          {/* ✅ Only show Assign Quiz if user is not a student */}
+          {userPosition !== "student" && (
+            <DropdownMenuItem
+              onClick={() => setShowDeleteDialog(true)}
+              className="cursor-pointer text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-200"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Quiz
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

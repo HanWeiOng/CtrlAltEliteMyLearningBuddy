@@ -214,7 +214,7 @@ const PracticeQuizPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://localhost:5003/api/practiceQuiz/deleteFolder/${folderId}`,
+        `http://localhost:5003/api/openpracticequiz/deleteFolder/${folderId}`,
         {
           method: "DELETE",
         }
@@ -430,12 +430,12 @@ const PracticeQuizPage: React.FC = () => {
               <FolderPlus className="h-4 w-4" />
               <span>New Folder</span>
             </Button>
-            <Link href="/createquiz">
-              <Button className="gap-2 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:from-[#6D28D9] hover:to-[#5B21B6] text-white transition-all duration-200 shadow-sm hover:shadow-md">
-                <Plus className="h-4 w-4" />
-                <span>New Quiz</span>
-              </Button>
-            </Link>
+            
+            <Button onClick={() => router.push("/createQuiz")} className="gap-2 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:from-[#6D28D9] hover:to-[#5B21B6] text-white transition-all duration-200 shadow-sm hover:shadow-md">
+              <Plus className="h-4 w-4" />
+              <span>New Quiz</span>
+            </Button>
+       
           </div>
         </div>
 
