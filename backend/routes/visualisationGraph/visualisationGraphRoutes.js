@@ -39,92 +39,258 @@ client.connect((err) => {
     }
 });
 
-router.get('/getHardestTopic', async (req, res) => {
+router.post('/getHardestTopicOverview', async (req, res) => {
     try {
-        const result = await client.query(`
-            SELECT 
-            topic_label,
-            ROUND(
-                CASE 
-                    WHEN SUM(question_attempt_count) = 0 THEN 0 
-                    ELSE SUM(question_wrong)::numeric / SUM(question_attempt_count)
-                END
-            , 2) AS wrong_ratio
-            FROM questions
-            GROUP BY topic_label
-            ORDER BY wrong_ratio DESC
-            LIMIT 7;
-        `)
-        console.log(result);
-        res.status(200).json(result.rows);
-    } catch (error) {
-        console.error('Error retrieving questions:', error);
-        res.status(500).json({ message: 'Internal server error: ' + error.message });
-    }
-});
-
-router.get('/getPaperDemographic', async (req, res) => {
-    try {
-        const result = await client.query(`
-            SELECT level, COUNT(*) AS count
-            FROM (
-                SELECT DISTINCT ON (paper_name) level
-                FROM questions
-                ORDER BY paper_name, level
-            ) AS subquery
-            GROUP BY level;
-        `)
-        console.log(result);
-        res.status(200).json(result.rows);
-    } catch (error) {
-        console.error('Error retrieving questions:', error);
-        res.status(500).json({ message: 'Internal server error: ' + error.message });
-    }
-});
-
-// General 
-router.get('/getHardestQuestions', async (req, res) => {
-    try {
-        const result = await client.query(`
-            SELECT question_text, question_difficulty
-            FROM questions
-            WHERE question_difficulty > 0
-            ORDER BY question_difficulty ASC
-            LIMIT 10;
-        `)
-        console.log(result);
-        res.status(200).json(result.rows);
-    } catch (error) {
-        console.error('Error retrieving questions:', error);
-        res.status(500).json({ message: 'Internal server error: ' + error.message });
-    }
-});
-
-
-// Get the answer option that has the most wrong in a question
-router.get('/getAnswerOptionAnalytics/:question_id', async (req, res) => {
-    try {
-        const { question_id } = req.params; // ✅ GET requests use req.query
-
-        const result = await client.query(`
-            SELECT question_id, answer_option, answer_text, selected_option_count, correctness
-            FROM question_answer_table
-            WHERE question_id = $1 AND correctness = 'False'
-            ORDER BY selected_option_count DESC
-            LIMIT 1
-        `, [question_id]);
-
-        const row = result.rows[0];
-
-        res.status(200).json({
-            message: 'Most selected incorrect answer retrieved successfully.',
-            data: row || null
+      const { teacher_id } = req.body;
+  
+      if (!teacher_id) {
+        return res.status(400).json({ message: "teacher_id is required." });
+      }
+  
+      // Step 1: Get all paper_ids for this teacher
+      const papersResult = await client.query(
+        `
+        SELECT id FROM questions_folder
+        WHERE teacher_id = $1
+        `,
+        [teacher_id]
+      );
+  
+      const paperIds = papersResult.rows.map(row => row.id);
+  
+      if (paperIds.length === 0) {
+        return res.status(200).json({
+          message: 'No papers found for this teacher.',
+          data: [],
         });
+      }
+  
+      // Step 2: Aggregate by topic_label
+      const result = await client.query(
+        `
+        WITH topic_totals AS (
+          SELECT
+            topic_label,
+            SUM(selected_option_count) AS total_attempts_per_topic
+          FROM question_answer_table
+          WHERE paper_id = ANY($1)
+          GROUP BY topic_label
+        )
+        SELECT 
+          qat.topic_label,
+          SUM(qat.selected_option_count) AS total_wrong_attempts,
+          tt.total_attempts_per_topic,
+          ROUND(
+            (SUM(qat.selected_option_count)::decimal / NULLIF(tt.total_attempts_per_topic, 0)) * 100,
+            2
+          ) AS selected_percentage_wrong
+        FROM question_answer_table qat
+        JOIN topic_totals tt ON qat.topic_label = tt.topic_label
+        WHERE qat.paper_id = ANY($1)
+          AND qat.correctness = FALSE
+        GROUP BY 
+          qat.topic_label, 
+          tt.total_attempts_per_topic
+        ORDER BY selected_percentage_wrong DESC;
+        `,
+        [paperIds]
+      );
+  
+      res.status(200).json({
+        message: "Hardest topics retrieved successfully.",
+        data: result.rows,
+      });
+  
     } catch (error) {
-        console.error('Error retrieving answer analytics:', error);
-        res.status(500).json({ message: 'Internal server error' });
+      console.error('Error retrieving topics:', error);
+      res.status(500).json({ message: 'Internal server error: ' + error.message });
     }
 });
+
+router.post('/getHardestTopicByPaper', async (req, res) => {
+    try {
+      const { paper_id } = req.body;
+  
+      if (!paper_id) {
+        return res.status(400).json({ message: "paper_id is required." });
+      }
+  
+      // Step 1: Aggregate by topic_label for this specific paper
+      const result = await client.query(
+        `
+        WITH topic_totals AS (
+          SELECT
+            topic_label,
+            SUM(selected_option_count) AS total_attempts_per_topic
+          FROM question_answer_table
+          WHERE paper_id = $1
+          GROUP BY topic_label
+        )
+        SELECT 
+          qat.topic_label,
+          SUM(qat.selected_option_count) AS total_wrong_attempts,
+          tt.total_attempts_per_topic,
+          ROUND(
+            (SUM(qat.selected_option_count)::decimal / NULLIF(tt.total_attempts_per_topic, 0)) * 100,
+            2
+          ) AS selected_percentage_wrong
+        FROM question_answer_table qat
+        JOIN topic_totals tt ON qat.topic_label = tt.topic_label
+        WHERE qat.paper_id = $1
+          AND qat.correctness = FALSE
+        GROUP BY 
+          qat.topic_label, 
+          tt.total_attempts_per_topic
+        ORDER BY selected_percentage_wrong DESC;
+        `,
+        [paper_id]
+      );
+  
+      res.status(200).json({
+        message: "Hardest topics retrieved successfully.",
+        paper_id: paper_id,
+        data: result.rows,
+      });
+  
+    } catch (error) {
+      console.error('Error retrieving topics:', error);
+      res.status(500).json({ message: 'Internal server error: ' + error.message });
+    }
+});
+  
+
+//To use the function below need send the paper owned by the teacher in an array
+router.post('/getHardestQuestionsOverview', async (req, res) => {
+    try {
+      const { teacher_id } = req.body;
+  
+      if (!teacher_id) {
+        return res.status(400).json({ message: "teacher_id is required." });
+      }
+  
+      // Step 1: Get all paper_ids for this teacher
+      const papersResult = await client.query(
+        `
+        SELECT id FROM questions_folder
+        WHERE teacher_id = $1
+        `,
+        [teacher_id]
+      );
+  
+      const paperIds = papersResult.rows.map(row => row.id);
+  
+      if (paperIds.length === 0) {
+        return res.status(200).json({
+          message: 'No papers found for this teacher.',
+          data: [],
+        });
+      }
+  
+      // Step 2: Global question aggregation (ignore paper_id)
+      const result = await client.query(
+        `
+        WITH question_totals AS (
+          SELECT
+            question_id,
+            SUM(selected_option_count) AS total_attempts_per_question
+          FROM question_answer_table
+          WHERE paper_id = ANY($1)
+          GROUP BY question_id
+        )
+        SELECT 
+          qat.question_id,
+          SUM(qat.selected_option_count) AS total_wrong_attempts,
+          qt.total_attempts_per_question,
+          ROUND(
+            (SUM(qat.selected_option_count)::decimal / NULLIF(qt.total_attempts_per_question, 0)) * 100,
+            2
+          ) AS selected_percentage_wrong,
+          q.question_text,
+          qat.topic_label
+        FROM question_answer_table qat
+        JOIN questions q ON qat.question_id = q.id
+        JOIN question_totals qt ON qat.question_id = qt.question_id
+        WHERE qat.paper_id = ANY($1)
+          AND qat.correctness = FALSE
+        GROUP BY 
+          qat.question_id, 
+          qt.total_attempts_per_question,
+          q.question_text, 
+          qat.topic_label
+        ORDER BY selected_percentage_wrong DESC;
+        `,
+        [paperIds]
+      );
+  
+      res.status(200).json({
+        message: "Question overview retrieved successfully.",
+        data: result.rows,
+      });
+  
+    } catch (error) {
+      console.error("Error fetching question overview:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  
+router.post('/getHardestQuestionsByPaper', async (req, res) => {
+    try {
+      const { paper_id } = req.body;
+  
+      if (!paper_id) {
+        return res.status(400).json({ message: "paper_id is required." });
+      }
+  
+      const result = await client.query(
+        `
+        WITH question_totals AS (
+          SELECT
+            question_id,
+            SUM(selected_option_count) AS total_attempts_per_question
+          FROM question_answer_table
+          WHERE paper_id = $1
+          GROUP BY question_id
+        )
+        SELECT 
+          qat.paper_id,
+          qat.question_id,
+          SUM(qat.selected_option_count) AS total_wrong_attempts,
+          qt.total_attempts_per_question,
+          ROUND(
+            (SUM(qat.selected_option_count)::decimal / NULLIF(qt.total_attempts_per_question, 0)) * 100,
+            2
+          ) AS selected_percentage_wrong,
+          q.question_text,
+          qat.topic_label
+        FROM question_answer_table qat
+        JOIN questions q ON qat.question_id = q.id
+        JOIN question_totals qt ON qat.question_id = qt.question_id
+        WHERE qat.paper_id = $1
+          AND qat.correctness = FALSE
+        GROUP BY 
+          qat.paper_id, 
+          qat.question_id, 
+          qt.total_attempts_per_question,
+          q.question_text, 
+          qat.topic_label
+        ORDER BY selected_percentage_wrong DESC;
+        `,
+        [paper_id]
+      );
+  
+      res.status(200).json({
+        message: "Questions retrieved successfully.",
+        paper_id: paper_id,
+        data: result.rows,
+      });
+  
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+});
+  
 
 router.post('/getCompletionOfQuiz', async (req, res) => {
     const { teacher_id } = req.body;
@@ -389,3 +555,65 @@ async function explainWrongAnswer({ question, userAnswer, correctAnswer, options
 }
 
 module.exports = router;
+
+
+//         const result = await client.query(`
+//             SELECT question_text, question_difficulty
+//             FROM questions
+//             WHERE question_difficulty > 0
+//             ORDER BY question_difficulty ASC
+//             LIMIT 10;
+//         `)
+//         console.log(result);
+//         res.status(200).json(result.rows);
+//     } catch (error) {
+//         console.error('Error retrieving questions:', error);
+//         res.status(500).json({ message: 'Internal server error: ' + error.message });
+//     }
+// });
+// And this for most wrong questions individidual paper
+
+// Get the answer option that has the most wrong in a question
+// router.get('/getAnswerOptionAnalytics/:question_id', async (req, res) => {
+//     try {
+//         const { question_id } = req.params; // ✅ GET requests use req.query
+
+//         const result = await client.query(`
+//             SELECT question_id, answer_option, answer_text, selected_option_count, correctness
+//             FROM question_answer_table
+//             WHERE question_id = $1 AND correctness = 'False'
+//             ORDER BY selected_option_count DESC
+//             LIMIT 1
+//         `, [question_id]);
+
+//         const row = result.rows[0];
+
+//         res.status(200).json({
+//             message: 'Most selected incorrect answer retrieved successfully.',
+//             data: row || null
+//         });
+//     } catch (error) {
+//         console.error('Error retrieving answer analytics:', error);
+//         res.status(500).json({ message: 'Internal server error' });
+//     }
+// });
+
+
+// router.get('/getPaperDemographic', async (req, res) => {
+//     try {
+//         const result = await client.query(`
+//             SELECT level, COUNT(*) AS count
+//             FROM (
+//                 SELECT DISTINCT ON (paper_name) level
+//                 FROM questions
+//                 ORDER BY paper_name, level
+//             ) AS subquery
+//             GROUP BY level;
+//         `)
+//         console.log(result);
+//         res.status(200).json(result.rows);
+//     } catch (error) {
+//         console.error('Error retrieving questions:', error);
+//         res.status(500).json({ message: 'Internal server error: ' + error.message });
+//     }
+// });

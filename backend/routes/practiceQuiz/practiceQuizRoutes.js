@@ -335,7 +335,7 @@ router.use((err, req, res, next) => {
 });
 
 // 2 person 1 correct 1 wrong
-
+//UPDATE QUESTIONS DIFFICULTY SCORE
 router.post("/updateScore", async (req, res) => {
   try {
     const { questionId, questionCorrectness } = req.body;
@@ -385,17 +385,27 @@ router.post("/updateScore", async (req, res) => {
 
 router.post("/addAnswerOptionAnalytics", async (req, res) => {
   try {
-    const { question_id, answer_option, answer_text, correctness } = req.body;
+    const { paper_id, question_id, answer_option, answer_text, correctness } = req.body;
+
+    const getTopicLabel = await client.query(`
+      SELECT topic_label FROM questions 
+      WHERE id = $1
+      LIMIT 1
+      `, [question_id]
+    )
+
+    const topic_label = getTopicLabel.rows[0]?.topic_label || null; // handle if not found
+    console.log(topic_label)
 
     const result = await client.query(
       `INSERT INTO question_answer_table (
-                question_id, answer_option, answer_text, selected_option_count, correctness
+                question_id, answer_option, answer_text, selected_option_count, correctness, paper_id, topic_label
             )
-            VALUES ($1, $2, $3, 1, $4)
-            ON CONFLICT (question_id, answer_option)
+            VALUES ($1, $2, $3, 1, $4, $5, $6)
+            ON CONFLICT (question_id, answer_option, paper_id)
             DO UPDATE SET selected_option_count = question_answer_table.selected_option_count + 1
             RETURNING *;`,
-      [question_id, answer_option, answer_text, correctness]
+      [question_id, answer_option, answer_text, correctness, paper_id, topic_label]
     );
 
     const row = result.rows[0];
