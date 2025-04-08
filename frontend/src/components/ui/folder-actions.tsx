@@ -113,13 +113,13 @@ export function FolderActions({
             onClick={() => onShare(folderId)}
             className="cursor-pointer text-[#7C3AED] dark:text-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 transition-all duration-200"
           >
-            <Share2 className="mr-2 h-4 w-4 text-[#7C3AED] dark:text-[#7C3AED]" />
+            {/* <Share2 className="mr-2 h-4 w-4 text-[#7C3AED] dark:text-[#7C3AED]" />
             Share Quiz
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => onDownload(folderId)}
             className="cursor-pointer text-[#7C3AED] dark:text-[#7C3AED] hover:bg-[#7C3AED]/10 dark:hover:bg-[#7C3AED]/20 transition-all duration-200"
-          >
+          > */}
             <Download className="mr-2 h-4 w-4 text-[#7C3AED] dark:text-[#7C3AED]" />
             Download Quiz
           </DropdownMenuItem>
