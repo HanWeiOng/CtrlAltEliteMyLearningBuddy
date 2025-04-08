@@ -5,7 +5,9 @@ import * as d3 from "d3";
 
 interface Topic {
   topic_label: string;
-  wrong_ratio: number;
+  total_wrong_attempts: string;
+  total_attempts_per_topic: string;
+  selected_percentage_wrong: string;
 }
 
 interface PaperDemographic {
@@ -27,16 +29,33 @@ export default function DataVisualisationD3() {
 
   const fetchHardestTopic = async () => {
     try {
-      const response = await fetch("http://localhost:5003/api/visualisationGraph/getHardestTopic");
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      const parsedData: Topic[] = data.map((item: any) => ({
-        ...item,
-        wrong_ratio: parseFloat(item.wrong_ratio),
-      }));
-      setHardestTopicBarData(parsedData);
+      const response = await fetch("http://localhost:5003/api/visualisationGraph/getHardestTopicByPaper", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          paper_id: quiz_id // You might want to make this dynamic
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.data || !Array.isArray(result.data)) {
+        throw new Error('Invalid response format');
+      }
+
+      setHardestTopicBarData(result.data.map((item: Topic) => ({
+        topic_label: item.topic_label,
+        wrong_ratio: parseFloat(item.selected_percentage_wrong) / 100
+      })));
     } catch (error) {
-      console.error("Error occurred while making the request:", error);
+      console.error("Error fetching hardest topics:", error);
+      setHardestTopicBarData([]);
     }
   };
 

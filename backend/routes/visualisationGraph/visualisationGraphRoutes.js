@@ -717,6 +717,39 @@ async function explainWrongAnswer({ question, userAnswer, correctAnswer, options
     return response.text();
 }
 
+// New endpoint to get quiz folder data
+router.get('/getQuizFolderData', async (req, res) => {
+  try {
+    const { quiz_id, teacher_id } = req.query;
+    
+    // Validate required parameters
+    if (!quiz_id || !teacher_id) {
+      return res.status(400).json({ error: 'quiz_id and teacher_id are required' });
+    }
+
+    // Get quiz folder data
+    const result = await client.query(`
+      SELECT 
+        subject, 
+        banding, 
+        level
+      FROM 
+        questions_folder 
+      WHERE 
+        id = $1 AND teacher_id = $2
+    `, [quiz_id, teacher_id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Quiz folder not found' });
+    }
+
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching quiz folder data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
 
 
