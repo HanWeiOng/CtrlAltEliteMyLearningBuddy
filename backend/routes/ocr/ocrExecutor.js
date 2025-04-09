@@ -137,7 +137,8 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const OcrExecutionMinor = async (data) => {
   try {
-    const { subject, banding, level, paper_name: paperName, images } = data;
+    const { subject, banding, level, paper_name: paperNameRaw, images } = data;
+    const paperName = paperNameRaw.replace(/\s+/g, '_');
     const imageFiles = images.map((url) => ({ url, filename: path.basename(url) }));
     const allExtractedData = [];
 
@@ -264,6 +265,15 @@ const extractBoundingBoxDataFromImage = async (img, boundingBoxes, filename, pap
     const absY2 = height;
 
     const croppedCanvas = createCanvas(absX2 - absX1, absY2 - absY1);
+    const croppedCtx = croppedCanvas.getContext("2d");
+
+    croppedCtx.drawImage(
+      img,
+      absX1, absY1,                   // Source x, y
+      absX2 - absX1, absY2 - absY1,   // Source width, height
+      0, 0,                           // Dest x, y
+      absX2 - absX1, absY2 - absY1    // Dest width, height
+    );
 
     const croppedBuffer = croppedCanvas.toBuffer("image/png");
     const s3Key = `${paperName}/${filename.replace(".png", "")}_${box.label}_${box.question_number}.png`;

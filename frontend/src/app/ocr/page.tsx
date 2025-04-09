@@ -151,7 +151,8 @@ export default function UploadPage() {
         `http://localhost:5003/api/ocr/retrieve_all_uploaded_questions?paper_name=${paper_name}`
       );
       const questionsData = await questionsRes.json();
-      setUploadedQuestions(questionsData);
+      console.log(questionsData)
+      setUploadedQuestions(questionsData.valid_questions ||[]);
       console.log("Processed PDF:", result);
 
       const { images } = result;
@@ -382,8 +383,15 @@ export default function UploadPage() {
                             {q.image_paths &&
                               (() => {
                                 try {
-                                  const imageArray = JSON.parse(q.image_paths);
-                                  const imageUrl = imageArray[0]?.image_url;
+                                  let imageUrl = "";
+                                  try {
+                                    // Try parse if it's an array of image objects
+                                    const imageArray = JSON.parse(q.image_paths);
+                                    imageUrl = imageArray[0]?.image_url || "";
+                                  } catch {
+                                    // Fallback to plain string (already a URL)
+                                    imageUrl = q.image_paths;
+                                  }
 
                                   return imageUrl ? (
                                     <div className="relative aspect-[4/3] w-full mb-4">

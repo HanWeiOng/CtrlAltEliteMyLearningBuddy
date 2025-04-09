@@ -284,7 +284,7 @@ router.get("/retrieve_all_uploaded_questions", async (req, res) => {
       if (!q.level?.trim()) invalidFields.push("level");
 
       // Answer options
-      let answerOptions = JSON.parse(q.answer_options);
+      let answerOptions = q.answer_options;
       // if (typeof answerOptions === "string") {
       //   try {
       //     answerOptions = JSON.parse(answerOptions);
@@ -311,9 +311,15 @@ router.get("/retrieve_all_uploaded_questions", async (req, res) => {
       let imagePaths = q.image_paths;
       if (typeof imagePaths === "string") {
         try {
-          imagePaths = JSON.parse(imagePaths);
+          const parsed = JSON.parse(imagePaths);
+          imagePaths = parsed;
         } catch {
-          invalidFields.push("image_paths (invalid JSON)");
+          // If it's just a string URL (not JSON), wrap it in an array of objects
+          if (imagePaths.startsWith("http")) {
+            imagePaths = [{ image_url: imagePaths }];
+          } else {
+            invalidFields.push("image_paths (invalid JSON or malformed URL)");
+          }
         }
       }
 

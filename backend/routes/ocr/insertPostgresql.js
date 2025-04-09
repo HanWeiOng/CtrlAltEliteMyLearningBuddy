@@ -85,12 +85,16 @@ const insertJSONPayload = async (parsedJSON) => {
 
         const { paper_name, subject, banding, level, questions } = parsedJSON;
         const fullPaperName = `${paper_name}_${subject}_${banding}_${level}`.replace(/\s+/g, '_');
-        
         for (const item of questions) {
             // Extract only image_url(s) from image_path array
             const image_urls = (item.image_path || []).map(obj => obj.image_url);
-            const image_url_cleaned=JSON.stringify(image_urls[0]).replace(/\s+/g, '_')
+            if (image_urls.length === 0) continue;
+            const image_url_cleaned = image_urls[0]
+                .replace(/\s+/g, '_')     // Replace spaces with underscores
+                .replace(/\+/g, '_');     // Replace + with underscores
+
             console.log(`Extracted image URLs:`, image_urls);
+            console.log(`Cleaned image URLs:`, image_url_cleaned);
 
             await client.query(
                 `INSERT INTO questions (
