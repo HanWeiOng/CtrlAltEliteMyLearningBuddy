@@ -192,34 +192,53 @@ router.post('/getHardestQuestionsOverview', async (req, res) => {
       const result = await client.query(
         `
         WITH question_totals AS (
-          SELECT
-            question_id,
-            SUM(selected_option_count) AS total_attempts_per_question
-          FROM question_answer_table
-          WHERE paper_id = ANY($1)
-          GROUP BY question_id
-        )
-        SELECT 
-          qat.question_id,
-          SUM(qat.selected_option_count) AS total_wrong_attempts,
-          qt.total_attempts_per_question,
-          ROUND(
-            (SUM(qat.selected_option_count)::decimal / NULLIF(qt.total_attempts_per_question, 0)) * 100,
-            2
-          ) AS selected_percentage_wrong,
-          q.question_text,
-          qat.topic_label
-        FROM question_answer_table qat
-        JOIN questions q ON qat.question_id = q.id
-        JOIN question_totals qt ON qat.question_id = qt.question_id
-        WHERE qat.paper_id = ANY($1)
-          AND qat.correctness = FALSE
-        GROUP BY 
-          qat.question_id, 
-          qt.total_attempts_per_question,
-          q.question_text, 
-          qat.topic_label
-        ORDER BY selected_percentage_wrong DESC;
+  SELECT
+    question_id,
+    SUM(selected_option_count) AS total_attempts_per_question
+  FROM question_answer_table
+  WHERE paper_id = ANY($1)
+  GROUP BY question_id
+),
+most_wrong_options AS (
+  SELECT DISTINCT ON (question_id)
+    question_id,
+    answer_option,
+    answer_text,
+    selected_option_count
+  FROM question_answer_table
+  WHERE paper_id = ANY($1)
+    AND correctness = FALSE
+  ORDER BY question_id, selected_option_count DESC
+)
+SELECT 
+  qat.question_id,
+  SUM(qat.selected_option_count) AS total_wrong_attempts,
+  qt.total_attempts_per_question,
+  ROUND(
+    (SUM(qat.selected_option_count)::decimal / NULLIF(qt.total_attempts_per_question, 0)) * 100,
+    2
+  ) AS selected_percentage_wrong,
+  q.question_text,
+  qat.topic_label,
+  q.image_paths, -- ✅ Added image paths here
+  mwo.answer_option AS most_wrong_answer_option,
+  mwo.answer_text AS most_wrong_answer_text
+FROM question_answer_table qat
+JOIN questions q ON qat.question_id = q.id
+JOIN question_totals qt ON qat.question_id = qt.question_id
+JOIN most_wrong_options mwo ON qat.question_id = mwo.question_id
+WHERE qat.paper_id = ANY($1)
+  AND qat.correctness = FALSE
+GROUP BY 
+  qat.question_id, 
+  qt.total_attempts_per_question,
+  q.question_text, 
+  qat.topic_label,
+  q.image_paths,
+  mwo.answer_option,
+  mwo.answer_text
+ORDER BY selected_percentage_wrong DESC;
+
         `,
         [paperIds]
       );
@@ -247,36 +266,54 @@ router.post('/getHardestQuestionsByPaper', async (req, res) => {
       const result = await client.query(
         `
         WITH question_totals AS (
-          SELECT
-            question_id,
-            SUM(selected_option_count) AS total_attempts_per_question
-          FROM question_answer_table
-          WHERE paper_id = $1
-          GROUP BY question_id
-        )
-        SELECT 
-          qat.paper_id,
-          qat.question_id,
-          SUM(qat.selected_option_count) AS total_wrong_attempts,
-          qt.total_attempts_per_question,
-          ROUND(
-            (SUM(qat.selected_option_count)::decimal / NULLIF(qt.total_attempts_per_question, 0)) * 100,
-            2
-          ) AS selected_percentage_wrong,
-          q.question_text,
-          qat.topic_label
-        FROM question_answer_table qat
-        JOIN questions q ON qat.question_id = q.id
-        JOIN question_totals qt ON qat.question_id = qt.question_id
-        WHERE qat.paper_id = $1
-          AND qat.correctness = FALSE
-        GROUP BY 
-          qat.paper_id, 
-          qat.question_id, 
-          qt.total_attempts_per_question,
-          q.question_text, 
-          qat.topic_label
-        ORDER BY selected_percentage_wrong DESC;
+        SELECT
+          question_id,
+          SUM(selected_option_count) AS total_attempts_per_question
+        FROM question_answer_table
+        WHERE paper_id = $1
+        GROUP BY question_id
+      ),
+      most_wrong_options AS (
+        SELECT DISTINCT ON (question_id)
+          question_id,
+          answer_option,
+          answer_text,
+          selected_option_count
+        FROM question_answer_table
+        WHERE paper_id = $1
+          AND correctness = FALSE
+        ORDER BY question_id, selected_option_count DESC
+      )
+      SELECT 
+        qat.paper_id,
+        qat.question_id,
+        SUM(qat.selected_option_count) AS total_wrong_attempts,
+        qt.total_attempts_per_question,
+        ROUND(
+          (SUM(qat.selected_option_count)::decimal / NULLIF(qt.total_attempts_per_question, 0)) * 100,
+          2
+        ) AS selected_percentage_wrong,
+        q.question_text,
+        qat.topic_label,
+        q.image_paths,
+        mwo.answer_option AS most_wrong_answer_option,
+        mwo.answer_text AS most_wrong_answer_text
+      FROM question_answer_table qat
+      JOIN questions q ON qat.question_id = q.id
+      JOIN question_totals qt ON qat.question_id = qt.question_id
+      JOIN most_wrong_options mwo ON qat.question_id = mwo.question_id
+      WHERE qat.paper_id = $1
+        AND qat.correctness = FALSE
+      GROUP BY 
+        qat.paper_id,
+        qat.question_id,
+        qt.total_attempts_per_question,
+        q.question_text,
+        qat.topic_label,
+        q.image_paths,
+        mwo.answer_option,
+        mwo.answer_text
+      ORDER BY selected_percentage_wrong DESC;
         `,
         [paper_id]
       );
@@ -1290,82 +1327,114 @@ router.post('/getStudentsNeedingSupportByQuiz/:quizId', async (req, res) => {
 });
 
 
-/**
- * Explain why a user's answer to a question is wrong using Gemini
- * @param {string} question - The original question
- * @param {string} userAnswer - The user's (wrong) answer
- * @returns {Promise<string>} - Gemini's explanation
- */
-router.post('/reccomendationForResults', async (req, res) => {
-    const { question, userAnswer, correctAnswer, options, imageUrl } = req.body;
-  
-    if (!question || !userAnswer || !correctAnswer || !options) {
-      return res.status(400).json({ message: 'Missing fields in request body' });
-    }
-  
-    try {
-      const explanation = await explainWrongAnswer({
-        question,
-        userAnswer,
-        correctAnswer,
-        options,
-        imageUrl,
-        model,
-      });
-  
-      return res.status(200).json({ explanation });
-    } catch (error) {
-      console.error('Gemini error:', error);
-      return res.status(500).json({ message: 'Something went wrong', error: error.message });
-    }
-});
-  
+router.post('/reccomendationForResultsAllPapersNew', async (req, res) => {
+  const { question_text, image_paths, most_wrong_answer_text } = req.body;
 
-async function explainWrongAnswer({ question, userAnswer, correctAnswer, options, imageUrl, model }) {
-    let formattedOptions = options
-      .map((opt) => {
-        const text = typeof opt.text === 'string' ? opt.text : JSON.stringify(opt.text);
-        return `${opt.option}: ${text}`;
-      })
-      .join('\n');
-  
+  if (!question_text || !most_wrong_answer_text) {
+    return res.status(400).json({ message: 'Missing required fields in request body' });
+  }
 
+  try {
     const prompt = `
-    You are a helpful tutor explaining why an answer is incorrect. Please provide a clear and concise explanation following this format:
-
-    Here is the full context:
-    - Question: ${question}
-    - Image (if available): ${imageUrl ? imageUrl : "No diagram provided"}
-    - Answer: ${userAnswer.option}: ${userAnswer.text}
-    - Correct answer : ${correctAnswer.option}: ${correctAnswer.text}
-    - Options: ${formattedOptions}
-
-    Please provide your explanation following these guidelines:
-    1. Start with "❌ ${userAnswer.option} is incorrect because:"
-    2. Then explain "✅ Correct Answer: ${correctAnswer.option}"\
-    3. If the diagram is important, explain its relevance
-    4. Keep explanations concise and focused
-    5. Use bullet points for clarity
-    6. Do not use markdown formatting
-
-    Format your response like this:
-    ${imageUrl ? `
-        • [Explain diagram's relevance]` : ''}
-
-    ❌ ${userAnswer.option} is incorrect because:
-    • [First reason]
-    • [Second reason]
-
-    ✅ Correct Answer: ${correctAnswer.option}
-    • [First reason]
-    • [Second reason]
-    • [More reasons if neccesary]
+    A student answered this multiple-choice question incorrectly.
+    
+    Question: ${question_text}
+    Image: ${image_paths ? image_paths : "No diagram provided"}
+    Wrong Answer Chosen: ${most_wrong_answer_text}
+    
+    Identify clearly and briefly why the student likely selected this wrong answer. Consider misunderstandings, common misconceptions, confusion with the diagram, similar-looking options, or skipped reasoning steps. Keep the explanation short, specific, and focused only on the reason for the mistake. Do not add introductions, conclusions, or extra text.
     `;
-  
+
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    return response.text();
-}
+    const explanation = response.text().trim();
+
+    return res.status(200).json({ explanation });
+  } catch (error) {
+    console.error('Gemini error:', error);
+    return res.status(500).json({ message: 'Something went wrong', error: error.message });
+  }
+});
+
+
+
+
+// /**
+//  * Explain why a user's answer to a question is wrong using Gemini
+//  * @param {string} question - The original question
+//  * @param {string} userAnswer - The user's (wrong) answer
+//  * @returns {Promise<string>} - Gemini's explanation
+//  */
+// router.post('/reccomendationForResults', async (req, res) => {
+//     const { question, userAnswer, correctAnswer, options, imageUrl } = req.body;
+  
+//     if (!question || !userAnswer || !correctAnswer || !options) {
+//       return res.status(400).json({ message: 'Missing fields in request body' });
+//     }
+  
+//     try {
+//       const explanation = await explainWrongAnswer({
+//         question,
+//         userAnswer,
+//         correctAnswer,
+//         options,
+//         imageUrl,
+//         model,
+//       });
+  
+//       return res.status(200).json({ explanation });
+//     } catch (error) {
+//       console.error('Gemini error:', error);
+//       return res.status(500).json({ message: 'Something went wrong', error: error.message });
+//     }
+// });
+  
+
+// async function explainWrongAnswer({ question, userAnswer, correctAnswer, options, imageUrl, model }) {
+//     let formattedOptions = options
+//       .map((opt) => {
+//         const text = typeof opt.text === 'string' ? opt.text : JSON.stringify(opt.text);
+//         return `${opt.option}: ${text}`;
+//       })
+//       .join('\n');
+  
+
+//     const prompt = `
+//     You are a helpful tutor explaining why an answer is incorrect. Please provide a clear and concise explanation following this format:
+
+//     Here is the full context:
+//     - Question: ${question}
+//     - Image (if available): ${imageUrl ? imageUrl : "No diagram provided"}
+//     - Answer: ${userAnswer.option}: ${userAnswer.text}
+//     - Correct answer : ${correctAnswer.option}: ${correctAnswer.text}
+//     - Options: ${formattedOptions}
+
+//     Please provide your explanation following these guidelines:
+//     1. Start with "❌ ${userAnswer.option} is incorrect because:"
+//     2. Then explain "✅ Correct Answer: ${correctAnswer.option}"\
+//     3. If the diagram is important, explain its relevance
+//     4. Keep explanations concise and focused
+//     5. Use bullet points for clarity
+//     6. Do not use markdown formatting
+
+//     Format your response like this:
+//     ${imageUrl ? `
+//         • [Explain diagram's relevance]` : ''}
+
+//     ❌ ${userAnswer.option} is incorrect because:
+//     • [First reason]
+//     • [Second reason]
+
+//     ✅ Correct Answer: ${correctAnswer.option}
+//     • [First reason]
+//     • [Second reason]
+//     • [More reasons if neccesary]
+//     `;
+  
+//     const result = await model.generateContent(prompt);
+//     const response = await result.response;
+//     return response.text();
+// }
 
 
 
