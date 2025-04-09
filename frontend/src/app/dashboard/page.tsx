@@ -25,6 +25,8 @@ import { StudentPerformanceTable } from "@/components/student-performance-table"
 import { ProgressRing } from "@/components/progress-ring";
 import RoleRestrictionWrapper from "@/components/RoleRestrictionWrapper";
 import MostMissedQuestionsTable from "@/components/MostMissedQuestionsTable";
+import NeedsSupport from '@/components/NeedsSupport';
+
 
 // Quiz data structure
 type Quiz = {
@@ -704,9 +706,8 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Need Support Section */}
-            <div className="md:col-span-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md hover:shadow-lg transition-shadow rounded-lg overflow-hidden">
-              {/* Needs Support */}
+          {/* Needs Support Section */}
+          <div className="md:col-span-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md hover:shadow-lg transition-shadow rounded-lg overflow-hidden">
               <div className="bg-gradient-to-r from-red-500/10 to-orange-500/5 dark:from-red-500/20 dark:to-orange-500/10 p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -726,67 +727,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="p-3">
-                <div className="space-y-2">
-                  {/* Student 1 */}
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium text-xs">
-                        1
-                      </div>
-                      <span className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                        Jamie Smith
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                        45%
-                      </div>
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400">
-                        Critical
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Student 2 */}
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium text-xs">
-                        2
-                      </div>
-                      <span className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                        Alex Johnson
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                        52%
-                      </div>
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400">
-                        Critical
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Student 3 */}
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium text-xs">
-                        3
-                      </div>
-                      <span className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                        Taylor Williams
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-                        58%
-                      </div>
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
-                        At Risk
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                <NeedsSupport quizId={selectedQuiz.id} />
               </div>
             </div>
           </div>

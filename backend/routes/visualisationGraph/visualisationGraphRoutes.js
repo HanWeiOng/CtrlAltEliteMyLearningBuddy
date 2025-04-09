@@ -789,6 +789,132 @@ async function explainWrongAnswer({ question, userAnswer, correctAnswer, options
     return response.text();
 }
 
+
+// ... existing code ...
+
+// Get students needing support across all quizzes
+router.post('/getStudentsNeedingSupport', async (req, res) => {
+  try {
+    const { teacher_id } = req.body;
+
+    if (!teacher_id) {
+      return res.status(400).json({ message: "teacher_id is required." });
+    }
+
+    // Step 1: Get all paper_ids for this teacher
+    const papersResult = await client.query(
+      `
+      SELECT id FROM questions_folder
+      WHERE teacher_id = $1
+      `,
+      [teacher_id]
+    );
+
+    const paperIds = papersResult.rows.map(row => row.id);
+
+    if (paperIds.length === 0) {
+      return res.status(200).json({
+        message: 'No papers found for this teacher.',
+        data: [],
+      });
+    }
+
+    // Step 2: Get average scores for each student across all papers
+    const result = await client.query(
+      `
+      WITH student_scores AS (
+        SELECT 
+          student_name,
+          ROUND(AVG(student_score)::numeric, 2) as score
+        FROM student_attempt_quiz_table
+        WHERE folder_id = ANY($1)
+          AND completed = true
+        GROUP BY student_name
+        HAVING AVG(student_score) < 70  -- Only get students with average score below 70%
+        ORDER BY score ASC
+      )
+      SELECT 
+        student_name,
+        score::text as score
+      FROM student_scores
+      `,
+      [paperIds]
+    );
+
+    res.status(200).json({
+      message: "Students needing support retrieved successfully.",
+      data: result.rows,
+    });
+
+  } catch (error) {
+    console.error('Error retrieving students needing support:', error);
+    res.status(500).json({ message: 'Internal server error: ' + error.message });
+  }
+});
+
+// Get students needing support for a specific quiz
+router.post('/getStudentsNeedingSupportByQuiz/:quizId', async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const { teacher_id } = req.body;
+
+    if (!teacher_id) {
+      return res.status(400).json({ message: "teacher_id is required." });
+    }
+
+    // Verify the quiz belongs to the teacher
+    const quizCheck = await client.query(
+      `
+      SELECT id FROM questions_folder
+      WHERE id = $1 AND teacher_id = $2
+      `,
+      [quizId, teacher_id]
+    );
+
+    if (quizCheck.rows.length === 0) {
+      return res.status(404).json({
+        message: 'Quiz not found or does not belong to this teacher.',
+        data: [],
+      });
+    }
+
+    // Get student scores for this specific quiz
+    const result = await client.query(
+      `
+      WITH latest_attempts AS (
+        SELECT DISTINCT ON (student_name)
+          student_name,
+          student_score::numeric as score
+        FROM student_attempt_quiz_table
+        WHERE folder_id = $1
+          AND completed = true
+        ORDER BY student_name, id DESC
+      )
+      SELECT 
+        student_name,
+        ROUND(score, 2)::text as score
+      FROM latest_attempts
+      WHERE score < 70  -- Only get students with score below 70%
+      ORDER BY score ASC
+      `,
+      [quizId]
+    );
+
+    res.status(200).json({
+      message: "Students needing support retrieved successfully.",
+      data: result.rows,
+    });
+
+  } catch (error) {
+    console.error('Error retrieving students needing support:', error);
+    res.status(500).json({ message: 'Internal server error: ' + error.message });
+  }
+});
+
+
+
+
+
 module.exports = router;
 
 
