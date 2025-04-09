@@ -640,6 +640,36 @@ router.get('/getAllQuizzes', async (req, res) => {
     }
 });
 
+router.get('/getQuizFolder', async (req, res) => {
+  try {
+    const { quiz_id, teacher_id } = req.query;
+
+    if (!quiz_id || !teacher_id) {
+      return res.status(400).json({ message: "quiz_id and teacher_id are required." });
+    }
+
+    // Get quiz folder data
+    const result = await client.query(
+      `
+      SELECT subject, banding, level, folder_name
+      FROM questions_folder
+      WHERE id = $1 AND teacher_id = $2
+      `,
+      [quiz_id, teacher_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Quiz folder not found." });
+    }
+
+    res.status(200).json(result.rows[0]);
+
+  } catch (error) {
+    console.error('Error fetching quiz folder:', error);
+    res.status(500).json({ message: 'Internal server error: ' + error.message });
+  }
+});
+
 /**
  * Explain why a user's answer to a question is wrong using Gemini
  * @param {string} question - The original question

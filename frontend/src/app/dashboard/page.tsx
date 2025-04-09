@@ -76,6 +76,9 @@ export default function DashboardPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingQuizzes, setIsLoadingQuizzes] = useState(true);
+  const [hardestTopicBarData, setHardestTopicBarData] = useState<Topic[]>([]);
+  const [paperDemographicBarData, setPaperDemographicBarData] = useState<PaperDemographic[]>([]);
+  const [questions, setQuestions] = useState<HardestQuestion[]>([]);
 
   // Function to fetch quizzes from API
   const fetchQuizzes = async () => {
@@ -108,6 +111,49 @@ export default function DashboardPage() {
       ]);
     } finally {
       setIsLoadingQuizzes(false);
+    }
+  };
+
+
+    const fetchHardestTopic = async (quizId: string, teacherId?: number) => {
+    try {
+      let response;
+  
+      if (quizId === 'all') {
+        if (!teacherId) {
+          throw new Error("Teacher ID is required when quizId is 'all'");
+        }
+  
+        response = await fetch("http://localhost:5003/api/visualisationGraph/getHardestTopicOverview", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ teacher_id: teacherId }),
+        });
+      } else {
+        response = await fetch("http://localhost:5003/api/visualisationGraph/getHardestTopicByPaper", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ paper_id: Number(quizId) }),
+        });
+      }
+  
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  
+      const result = await response.json();
+  
+      const parsedData: Topic[] = result.data.map((item: any) => ({
+        topic_label: item.topic_label,
+        wrong_ratio: parseFloat(item.selected_percentage_wrong) / 100,
+      }));
+
+  
+      setHardestTopicBarData(parsedData);
+    } catch (error) {
+      console.error("Error occurred while making the request:", error);
     }
   };
 
