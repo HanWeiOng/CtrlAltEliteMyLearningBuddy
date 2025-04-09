@@ -751,58 +751,61 @@ router.get('/getQuizFolder', async (req, res) => {
 
 router.post('/teacherActionInsights', async (req, res) => {
   try {
-    // Simulated data for all papers
-    const hardestQuestions = [
-      {
-        question_text: "What type of cell is it?",
-        topic_label: "Cell Types",
-        selected_percentage_wrong: "100.00"
-      },
-      {
-        question_text: "Amylase solution is tested with Benedict's solution, biuret solution and iodine solution. Which colours are obtained?",
-        topic_label: "Enzymes",
-        selected_percentage_wrong: "73.08"
-      },
-      {
-        question_text: "The diagram below shows a cell as seen under an electron microscope. What are the functions in the cell of the numbered parts?",
-        topic_label: "Cell Structure",
-        selected_percentage_wrong: "30.00"
-      }
-    ];
 
-    const hardestTopics = [
-      {
-        topic_label: "Cell Types",
-        selected_percentage_wrong: "100.00"
-      },
-      {
-        topic_label: "Enzymes",
-        selected_percentage_wrong: "73.08"
-      },
-      {
-        topic_label: "Cell Structure",
-        selected_percentage_wrong: "30.00"
-      }
-    ];
+    const { hardestQuestions, hardestTopics, allPaperScores } = req.body;
 
-    const allPaperScores = [
-      {
-        student_name: "raerae3",
-        average_score: "69.55"
-      },
-      {
-        student_name: "Sharon001",
-        average_score: "57.25"
-      },
-      {
-        student_name: "raerae2",
-        average_score: "48.00"
-      },
-      {
-        student_name: "raerae1",
-        average_score: "0.00"
-      }
-    ];
+    // // Simulated data for all papers
+    // const hardestQuestions = [
+    //   {
+    //     question_text: "What type of cell is it?",
+    //     topic_label: "Cell Types",
+    //     selected_percentage_wrong: "100.00"
+    //   },
+    //   {
+    //     question_text: "Amylase solution is tested with Benedict's solution, biuret solution and iodine solution. Which colours are obtained?",
+    //     topic_label: "Enzymes",
+    //     selected_percentage_wrong: "73.08"
+    //   },
+    //   {
+    //     question_text: "The diagram below shows a cell as seen under an electron microscope. What are the functions in the cell of the numbered parts?",
+    //     topic_label: "Cell Structure",
+    //     selected_percentage_wrong: "30.00"
+    //   }
+    // ];
+
+    // const hardestTopics = [
+    //   {
+    //     topic_label: "Cell Types",
+    //     selected_percentage_wrong: "100.00"
+    //   },
+    //   {
+    //     topic_label: "Enzymes",
+    //     selected_percentage_wrong: "73.08"
+    //   },
+    //   {
+    //     topic_label: "Cell Structure",
+    //     selected_percentage_wrong: "30.00"
+    //   }
+    // ];
+
+    // const allPaperScores = [
+    //   {
+    //     student_name: "raerae3",
+    //     average_score: "69.55"
+    //   },
+    //   {
+    //     student_name: "Sharon001",
+    //     average_score: "57.25"
+    //   },
+    //   {
+    //     student_name: "raerae2",
+    //     average_score: "48.00"
+    //   },
+    //   {
+    //     student_name: "raerae1",
+    //     average_score: "0.00"
+    //   }
+    // ];
 
     // Categorization functions
     function categorizeByPriority(items, key) {
@@ -948,81 +951,79 @@ ${finalInstructions}
 });
 
 
-
-
 /**
  * Teacher Dashboard Insights (Individual Paper) - frontend sends the data
  */
-
-
 router.post('/teacherActionInsightsIndividual', async (req, res) => {
   try {
-    // Simulated data for individual paper
-    const hardestQuestionsByPaper = [
-      {
-        paper_id: 5769,
-        question_id: 2,
-        total_wrong_attempts: "15",
-        total_attempts_per_question: "15",
-        selected_percentage_wrong: "100.00",
-        question_text: "Amylase solution is tested with Benedict's solution, biuret solution and iodine solution. Which colours are obtained?",
-        topic_label: "Enzymes"
-      },
-      {
-        paper_id: 5769,
-        question_id: 22,
-        total_wrong_attempts: "5",
-        total_attempts_per_question: "5",
-        selected_percentage_wrong: "100.00",
-        question_text: "What type of cell is it?",
-        topic_label: "Cell Types"
-      },
-      {
-        paper_id: 5769,
-        question_id: 21,
-        total_wrong_attempts: "3",
-        total_attempts_per_question: "10",
-        selected_percentage_wrong: "30.00",
-        question_text: "The diagram below shows a cell as seen under an electron microscope. What are the functions in the cell of the numbered parts?",
-        topic_label: "Cell Structure"
-      }
-    ];
+    const { hardestQuestionsByPaper, hardestTopicsByPaper, individualPaperScores } = req.body;
 
-    const hardestTopicsByPaper = [
-      {
-        topic_label: "Enzymes",
-        total_wrong_attempts: "15",
-        total_attempts_per_topic: "15",
-        selected_percentage_wrong: "100.00"
-      },
-      {
-        topic_label: "Cell Types",
-        total_wrong_attempts: "5",
-        total_attempts_per_topic: "5",
-        selected_percentage_wrong: "100.00"
-      },
-      {
-        topic_label: "Cell Structure",
-        total_wrong_attempts: "3",
-        total_attempts_per_topic: "10",
-        selected_percentage_wrong: "30.00"
-      }
-    ];
+      // // Simulated data for individual paper
+      // const hardestQuestionsByPaper = [
+      //   {
+      //     paper_id: 5769,
+      //     question_id: 2,
+      //     total_wrong_attempts: "15",
+      //     total_attempts_per_question: "15",
+      //     selected_percentage_wrong: "100.00",
+      //     question_text: "Amylase solution is tested with Benedict's solution, biuret solution and iodine solution. Which colours are obtained?",
+      //     topic_label: "Enzymes"
+      //   },
+      //   {
+      //     paper_id: 5769,
+      //     question_id: 22,
+      //     total_wrong_attempts: "5",
+      //     total_attempts_per_question: "5",
+      //     selected_percentage_wrong: "100.00",
+      //     question_text: "What type of cell is it?",
+      //     topic_label: "Cell Types"
+      //   },
+      //   {
+      //     paper_id: 5769,
+      //     question_id: 21,
+      //     total_wrong_attempts: "3",
+      //     total_attempts_per_question: "10",
+      //     selected_percentage_wrong: "30.00",
+      //     question_text: "The diagram below shows a cell as seen under an electron microscope. What are the functions in the cell of the numbered parts?",
+      //     topic_label: "Cell Structure"
+      //   }
+      // ];
 
-    const individualPaperScores = [
-      {
-        student_name: "raerae3",
-        student_score: "69.55"
-      },
-      {
-        student_name: "Sharon001",
-        student_score: "54.00"
-      },
-      {
-        student_name: "raerae2",
-        student_score: "48.00"
-      }
-    ];
+      // const hardestTopicsByPaper = [
+      //   {
+      //     topic_label: "Enzymes",
+      //     total_wrong_attempts: "15",
+      //     total_attempts_per_topic: "15",
+      //     selected_percentage_wrong: "100.00"
+      //   },
+      //   {
+      //     topic_label: "Cell Types",
+      //     total_wrong_attempts: "5",
+      //     total_attempts_per_topic: "5",
+      //     selected_percentage_wrong: "100.00"
+      //   },
+      //   {
+      //     topic_label: "Cell Structure",
+      //     total_wrong_attempts: "3",
+      //     total_attempts_per_topic: "10",
+      //     selected_percentage_wrong: "30.00"
+      //   }
+      // ];
+
+      // const individualPaperScores = [
+      //   {
+      //     student_name: "raerae3",
+      //     student_score: "69.55"
+      //   },
+      //   {
+      //     student_name: "Sharon001",
+      //     student_score: "54.00"
+      //   },
+      //   {
+      //     student_name: "raerae2",
+      //     student_score: "48.00"
+      //   }
+      // ];
 
     // Categorization functions
     function categorizeByPriority(items, key) {
@@ -1295,113 +1296,3 @@ router.post('/getStudentsNeedingSupportByQuiz/:quizId', async (req, res) => {
 
 
 module.exports = router;
-
-
-//         const result = await client.query(`
-//             SELECT question_text, question_difficulty
-//             FROM questions
-//             WHERE question_difficulty > 0
-//             ORDER BY question_difficulty ASC
-//             LIMIT 10;
-//         `)
-//         console.log(result);
-//         res.status(200).json(result.rows);
-//     } catch (error) {
-//         console.error('Error retrieving questions:', error);
-//         res.status(500).json({ message: 'Internal server error: ' + error.message });
-//     }
-// });
-// And this for most wrong questions individidual paper
-
-// Get the answer option that has the most wrong in a question
-// router.get('/getAnswerOptionAnalytics/:question_id', async (req, res) => {
-//     try {
-//         const { question_id } = req.params; // ✅ GET requests use req.query
-
-//         const result = await client.query(`
-//             SELECT question_id, answer_option, answer_text, selected_option_count, correctness
-//             FROM question_answer_table
-//             WHERE question_id = $1 AND correctness = 'False'
-//             ORDER BY selected_option_count DESC
-//             LIMIT 1
-//         `, [question_id]);
-
-//         const row = result.rows[0];
-
-//         res.status(200).json({
-//             message: 'Most selected incorrect answer retrieved successfully.',
-//             data: row || null
-//         });
-//     } catch (error) {
-//         console.error('Error retrieving answer analytics:', error);
-//         res.status(500).json({ message: 'Internal server error' });
-//     }
-// });
-
-
-// router.get('/getPaperDemographic', async (req, res) => {
-//     try {
-//         const result = await client.query(`
-//             SELECT level, COUNT(*) AS count
-//             FROM (
-//                 SELECT DISTINCT ON (paper_name) level
-//                 FROM questions
-//                 ORDER BY paper_name, level
-//             ) AS subquery
-//             GROUP BY level;
-//         `)
-//         console.log(result);
-//         res.status(200).json(result.rows);
-//     } catch (error) {
-//         console.error('Error retrieving questions:', error);
-//         res.status(500).json({ message: 'Internal server error: ' + error.message });
-//     }
-// });
-
-
-// /**
-//  * Explain why a user's answer to a question is wrong using Gemini
-//  * @param {string} question - The original question
-//  * @param {string} userAnswer - The user's (wrong) answer
-//  * @returns {Promise<string>} - Gemini's explanation
-//  */
-// router.post('/reccomendationForResults', async (req, res) => {
-//   const { question, userAnswer, correctAnswer, options, imageUrl } = req.body;
-
-//   if (!question || !userAnswer || !correctAnswer || !options) {
-//     return res.status(400).json({ message: 'Missing fields in request body' });
-//   }
-
-//   try {
-//     const explanation = await explainWrongAnswer({
-//       question,
-//       userAnswer,
-//       correctAnswer,
-//       options,
-//       imageUrl,
-//       model,
-//     });
-
-//     return res.status(200).json({ explanation });
-//   } catch (error) {
-//     console.error('Gemini error:', error);
-//     return res.status(500).json({ message: 'Something went wrong', error: error.message });
-//   }
-// });
-
-
-// async function explainWrongAnswer({ question, userAnswer, correctAnswer, options, imageUrl, model }) {
-//   let formattedOptions = options
-//     .map((opt) => {
-//       const text = typeof opt.text === 'string' ? opt.text : JSON.stringify(opt.text);
-//       return `${opt.option}: ${text}`;
-//     })
-//     .join('\n');
-
-//   const prompt = `
-//   `;
-
-//   const result = await model.generateContent(prompt);
-//   const response = await result.response;
-//   return response.text();
-// }
