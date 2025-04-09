@@ -675,8 +675,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-                    {/* Second row - Most missed questions and support/recommendations */}
-                    <div className="grid gap-6 md:grid-cols-6 h-fit">
+          <div className="grid gap-6 md:grid-cols-6 h-fit">
             {/* Most Missed Questions */}
             <div className="md:col-span-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md hover:shadow-lg transition-shadow rounded-lg">
               <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/5 dark:from-blue-500/20 dark:to-indigo-500/10 p-4">
