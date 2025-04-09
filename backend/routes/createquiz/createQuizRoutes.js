@@ -47,8 +47,82 @@ router.get('/getQuestions', async (req, res) => {
             SELECT * FROM questions
             WHERE subject = $1 AND banding = $2 AND level = $3
         `, [subject, banding, level]);
-        console.log(result.rows);
-        res.status(200).json(result.rows);
+        // console.log(result.rows);
+
+        const validQuestions = [];
+        const invalidQuestions = [];
+
+        for (const q of result.rows) {
+          const invalidFields = [];
+
+          if (!q.question_text?.trim()) invalidFields.push("question_text");
+          if (!q.question_number?.toString().trim()) invalidFields.push("question_number");
+          if (!q.answer_key?.trim()) invalidFields.push("answer_key");
+          if (!q.topic_label?.trim()) invalidFields.push("topic_label");
+          if (!q.subject?.trim()) invalidFields.push("subject");
+          if (!q.banding?.trim()) invalidFields.push("banding");
+          if (!q.level?.trim()) invalidFields.push("level");
+
+          let answerOptions = q.answer_options;
+          const hasValidOptions =
+            Array.isArray(answerOptions) &&
+            answerOptions.length > 0 &&
+            answerOptions.every(
+              (opt) =>
+                opt &&
+                typeof opt.option === "string" &&
+                opt.option.trim() !== "" &&
+                (typeof opt.text === "string"
+                  ? opt.text.trim() !== ""
+                  : opt.text !== null && typeof opt.text === "object")
+            );
+
+          if (!hasValidOptions) invalidFields.push("answer_options");
+
+          let imagePaths = q.image_paths;
+          if (typeof imagePaths === "string") {
+            try {
+              const parsed = JSON.parse(imagePaths);
+              imagePaths = parsed;
+            } catch {
+              if (imagePaths.startsWith("http")) {
+                imagePaths = [{ image_url: imagePaths }];
+              } else {
+                invalidFields.push("image_paths (invalid JSON or malformed URL)");
+              }
+            }
+          }
+
+          const hasValidImages =
+            Array.isArray(imagePaths) &&
+            imagePaths.every(
+              (img) =>
+                img &&
+                typeof img.image_url === "string" &&
+                img.image_url.startsWith("http")
+            );
+
+          if (!hasValidImages) invalidFields.push("image_paths");
+
+          if (invalidFields.length === 0) {
+            validQuestions.push(q);
+          } else {
+            invalidQuestions.push({
+              question_number: q.question_number,
+              invalid_fields: invalidFields,
+            });
+          }
+        }
+
+        console.log("✅ Valid Questions:", validQuestions.length);
+        console.log("❌ Invalid Questions:", invalidQuestions);
+
+
+        // Or if using Express:
+        res.json(validQuestions);
+
+
+        // res.status(200).json(result.rows);
     } catch (error) {
         console.error('Error retrieving questions:', error);
         res.status(500).json({ message: 'Internal server error: ' + error.message });
