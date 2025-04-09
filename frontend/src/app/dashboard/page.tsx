@@ -76,6 +76,8 @@ export default function DashboardPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingQuizzes, setIsLoadingQuizzes] = useState(true);
+    const [studentCount, setStudentCount] = useState(0);
+
   const [hardestTopicBarData, setHardestTopicBarData] = useState<Topic[]>([]);
   const [paperDemographicBarData, setPaperDemographicBarData] = useState<PaperDemographic[]>([]);
   const [questions, setQuestions] = useState<HardestQuestion[]>([]);
@@ -101,14 +103,7 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error("Error fetching quizzes:", error);
-      // Fallback to default quizzes in case of error
-      setQuizzes([
-        { id: "all", name: "All Quizzes" },
-        { id: "quiz-1", name: "Quiz 1: Linear Functions" },
-        { id: "quiz-2", name: "Quiz 2: Quadratic Equations" },
-        { id: "quiz-3", name: "Quiz 3: Inequalities" },
-        { id: "quiz-4", name: "Quiz 4: Polynomials" },
-      ]);
+     
     } finally {
       setIsLoadingQuizzes(false);
     }
@@ -649,30 +644,31 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Student Performance */}
-            <div className="md:col-span-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md hover:shadow-lg transition-shadow rounded-lg">
-              <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/5 dark:from-purple-500/20 dark:to-blue-500/10 p-4">
+          {/* Student Performance */}
+          <div className="md:col-span-2 rounded-xl bg-white overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-50 to-purple-50/50 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="flex items-center gap-2 text-purple-700 dark:text-purple-400 font-medium">
+                    <h3 className="flex items-center gap-2 text-purple-700 font-medium">
                       <Users className="h-5 w-5" />
                       Student Performance
                     </h3>
-                    <p className="text-sm text-slate-500">
-                      Individual student scores
-                    </p>
+                    <p className="text-sm text-slate-500">Individual student scores</p>
                   </div>
-                  <div className="bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800 px-2 py-1 rounded-full text-xs">
-                    <span className="flex items-center">
-                      <Users className="h-3 w-3 mr-1" />8 Students
-                    </span>
-                  </div>
+                  {studentCount > 0 && (
+                    <div className="bg-purple-50 text-purple-700 border border-purple-200 px-2 py-1 rounded-full text-xs">
+                      <span className="flex items-center">
+                        <Users className="h-3 w-3 mr-1" />
+                        {studentCount} Students
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="p-3">
                 <StudentPerformanceTable
-                  quizId={selectedQuiz.id}
-                  teacherId={TEACHER_ID}
+                  folderId={selectedQuiz.id}
+                  onStudentCountChange={setStudentCount}
                 />
               </div>
             </div>

@@ -576,25 +576,67 @@ router.post('/getAverageQuizScoresFor3Quiz', async (req, res) => {
 });
 
 
-router.post('/getIndividualPaperAllScore/:folder_id', async (req, res) => {
-    try {
-        const {folder_id} = req.params
-        const response = await client.query(`
-            SELECT student_name, student_score
-            FROM (
-                SELECT DISTINCT ON (student_name) student_name, student_score, id
-                FROM student_attempt_quiz_table
-                WHERE folder_id = $1 AND completed = true
-                ORDER BY student_name, id ASC
-            ) AS first_attempts
-            ORDER BY student_score DESC
-        `, [folder_id]);
-        res.status(200).json(response.rows);
+// router.post('/getIndividualPaperAllScore/:folder_id', async (req, res) => {
+//     try {
+//         const {folder_id} = req.params
+//         const response = await client.query(`
+//             SELECT student_name, student_score
+//             FROM (
+//                 SELECT DISTINCT ON (student_name) student_name, student_score, id
+//                 FROM student_attempt_quiz_table
+//                 WHERE folder_id = $1 AND completed = true
+//                 ORDER BY student_name, id ASC
+//             ) AS first_attempts
+//             ORDER BY student_score DESC
+//         `, [folder_id]);
+//         res.status(200).json(response.rows);
 
-    } catch (error) {
-        console.error('Error fetching individual quiz score data:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
+//     } catch (error) {
+//         console.error('Error fetching individual quiz score data:', error);
+//         res.status(500).json({ error: 'Internal server error' });
+//     }
+// });
+
+// get student performance across all papers
+router.post('/getIndividualPaperAllScore/:folder_id', async (req, res) => {
+  try {
+      const {folder_id} = req.params;
+      
+      // Handle 'all' case
+      if (folder_id === 'all') {
+          const response = await client.query(`
+              WITH student_averages AS (
+                  SELECT 
+                      student_name,
+                      ROUND(AVG(student_score)::numeric, 2) as student_score
+                  FROM student_attempt_quiz_table
+                  WHERE completed = true
+                  GROUP BY student_name
+              )
+              SELECT student_name, student_score::text
+              FROM student_averages
+              ORDER BY student_score DESC
+          `);
+          return res.status(200).json(response.rows);
+      }
+
+      // Handle specific folder case
+      const response = await client.query(`
+          SELECT student_name, student_score
+          FROM (
+              SELECT DISTINCT ON (student_name) student_name, student_score, id
+              FROM student_attempt_quiz_table
+              WHERE folder_id = $1 AND completed = true
+              ORDER BY student_name, id ASC
+          ) AS first_attempts
+          ORDER BY student_score DESC
+      `, [folder_id]);
+      res.status(200).json(response.rows);
+
+  } catch (error) {
+      console.error('Error fetching individual quiz score data:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 

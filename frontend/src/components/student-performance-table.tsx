@@ -1,132 +1,194 @@
 "use client"
 
-import { useState } from "react"
-import { ArrowUp, ArrowDown, ChevronUp, ChevronDown, AlertTriangle, Award, CheckCircle } from "lucide-react"
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { ChevronUp, ChevronDown, Minus } from 'lucide-react';
 
-// Student data
-const initialStudents = [
-  { id: 1, name: "Roy", score: 94, trend: "up" },
-  { id: 2, name: "K2", score: 87, trend: "up" },
-  { id: 3, name: "Brad", score: 84, trend: "stable" },
-  { id: 4, name: "PK", score: 78, trend: "down" },
-  { id: 5, name: "Jamie", score: 45, trend: "down" }
-]
-
-// Define component props
-interface StudentPerformanceTableProps {
-  quizId?: string;
-  teacherId?: number;
+interface StudentPerformanceProps {
+  folderId?: string;
+  onStudentCountChange?: (count: number) => void;
 }
 
-export function StudentPerformanceTable({ quizId = 'all', teacherId }: StudentPerformanceTableProps) {
-  const [students, setStudents] = useState(initialStudents)
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
+interface StudentScore {
+  student_name: string;
+  student_score: string;
+  trend?: 'up' | 'down' | 'same';
+}
 
-  // In a real app, we would filter or fetch data based on quizId and teacherId
-  // For now, we'll just log it for demonstration
-  console.log(`Rendering StudentPerformanceTable with quizId: ${quizId}, teacherId: ${teacherId}`);
+type SortDirection = 'asc' | 'desc';
 
-  // Function to sort students
-  const sortStudents = () => {
-    const newDirection = sortDirection === "desc" ? "asc" : "desc"
-    setSortDirection(newDirection)
+const BASE_URL = 'http://localhost:5003';
 
-    const sortedStudents = [...students].sort((a, b) => {
-      if (newDirection === "desc") {
-        return b.score - a.score
-      } else {
-        return a.score - b.score
+export function StudentPerformanceTable({ folderId, onStudentCountChange }: StudentPerformanceProps) {
+  const [students, setStudents] = useState<StudentScore[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // Add useEffect to notify parent of student count changes
+  useEffect(() => {
+    onStudentCountChange?.(students.length);
+  }, [students.length, onStudentCountChange]);
+
+  const sortStudents = (students: StudentScore[], direction: SortDirection) => {
+    return [...students].sort((a, b) => {
+      const scoreA = parseFloat(a.student_score);
+      const scoreB = parseFloat(b.student_score);
+      return direction === 'desc' ? scoreB - scoreA : scoreA - scoreB;
+    });
+  };
+
+  const toggleSort = () => {
+    const newDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+    setSortDirection(newDirection);
+    setStudents(prev => sortStudents(prev, newDirection));
+  };
+
+  useEffect(() => {
+    const fetchStudentScores = async () => {
+      if (!folderId) {
+        setLoading(false);
+        setStudents([]);
+        return;
       }
-    })
 
-    setStudents(sortedStudents)
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log(`Fetching student scores for folder: ${folderId}`);
+        const response = await axios.post(`${BASE_URL}/api/visualisationGraph/getIndividualPaperAllScore/${folderId}`);
+        
+        if (!response.data || !Array.isArray(response.data)) {
+          console.error('Invalid response format:', response.data);
+          setStudents([]);
+          return;
+        }
+
+        // Sort students by score in descending order by default
+        const sortedStudents = sortStudents(
+          response.data.map(student => ({
+            ...student,
+            trend: 'same' as const
+          })),
+          sortDirection
+        );
+
+        console.log(`Found ${sortedStudents.length} student scores`);
+        setStudents(sortedStudents);
+      } catch (err: any) {
+        console.error('Error fetching student scores:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to load student scores');
+        setStudents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentScores();
+  }, [folderId, sortDirection]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[400px]">
+        <div className="text-slate-500">Loading student scores...</div>
+      </div>
+    );
   }
 
-  // Function to get badge style based on score
-  const getBadgeColor = (score: number) => {
-    if (score >= 85) return 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400'; 
-    if (score >= 75) return 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400';   
-    if (score >= 65) return 'bg-violet-100 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400'; 
-    if (score >= 55) return 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'; 
-    return 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400';                     
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-[400px]">
+        <div className="text-red-500">{error}</div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (!students.length) {
+    return (
+      <div className="flex items-center justify-center h-[400px]">
+        <div className="text-slate-500">
+          {!folderId ? 'Please select a quiz to view student scores' : 'No student scores available'}
+        </div>
+      </div>
+    );
+  }
+
+  const getScoreColor = (score: string) => {
+    const numScore = parseFloat(score);
+    if (numScore >= 85) return 'bg-green-100 text-green-800';  // High score = green
+    if (numScore >= 70) return 'bg-blue-100 text-blue-800';    // Medium score = blue
+    return 'bg-red-100 text-red-800';                          // Low score = red
   };
 
-  // Function to get background color for rank indicator
-  const getRankBgColor = (score: number) => {
-    if (score >= 85) return 'bg-green-50 dark:bg-green-950/20'; 
-    if (score >= 75) return 'bg-blue-50 dark:bg-blue-950/20';   
-    if (score >= 65) return 'bg-violet-50 dark:bg-violet-950/20'; 
-    if (score >= 55) return 'bg-amber-50 dark:bg-amber-950/20'; 
-    return 'bg-red-50 dark:bg-red-950/20';                     
-  };
-
-  // Function to get trend indicator
-  const getTrendIndicator = (trend: string) => {
+  const getTrendIcon = (trend: StudentScore['trend']) => {
     switch (trend) {
-      case "up":
-        return <ChevronUp className="h-3 w-3 text-emerald-500" />;
-      case "down":
-        return <ChevronDown className="h-3 w-3 text-red-500" />;
+      case 'up':
+        return <ChevronUp className="w-4 h-4 text-green-500" />;
+      case 'down':
+        return <ChevronDown className="w-4 h-4 text-red-500" />;
       default:
-        return null;
+        return <Minus className="w-4 h-4 text-slate-400" />;
     }
   };
 
-  // Function to get performance status icon
-  const getStatusIcon = (score: number) => {
-    if (score >= 85) return <Award className="h-3.5 w-3.5 text-green-500" aria-label="Excellent" />;
-    if (score >= 65) return <CheckCircle className="h-3.5 w-3.5 text-blue-500" aria-label="Satisfactory" />;
-    return <AlertTriangle className="h-3.5 w-3.5 text-red-500" aria-label="Needs Improvement" />;
+  const getSortIcon = () => {
+    return sortDirection === 'desc' ? 
+      <ChevronDown className="w-4 h-4 inline-block ml-1" /> : 
+      <ChevronUp className="w-4 h-4 inline-block ml-1" />;
   };
 
   return (
-    <div>
-      <div className="rounded-lg overflow-hidden mb-2">
-        <div className="flex items-center justify-between py-3 px-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/30">
-          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">#</div>
-          <div className="flex-1 ml-4 text-xs font-medium text-slate-500 dark:text-slate-400">Student</div>
-          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-            <button
-              onClick={sortStudents}
-              className="inline-flex items-center font-medium hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
-            >
-              Score
-              {sortDirection === "desc" ? (
-                <ArrowDown className="h-3 w-3 ml-1" />
-              ) : (
-                <ArrowUp className="h-3 w-3 ml-1" />
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div className="space-y-2">
-        {students.map((student, index) => (
-          <div
-            key={student.id}
-            className="rounded-lg border border-slate-100 dark:border-slate-800/30 shadow-sm hover:shadow-md transition-shadow p-3 bg-white dark:bg-slate-900/50"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${getRankBgColor(student.score)}`}>
-                  {index + 1}
+    <div className="rounded-xl bg-white">
+      <div className="h-[400px] overflow-auto">
+        <table className="min-w-full">
+          <thead className="sticky top-0 bg-white">
+            <tr className="border-b border-slate-100">
+              <th className="text-left py-4 px-6 text-sm font-medium text-slate-600">#</th>
+              <th className="text-left py-4 px-6 text-sm font-medium text-slate-600">Student</th>
+              <th 
+                className="text-right py-4 px-6 text-sm font-medium text-slate-600 cursor-pointer group"
+                onClick={toggleSort}
+              >
+                <div className="flex items-center justify-end gap-2">
+                  {folderId === 'all' ? 'Average Score' : 'Score'}
+                  <div className="text-slate-400 group-hover:text-slate-600 transition-colors">
+                    {getSortIcon()}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="font-medium text-slate-700 dark:text-slate-300">{student.name}</span>
-                  <span>{getTrendIndicator(student.trend)}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>{getStatusIcon(student.score)}</span>
-                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getBadgeColor(student.score)}`}>
-                  {student.score}%
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {students.map((student, index) => (
+              <tr 
+                key={student.student_name}
+                className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors"
+              >
+                <td className="py-4 px-6 text-sm text-slate-600">{index + 1}</td>
+                <td className="py-4 px-6">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-900">
+                      {student.student_name}
+                    </span>
+                    <div className="text-slate-400">
+                      {getTrendIcon(student.trend)}
+                    </div>
+                  </div>
+                </td>
+                <td className="py-4 px-6 text-right">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getScoreColor(student.student_score)}`}>
+                    {parseFloat(student.student_score).toFixed(1)}%
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
-  )
+  );
 } 
