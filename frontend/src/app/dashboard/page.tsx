@@ -26,6 +26,7 @@ import { ProgressRing } from "@/components/progress-ring";
 import RoleRestrictionWrapper from "@/components/RoleRestrictionWrapper";
 import MostMissedQuestionsTable from "@/components/MostMissedQuestionsTable";
 import NeedsSupport from '@/components/NeedsSupport';
+import { RecommendationsCard } from "@/components/RecommendationsCard";
 
 
 // Quiz data structure
@@ -757,61 +758,22 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="p-6">
-                <div className="grid gap-4 md:grid-cols-3">
-                  {/* High Priority */}
-                  <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex gap-3 items-start">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 shrink-0">
-                        <Flag className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-slate-800 dark:text-slate-200 mb-1 text-sm">
-                          High Priority
-                        </div>
-                        <p className="text-slate-600 dark:text-slate-400 text-xs">
-                          Assign extra practice to the 5 students flagged for
-                          support on linear functions
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Medium Priority - Small Group */}
-                  <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex gap-3 items-start">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 shrink-0">
-                        <Users className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-slate-800 dark:text-slate-200 mb-1 text-sm">
-                          Medium Priority
-                        </div>
-                        <p className="text-slate-600 dark:text-slate-400 text-xs">
-                          Small group review session for quadratic equations and
-                          factoring
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Medium Priority - Class-wide */}
-                  <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex gap-3 items-start">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shrink-0">
-                        <BookOpen className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-slate-800 dark:text-slate-200 mb-1 text-sm">
-                          Medium Priority
-                        </div>
-                        <p className="text-slate-600 dark:text-slate-400 text-xs">
-                          Class-wide review of graphing inequalities with
-                          interactive examples
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {(() => {
+                  console.log('Dashboard: About to render RecommendationsCard');
+                  try {
+                    return (
+                      <RecommendationsCard 
+                        quizId={selectedQuiz.id}
+                        teacherId={TEACHER_ID}
+                      />
+                    );
+                  } catch (error) {
+                    console.error('Dashboard: Error rendering RecommendationsCard:', error);
+                    return <div className="text-red-500">Failed to load recommendations</div>;
+                  } finally {
+                    console.log('Dashboard: Finished RecommendationsCard render attempt');
+                  }
+                })()}
               </div>
             </div>
           </div>
