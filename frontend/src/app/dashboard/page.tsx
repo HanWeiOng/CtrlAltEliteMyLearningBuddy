@@ -24,6 +24,9 @@ import { ConceptMasteryChart } from "@/components/concept-mastery-chart";
 import { StudentPerformanceTable } from "@/components/student-performance-table";
 import { ProgressRing } from "@/components/progress-ring";
 import RoleRestrictionWrapper from "@/components/RoleRestrictionWrapper";
+import MostMissedQuestionsTable from "@/components/MostMissedQuestionsTable";
+import NeedsSupport from '@/components/NeedsSupport';
+
 
 // Quiz data structure
 type Quiz = {
@@ -76,6 +79,8 @@ export default function DashboardPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingQuizzes, setIsLoadingQuizzes] = useState(true);
+    const [studentCount, setStudentCount] = useState(0);
+
   const [hardestTopicBarData, setHardestTopicBarData] = useState<Topic[]>([]);
   const [paperDemographicBarData, setPaperDemographicBarData] = useState<PaperDemographic[]>([]);
   const [questions, setQuestions] = useState<HardestQuestion[]>([]);
@@ -101,14 +106,7 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error("Error fetching quizzes:", error);
-      // Fallback to default quizzes in case of error
-      setQuizzes([
-        { id: "all", name: "All Quizzes" },
-        { id: "quiz-1", name: "Quiz 1: Linear Functions" },
-        { id: "quiz-2", name: "Quiz 2: Quadratic Equations" },
-        { id: "quiz-3", name: "Quiz 3: Inequalities" },
-        { id: "quiz-4", name: "Quiz 4: Polynomials" },
-      ]);
+     
     } finally {
       setIsLoadingQuizzes(false);
     }
@@ -649,36 +647,36 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Student Performance */}
-            <div className="md:col-span-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md hover:shadow-lg transition-shadow rounded-lg">
-              <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/5 dark:from-purple-500/20 dark:to-blue-500/10 p-4">
+          {/* Student Performance */}
+          <div className="md:col-span-2 rounded-xl bg-white overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-50 to-purple-50/50 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="flex items-center gap-2 text-purple-700 dark:text-purple-400 font-medium">
+                    <h3 className="flex items-center gap-2 text-purple-700 font-medium">
                       <Users className="h-5 w-5" />
                       Student Performance
                     </h3>
-                    <p className="text-sm text-slate-500">
-                      Individual student scores
-                    </p>
+                    <p className="text-sm text-slate-500">Individual student scores</p>
                   </div>
-                  <div className="bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800 px-2 py-1 rounded-full text-xs">
-                    <span className="flex items-center">
-                      <Users className="h-3 w-3 mr-1" />8 Students
-                    </span>
-                  </div>
+                  {studentCount > 0 && (
+                    <div className="bg-purple-50 text-purple-700 border border-purple-200 px-2 py-1 rounded-full text-xs">
+                      <span className="flex items-center">
+                        <Users className="h-3 w-3 mr-1" />
+                        {studentCount} Students
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="p-3">
                 <StudentPerformanceTable
-                  quizId={selectedQuiz.id}
-                  teacherId={TEACHER_ID}
+                  folderId={selectedQuiz.id}
+                  onStudentCountChange={setStudentCount}
                 />
               </div>
             </div>
           </div>
 
-          {/* Second row - Most missed questions and support/recommendations */}
           <div className="grid gap-6 md:grid-cols-6 h-fit">
             {/* Most Missed Questions */}
             <div className="md:col-span-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md hover:shadow-lg transition-shadow rounded-lg">
@@ -703,83 +701,13 @@ export default function DashboardPage() {
               </div>
               <div className="p-6 overflow-auto">
                 <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="bg-slate-50 dark:bg-slate-800/50">
-                          <th className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">
-                            #
-                          </th>
-                          <th className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">
-                            Question
-                          </th>
-                          <th className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">
-                            % Wrong
-                          </th>
-                          <th className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">
-                            Explanation
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            1
-                          </td>
-                          <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                            Interpretation of slope in linear functions
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400">
-                              70%
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            Misinterpretation of rate of change
-                          </td>
-                        </tr>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            2
-                          </td>
-                          <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                            Solving quadratic equations
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400">
-                              65%
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            Calculation errors
-                          </td>
-                        </tr>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            3
-                          </td>
-                          <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                            Graphing inequalities
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
-                              58%
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            Confusion with boundary lines
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                  <MostMissedQuestionsTable quizId="all" teacherId={5} />
                 </div>
               </div>
             </div>
 
-            {/* Need Support Section */}
-            <div className="md:col-span-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md hover:shadow-lg transition-shadow rounded-lg overflow-hidden">
-              {/* Needs Support */}
+          {/* Needs Support Section */}
+          <div className="md:col-span-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md hover:shadow-lg transition-shadow rounded-lg overflow-hidden">
               <div className="bg-gradient-to-r from-red-500/10 to-orange-500/5 dark:from-red-500/20 dark:to-orange-500/10 p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -799,67 +727,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="p-3">
-                <div className="space-y-2">
-                  {/* Student 1 */}
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium text-xs">
-                        1
-                      </div>
-                      <span className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                        Jamie Smith
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                        45%
-                      </div>
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400">
-                        Critical
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Student 2 */}
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium text-xs">
-                        2
-                      </div>
-                      <span className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                        Alex Johnson
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                        52%
-                      </div>
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400">
-                        Critical
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Student 3 */}
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium text-xs">
-                        3
-                      </div>
-                      <span className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                        Taylor Williams
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-                        58%
-                      </div>
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
-                        At Risk
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                <NeedsSupport quizId={selectedQuiz.id} />
               </div>
             </div>
           </div>
