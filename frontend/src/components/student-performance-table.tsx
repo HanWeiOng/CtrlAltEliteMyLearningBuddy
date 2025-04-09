@@ -101,7 +101,7 @@ export function StudentPerformanceTable({ folderId, onStudentCountChange }: Stud
   if (error) {
     return (
       <div className="flex items-center justify-center h-[400px]">
-        <div className="text-red-500">{error}</div>
+        <div className="text-red-500">Error: {error}</div>
       </div>
     );
   }
@@ -119,9 +119,9 @@ export function StudentPerformanceTable({ folderId, onStudentCountChange }: Stud
 
   const getScoreColor = (score: string) => {
     const numScore = parseFloat(score);
-    if (numScore >= 85) return 'bg-green-100 text-green-800';  // High score = green
-    if (numScore >= 70) return 'bg-blue-100 text-blue-800';    // Medium score = blue
-    return 'bg-red-100 text-red-800';                          // Low score = red
+    if (numScore >= 85) return 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400';
+    if (numScore >= 70) return 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400';
+    return 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400';
   };
 
   const getTrendIcon = (trend: StudentScore['trend']) => {
@@ -142,53 +142,59 @@ export function StudentPerformanceTable({ folderId, onStudentCountChange }: Stud
   };
 
   return (
-    <div className="rounded-xl bg-white">
-      <div className="h-[400px] overflow-auto">
-        <table className="min-w-full">
-          <thead className="sticky top-0 bg-white">
-            <tr className="border-b border-slate-100">
-              <th className="text-left py-4 px-6 text-sm font-medium text-slate-600">#</th>
-              <th className="text-left py-4 px-6 text-sm font-medium text-slate-600">Student</th>
-              <th 
-                className="text-right py-4 px-6 text-sm font-medium text-slate-600 cursor-pointer group"
-                onClick={toggleSort}
+<div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+  <div className="overflow-x-auto">
+    <table className="w-full text-xs">
+      <thead>
+        <tr className="bg-slate-50 dark:bg-slate-800/50">
+          <th className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">
+            #
+          </th>
+          <th className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">
+            Student
+          </th>
+          <th
+            className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400 cursor-pointer group"
+            onClick={toggleSort}
+          >
+            <div className="flex items-center justify-end gap-2">
+              {folderId === 'all' ? 'Average Score' : 'Score'}
+              <div className="text-slate-400 group-hover:text-slate-600 transition-colors">
+                {getSortIcon()}
+              </div>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {students.map((student, index) => (
+          <tr
+            key={student.student_name}
+            className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+          >
+            <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
+              {index + 1}
+            </td>
+            <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+              <div className="flex items-center gap-2">
+                <span>{student.student_name}</span>
+              </div>
+            </td>
+            <td className="px-4 py-3 text-right">
+              <span
+                className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getScoreColor(
+                  student.student_score
+                )}`}
               >
-                <div className="flex items-center justify-end gap-2">
-                  {folderId === 'all' ? 'Average Score' : 'Score'}
-                  <div className="text-slate-400 group-hover:text-slate-600 transition-colors">
-                    {getSortIcon()}
-                  </div>
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student, index) => (
-              <tr 
-                key={student.student_name}
-                className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors"
-              >
-                <td className="py-4 px-6 text-sm text-slate-600">{index + 1}</td>
-                <td className="py-4 px-6">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-900">
-                      {student.student_name}
-                    </span>
-                    <div className="text-slate-400">
-                      {getTrendIcon(student.trend)}
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 px-6 text-right">
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getScoreColor(student.student_score)}`}>
-                    {parseFloat(student.student_score).toFixed(1)}%
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                {parseFloat(student.student_score).toFixed(1)}%
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
+
   );
 } 

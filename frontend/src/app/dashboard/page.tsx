@@ -648,8 +648,8 @@ export default function DashboardPage() {
             </div>
 
           {/* Student Performance */}
-          <div className="md:col-span-2 rounded-xl bg-white overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-50 to-purple-50/50 p-4">
+          <div className="md:col-span-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md hover:shadow-lg transition-shadow rounded-lg">
+              <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/5 dark:from-purple-500/20 dark:to-indigo-500/10 p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="flex items-center gap-2 text-purple-700 font-medium">
@@ -678,6 +678,8 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-6 h-fit">
+
+            
             {/* Most Missed Questions */}
             <div className="md:col-span-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md hover:shadow-lg transition-shadow rounded-lg">
               <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/5 dark:from-blue-500/20 dark:to-indigo-500/10 p-4">
