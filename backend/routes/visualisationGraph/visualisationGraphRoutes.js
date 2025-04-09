@@ -3,9 +3,11 @@ const express = require('express');
 const router = express.Router();
 const { Client } = require('pg');
 const cors = require('cors');
+const { marked } = require('marked');
 // Initialize middleware
 router.use(cors());
 router.use(express.json());
+
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 // Initialize Gemini model
@@ -575,6 +577,36 @@ router.post('/getAverageQuizScoresFor3Quiz', async (req, res) => {
   }
 });
 
+router.post('/getAllPaperAllScore', async (req, res) => {
+  try {
+      const response = await client.query(`
+          SELECT 
+              student_id,
+              student_name,
+              ROUND(AVG(student_score)::numeric, 2) AS average_score
+          FROM (
+              SELECT DISTINCT ON (student_id, folder_id)
+                  student_id,
+                  student_name,
+                  folder_id,
+                  student_score,
+                  id
+              FROM student_attempt_quiz_table
+              WHERE completed = true
+              ORDER BY student_id, folder_id, id ASC
+          ) AS first_attempts
+          GROUP BY student_id, student_name
+          ORDER BY average_score DESC
+      `);
+      
+      res.status(200).json(response.rows);
+
+  } catch (error) {
+      console.error('Error fetching individual quiz score data:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // router.post('/getIndividualPaperAllScore/:folder_id', async (req, res) => {
 //     try {
@@ -713,81 +745,429 @@ router.get('/getQuizFolder', async (req, res) => {
 });
 
 /**
- * Explain why a user's answer to a question is wrong using Gemini
- * @param {string} question - The original question
- * @param {string} userAnswer - The user's (wrong) answer
- * @returns {Promise<string>} - Gemini's explanation
+ * Teacher Dashboard Insights - frontend sends the data
  */
-router.post('/reccomendationForResults', async (req, res) => {
-    const { question, userAnswer, correctAnswer, options, imageUrl } = req.body;
-  
-    if (!question || !userAnswer || !correctAnswer || !options) {
-      return res.status(400).json({ message: 'Missing fields in request body' });
-    }
-  
-    try {
-      const explanation = await explainWrongAnswer({
-        question,
-        userAnswer,
-        correctAnswer,
-        options,
-        imageUrl,
-        model,
-      });
-  
-      return res.status(200).json({ explanation });
-    } catch (error) {
-      console.error('Gemini error:', error);
-      return res.status(500).json({ message: 'Something went wrong', error: error.message });
-    }
-});
-  
 
-async function explainWrongAnswer({ question, userAnswer, correctAnswer, options, imageUrl, model }) {
-    let formattedOptions = options
-      .map((opt) => {
-        const text = typeof opt.text === 'string' ? opt.text : JSON.stringify(opt.text);
-        return `${opt.option}: ${text}`;
-      })
-      .join('\n');
-  
+
+router.post('/teacherActionInsights', async (req, res) => {
+  try {
+
+    const { hardestQuestions, hardestTopics, allPaperScores } = req.body;
+
+    // // Simulated data for all papers
+    // const hardestQuestions = [
+    //   {
+    //     question_text: "What type of cell is it?",
+    //     topic_label: "Cell Types",
+    //     selected_percentage_wrong: "100.00"
+    //   },
+    //   {
+    //     question_text: "Amylase solution is tested with Benedict's solution, biuret solution and iodine solution. Which colours are obtained?",
+    //     topic_label: "Enzymes",
+    //     selected_percentage_wrong: "73.08"
+    //   },
+    //   {
+    //     question_text: "The diagram below shows a cell as seen under an electron microscope. What are the functions in the cell of the numbered parts?",
+    //     topic_label: "Cell Structure",
+    //     selected_percentage_wrong: "30.00"
+    //   }
+    // ];
+
+    // const hardestTopics = [
+    //   {
+    //     topic_label: "Cell Types",
+    //     selected_percentage_wrong: "100.00"
+    //   },
+    //   {
+    //     topic_label: "Enzymes",
+    //     selected_percentage_wrong: "73.08"
+    //   },
+    //   {
+    //     topic_label: "Cell Structure",
+    //     selected_percentage_wrong: "30.00"
+    //   }
+    // ];
+
+    // const allPaperScores = [
+    //   {
+    //     student_name: "raerae3",
+    //     average_score: "69.55"
+    //   },
+    //   {
+    //     student_name: "Sharon001",
+    //     average_score: "57.25"
+    //   },
+    //   {
+    //     student_name: "raerae2",
+    //     average_score: "48.00"
+    //   },
+    //   {
+    //     student_name: "raerae1",
+    //     average_score: "0.00"
+    //   }
+    // ];
+
+    // Categorization functions
+    function categorizeByPriority(items, key) {
+      const high = [], medium = [], low = [];
+      items.forEach(item => {
+        const value = parseFloat(item[key]);
+        if (value >= 70) high.push(item);
+        else if (value >= 40) medium.push(item);
+        else low.push(item);
+      });
+      return { high, medium, low };
+    }
+
+    function categorizeStudents(students) {
+      const high = [], medium = [], low = [];
+      students.forEach(s => {
+        const score = parseFloat(s.average_score);
+        if (score < 40) high.push(s);
+        else if (score < 70) medium.push(s);
+        else low.push(s);
+      });
+      return { high, medium, low };
+    }
+
+    const topicCategories = categorizeByPriority(hardestTopics, 'selected_percentage_wrong');
+    const questionCategories = categorizeByPriority(hardestQuestions, 'selected_percentage_wrong');
+    const studentCategories = categorizeStudents(allPaperScores);
+
+    // Build structured prompt with strict headings
+    const buildList = (label, data, formatter) => {
+      return `### ${label}\n${data.length ? data.map(formatter).join('\n') : 'No recommendations.'}\n`;
+    };
+
+    const buildPrioritySection = (priority, topics, questions, students) => {
+      return `## ${priority} Priority\n\n` +
+        buildList('Topics', topics, t => `- ${t.topic_label} (${t.selected_percentage_wrong}% wrong)`) + '\n' +
+        buildList('Questions', questions, q => `- ${q.question_text} (Topic: ${q.topic_label}, ${q.selected_percentage_wrong}% wrong)`) + '\n' +
+        buildList('Scores', students, s => `- ${s.student_name} (Average score: ${s.average_score})`) + '\n';
+    };
+
+    const highPrioritySection = buildPrioritySection('High', topicCategories.high, questionCategories.high, studentCategories.high);
+    const mediumPrioritySection = buildPrioritySection('Medium', topicCategories.medium, questionCategories.medium, studentCategories.medium);
+    const lowPrioritySection = buildPrioritySection('Low', topicCategories.low, questionCategories.low, studentCategories.low);
+
+    const finalInstructions = `
+Strict format required. No introductions. No extra text. Just headings and bullet points.
+
+For each priority, follow exactly:
+
+## [Priority Level] Priority
+
+### Topics
+- Short, clear action for teacher
+- Short, clear action for teacher
+
+### Questions
+- Short, clear action for teacher
+- Short, clear action for teacher
+
+### Scores
+- Short, clear action for teacher
+- Short, clear action for teacher
+
+Strictly follow this format only. Do not add extra headings or sections.
+
+For each section (Topics, Questions, Scores), give short, actionable, practical advice for teachers.
+
+Avoid explanations or introductions. Go straight to the recommendations.
+Keep each point under one line.
+Avoid long sentences.
+No extra headings, no summaries.
+`;
 
     const prompt = `
-    You are a helpful tutor explaining why an answer is incorrect. Please provide a clear and concise explanation following this format:
+You are an education advisor.
 
-    Here is the full context:
-    - Question: ${question}
-    - Image (if available): ${imageUrl ? imageUrl : "No diagram provided"}
-    - Answer: ${userAnswer.option}: ${userAnswer.text}
-    - Correct answer : ${correctAnswer.option}: ${correctAnswer.text}
-    - Options: ${formattedOptions}
+Based on the following quiz data, give short, actionable teaching recommendations.
 
-    Please provide your explanation following these guidelines:
-    1. Start with "❌ ${userAnswer.option} is incorrect because:"
-    2. Then explain "✅ Correct Answer: ${correctAnswer.option}"\
-    3. If the diagram is important, explain its relevance
-    4. Keep explanations concise and focused
-    5. Use bullet points for clarity
-    6. Do not use markdown formatting
+${highPrioritySection}
+${mediumPrioritySection}
+${lowPrioritySection}
 
-    Format your response like this:
-    ${imageUrl ? `
-        • [Explain diagram's relevance]` : ''}
+${finalInstructions}
+`;
 
-    ❌ ${userAnswer.option} is incorrect because:
-    • [First reason]
-    • [Second reason]
+    // Send to Gemini
+    const geminiResponse = await model.generateContent(prompt);
+    const geminiText = await geminiResponse.response;
+    const geminiOutput = geminiText.text();
 
-    ✅ Correct Answer: ${correctAnswer.option}
-    • [First reason]
-    • [Second reason]
-    • [More reasons if neccesary]
-    `;
-  
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
-}
+    // Parse Gemini output with marked
+    const tokens = marked.lexer(geminiOutput);
+
+    const response = {
+      highPriorityRecommendations: { topic: '', question: '', score: '' },
+      mediumPriorityRecommendations: { topic: '', question: '', score: '' },
+      lowPriorityRecommendations: { topic: '', question: '', score: '' }
+    };
+
+    let currentPriority = '';
+    let currentSection = '';
+
+    tokens.forEach(token => {
+      if (token.type === 'heading' && token.depth === 2) {
+        if (token.text.toLowerCase().includes('high priority')) currentPriority = 'highPriorityRecommendations';
+        else if (token.text.toLowerCase().includes('medium priority')) currentPriority = 'mediumPriorityRecommendations';
+        else if (token.text.toLowerCase().includes('low priority')) currentPriority = 'lowPriorityRecommendations';
+      }
+
+      if (token.type === 'heading' && token.depth === 3) {
+        const lowerText = token.text.toLowerCase();
+        if (lowerText.includes('topics')) currentSection = 'topic';
+        else if (lowerText.includes('questions')) currentSection = 'question';
+        else if (lowerText.includes('scores')) currentSection = 'score';
+      }
+
+      if ((token.type === 'paragraph' || token.type === 'text') && currentPriority && currentSection) {
+        response[currentPriority][currentSection] += token.text.trim() + '\n';
+      }
+
+      if (token.type === 'list' && currentPriority && currentSection) {
+        const listText = token.items.map(item => `${item.text}`).join('\n'); // ✅ no dash
+        response[currentPriority][currentSection] += listText + '\n';
+      }
+    });
+
+    // Clean up whitespace and fill empty with "No recommendations."
+    for (const priority of ['highPriorityRecommendations', 'mediumPriorityRecommendations', 'lowPriorityRecommendations']) {
+      for (const section of ['topic', 'question', 'score']) {
+        response[priority][section] = response[priority][section].trim() || 'No recommendations.';
+      }
+    }
+
+    res.status(200).json({
+      message: 'Teacher insights generated successfully with Gemini',
+      response
+    });
+
+  } catch (error) {
+    console.error('Dashboard insights error:', error);
+    res.status(500).json({ message: 'Failed to generate insights', error: error.message });
+  }
+});
+
+
+/**
+ * Teacher Dashboard Insights (Individual Paper) - frontend sends the data
+ */
+router.post('/teacherActionInsightsIndividual', async (req, res) => {
+  try {
+    const { hardestQuestionsByPaper, hardestTopicsByPaper, individualPaperScores } = req.body;
+
+      // // Simulated data for individual paper
+      // const hardestQuestionsByPaper = [
+      //   {
+      //     paper_id: 5769,
+      //     question_id: 2,
+      //     total_wrong_attempts: "15",
+      //     total_attempts_per_question: "15",
+      //     selected_percentage_wrong: "100.00",
+      //     question_text: "Amylase solution is tested with Benedict's solution, biuret solution and iodine solution. Which colours are obtained?",
+      //     topic_label: "Enzymes"
+      //   },
+      //   {
+      //     paper_id: 5769,
+      //     question_id: 22,
+      //     total_wrong_attempts: "5",
+      //     total_attempts_per_question: "5",
+      //     selected_percentage_wrong: "100.00",
+      //     question_text: "What type of cell is it?",
+      //     topic_label: "Cell Types"
+      //   },
+      //   {
+      //     paper_id: 5769,
+      //     question_id: 21,
+      //     total_wrong_attempts: "3",
+      //     total_attempts_per_question: "10",
+      //     selected_percentage_wrong: "30.00",
+      //     question_text: "The diagram below shows a cell as seen under an electron microscope. What are the functions in the cell of the numbered parts?",
+      //     topic_label: "Cell Structure"
+      //   }
+      // ];
+
+      // const hardestTopicsByPaper = [
+      //   {
+      //     topic_label: "Enzymes",
+      //     total_wrong_attempts: "15",
+      //     total_attempts_per_topic: "15",
+      //     selected_percentage_wrong: "100.00"
+      //   },
+      //   {
+      //     topic_label: "Cell Types",
+      //     total_wrong_attempts: "5",
+      //     total_attempts_per_topic: "5",
+      //     selected_percentage_wrong: "100.00"
+      //   },
+      //   {
+      //     topic_label: "Cell Structure",
+      //     total_wrong_attempts: "3",
+      //     total_attempts_per_topic: "10",
+      //     selected_percentage_wrong: "30.00"
+      //   }
+      // ];
+
+      // const individualPaperScores = [
+      //   {
+      //     student_name: "raerae3",
+      //     student_score: "69.55"
+      //   },
+      //   {
+      //     student_name: "Sharon001",
+      //     student_score: "54.00"
+      //   },
+      //   {
+      //     student_name: "raerae2",
+      //     student_score: "48.00"
+      //   }
+      // ];
+
+    // Categorization functions
+    function categorizeByPriority(items, key) {
+      const high = [], medium = [], low = [];
+      items.forEach(item => {
+        const value = parseFloat(item[key]);
+        if (value >= 70) high.push(item);
+        else if (value >= 40) medium.push(item);
+        else low.push(item);
+      });
+      return { high, medium, low };
+    }
+
+    function categorizeStudents(students) {
+      const high = [], medium = [], low = [];
+      students.forEach(s => {
+        const score = parseFloat(s.student_score);
+        if (score < 40) high.push(s);
+        else if (score < 70) medium.push(s);
+        else low.push(s);
+      });
+      return { high, medium, low };
+    }
+
+    const topicCategories = categorizeByPriority(hardestTopicsByPaper, 'selected_percentage_wrong');
+    const questionCategories = categorizeByPriority(hardestQuestionsByPaper, 'selected_percentage_wrong');
+    const studentCategories = categorizeStudents(individualPaperScores);
+
+    // Build structured prompt with strict headings
+    const buildList = (label, data, formatter) => {
+      return `### ${label}\n${data.length ? data.map(formatter).join('\n') : 'No recommendations.'}\n`;
+    };
+
+    const buildPrioritySection = (priority, topics, questions, students) => {
+      return `## ${priority} Priority\n\n` +
+        buildList('Topics', topics, t => `- ${t.topic_label} (${t.selected_percentage_wrong}% wrong)`) + '\n' +
+        buildList('Questions', questions, q => `- ${q.question_text} (Topic: ${q.topic_label}, ${q.selected_percentage_wrong}% wrong)`) + '\n' +
+        buildList('Scores', students, s => `- ${s.student_name} (Score: ${s.student_score})`) + '\n';
+    };
+
+    const highPrioritySection = buildPrioritySection('High', topicCategories.high, questionCategories.high, studentCategories.high);
+    const mediumPrioritySection = buildPrioritySection('Medium', topicCategories.medium, questionCategories.medium, studentCategories.medium);
+    const lowPrioritySection = buildPrioritySection('Low', topicCategories.low, questionCategories.low, studentCategories.low);
+
+    const finalInstructions = `
+Strict format required. No introductions. No extra text. Just headings and bullet points.
+
+For each priority, follow exactly:
+
+## [Priority Level] Priority
+
+### Topics
+- Short, clear action for teacher
+- Short, clear action for teacher
+
+### Questions
+- Short, clear action for teacher
+- Short, clear action for teacher
+
+### Scores
+- Short, clear action for teacher
+- Short, clear action for teacher
+
+Strictly follow this format only. Do not add extra headings or sections.
+
+For each section (Topics, Questions, Scores), give short, actionable, practical advice for teachers.
+
+Avoid explanations or introductions. Go straight to the recommendations.
+Keep each point under one line.
+Avoid long sentences.
+No extra headings, no summaries.
+`;
+
+    const prompt = `
+You are an education advisor.
+
+Based on the following quiz data, give short, actionable teaching recommendations.
+
+${highPrioritySection}
+${mediumPrioritySection}
+${lowPrioritySection}
+
+${finalInstructions}
+`;
+
+    // Send to Gemini
+    const geminiResponse = await model.generateContent(prompt);
+    const geminiText = await geminiResponse.response;
+    const geminiOutput = geminiText.text();
+
+    // Parse Gemini output with marked
+    const tokens = marked.lexer(geminiOutput);
+
+    const response = {
+      highPriorityRecommendations: { topic: '', question: '', score: '' },
+      mediumPriorityRecommendations: { topic: '', question: '', score: '' },
+      lowPriorityRecommendations: { topic: '', question: '', score: '' }
+    };
+
+    let currentPriority = '';
+    let currentSection = '';
+
+    tokens.forEach(token => {
+      if (token.type === 'heading' && token.depth === 2) {
+        if (token.text.toLowerCase().includes('high priority')) currentPriority = 'highPriorityRecommendations';
+        else if (token.text.toLowerCase().includes('medium priority')) currentPriority = 'mediumPriorityRecommendations';
+        else if (token.text.toLowerCase().includes('low priority')) currentPriority = 'lowPriorityRecommendations';
+      }
+
+      if (token.type === 'heading' && token.depth === 3) {
+        const lowerText = token.text.toLowerCase();
+        if (lowerText.includes('topics')) currentSection = 'topic';
+        else if (lowerText.includes('questions')) currentSection = 'question';
+        else if (lowerText.includes('scores')) currentSection = 'score';
+      }
+
+      if ((token.type === 'paragraph' || token.type === 'text') && currentPriority && currentSection) {
+        response[currentPriority][currentSection] += token.text.trim() + '\n';
+      }
+
+      if (token.type === 'list' && currentPriority && currentSection) {
+        const listText = token.items.map(item => `${item.text}`).join('\n'); // ✅ no dash
+        response[currentPriority][currentSection] += listText + '\n';
+      }
+    });
+
+    // Clean up whitespace and fill empty with "No recommendations."
+    for (const priority of ['highPriorityRecommendations', 'mediumPriorityRecommendations', 'lowPriorityRecommendations']) {
+      for (const section of ['topic', 'question', 'score']) {
+        response[priority][section] = response[priority][section].trim() || 'No recommendations.';
+      }
+    }
+
+    res.status(200).json({
+      message: 'Teacher individual paper insights generated successfully with Gemini',
+      response
+    });
+
+  } catch (error) {
+    console.error('Dashboard insights error (individual):', error);
+    res.status(500).json({ message: 'Failed to generate individual paper insights', error: error.message });
+  }
+});
+
 
 
 // ... existing code ...
@@ -916,65 +1296,3 @@ router.post('/getStudentsNeedingSupportByQuiz/:quizId', async (req, res) => {
 
 
 module.exports = router;
-
-
-//         const result = await client.query(`
-//             SELECT question_text, question_difficulty
-//             FROM questions
-//             WHERE question_difficulty > 0
-//             ORDER BY question_difficulty ASC
-//             LIMIT 10;
-//         `)
-//         console.log(result);
-//         res.status(200).json(result.rows);
-//     } catch (error) {
-//         console.error('Error retrieving questions:', error);
-//         res.status(500).json({ message: 'Internal server error: ' + error.message });
-//     }
-// });
-// And this for most wrong questions individidual paper
-
-// Get the answer option that has the most wrong in a question
-// router.get('/getAnswerOptionAnalytics/:question_id', async (req, res) => {
-//     try {
-//         const { question_id } = req.params; // ✅ GET requests use req.query
-
-//         const result = await client.query(`
-//             SELECT question_id, answer_option, answer_text, selected_option_count, correctness
-//             FROM question_answer_table
-//             WHERE question_id = $1 AND correctness = 'False'
-//             ORDER BY selected_option_count DESC
-//             LIMIT 1
-//         `, [question_id]);
-
-//         const row = result.rows[0];
-
-//         res.status(200).json({
-//             message: 'Most selected incorrect answer retrieved successfully.',
-//             data: row || null
-//         });
-//     } catch (error) {
-//         console.error('Error retrieving answer analytics:', error);
-//         res.status(500).json({ message: 'Internal server error' });
-//     }
-// });
-
-
-// router.get('/getPaperDemographic', async (req, res) => {
-//     try {
-//         const result = await client.query(`
-//             SELECT level, COUNT(*) AS count
-//             FROM (
-//                 SELECT DISTINCT ON (paper_name) level
-//                 FROM questions
-//                 ORDER BY paper_name, level
-//             ) AS subquery
-//             GROUP BY level;
-//         `)
-//         console.log(result);
-//         res.status(200).json(result.rows);
-//     } catch (error) {
-//         console.error('Error retrieving questions:', error);
-//         res.status(500).json({ message: 'Internal server error: ' + error.message });
-//     }
-// });
