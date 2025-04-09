@@ -24,6 +24,7 @@ import { ConceptMasteryChart } from "@/components/concept-mastery-chart";
 import { StudentPerformanceTable } from "@/components/student-performance-table";
 import { ProgressRing } from "@/components/progress-ring";
 import RoleRestrictionWrapper from "@/components/RoleRestrictionWrapper";
+import MostMissedQuestionsTable from "@/components/MostMissedQuestionsTable";
 
 // Quiz data structure
 type Quiz = {
@@ -699,76 +700,7 @@ export default function DashboardPage() {
               </div>
               <div className="p-6 overflow-auto">
                 <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="bg-slate-50 dark:bg-slate-800/50">
-                          <th className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">
-                            #
-                          </th>
-                          <th className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">
-                            Question
-                          </th>
-                          <th className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">
-                            % Wrong
-                          </th>
-                          <th className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">
-                            Explanation
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            1
-                          </td>
-                          <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                            Interpretation of slope in linear functions
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400">
-                              70%
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            Misinterpretation of rate of change
-                          </td>
-                        </tr>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            2
-                          </td>
-                          <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                            Solving quadratic equations
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400">
-                              65%
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            Calculation errors
-                          </td>
-                        </tr>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            3
-                          </td>
-                          <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
-                            Graphing inequalities
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
-                              58%
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                            Confusion with boundary lines
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                  <MostMissedQuestionsTable quizId="all" teacherId={5} />
                 </div>
               </div>
             </div>

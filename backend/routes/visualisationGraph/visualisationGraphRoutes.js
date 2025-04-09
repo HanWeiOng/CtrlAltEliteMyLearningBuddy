@@ -718,7 +718,7 @@ router.get('/getQuizFolder', async (req, res) => {
  * @param {string} userAnswer - The user's (wrong) answer
  * @returns {Promise<string>} - Gemini's explanation
  */
-router.post('/reccomendationForResults', async (req, res) => {
+router.post('/recommendationForResults', async (req, res) => {
     const { question, userAnswer, correctAnswer, options, imageUrl } = req.body;
   
     if (!question || !userAnswer || !correctAnswer || !options) {
