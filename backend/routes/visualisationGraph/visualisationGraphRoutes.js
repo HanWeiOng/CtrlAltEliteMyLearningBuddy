@@ -747,8 +747,6 @@ router.get('/getQuizFolder', async (req, res) => {
 /**
  * Teacher Dashboard Insights - frontend sends the data
  */
-
-
 router.post('/teacherActionInsights', async (req, res) => {
   try {
 
@@ -1292,6 +1290,82 @@ router.post('/getStudentsNeedingSupportByQuiz/:quizId', async (req, res) => {
 });
 
 
+/**
+ * Explain why a user's answer to a question is wrong using Gemini
+ * @param {string} question - The original question
+ * @param {string} userAnswer - The user's (wrong) answer
+ * @returns {Promise<string>} - Gemini's explanation
+ */
+router.post('/reccomendationForResults', async (req, res) => {
+    const { question, userAnswer, correctAnswer, options, imageUrl } = req.body;
+  
+    if (!question || !userAnswer || !correctAnswer || !options) {
+      return res.status(400).json({ message: 'Missing fields in request body' });
+    }
+  
+    try {
+      const explanation = await explainWrongAnswer({
+        question,
+        userAnswer,
+        correctAnswer,
+        options,
+        imageUrl,
+        model,
+      });
+  
+      return res.status(200).json({ explanation });
+    } catch (error) {
+      console.error('Gemini error:', error);
+      return res.status(500).json({ message: 'Something went wrong', error: error.message });
+    }
+});
+  
+
+async function explainWrongAnswer({ question, userAnswer, correctAnswer, options, imageUrl, model }) {
+    let formattedOptions = options
+      .map((opt) => {
+        const text = typeof opt.text === 'string' ? opt.text : JSON.stringify(opt.text);
+        return `${opt.option}: ${text}`;
+      })
+      .join('\n');
+  
+
+    const prompt = `
+    You are a helpful tutor explaining why an answer is incorrect. Please provide a clear and concise explanation following this format:
+
+    Here is the full context:
+    - Question: ${question}
+    - Image (if available): ${imageUrl ? imageUrl : "No diagram provided"}
+    - Answer: ${userAnswer.option}: ${userAnswer.text}
+    - Correct answer : ${correctAnswer.option}: ${correctAnswer.text}
+    - Options: ${formattedOptions}
+
+    Please provide your explanation following these guidelines:
+    1. Start with "❌ ${userAnswer.option} is incorrect because:"
+    2. Then explain "✅ Correct Answer: ${correctAnswer.option}"\
+    3. If the diagram is important, explain its relevance
+    4. Keep explanations concise and focused
+    5. Use bullet points for clarity
+    6. Do not use markdown formatting
+
+    Format your response like this:
+    ${imageUrl ? `
+        • [Explain diagram's relevance]` : ''}
+
+    ❌ ${userAnswer.option} is incorrect because:
+    • [First reason]
+    • [Second reason]
+
+    ✅ Correct Answer: ${correctAnswer.option}
+    • [First reason]
+    • [Second reason]
+    • [More reasons if neccesary]
+    `;
+  
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+}
 
 
 
