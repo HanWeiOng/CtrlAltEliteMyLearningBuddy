@@ -8,6 +8,7 @@ import RoleRestrictionWrapper from "@/components/RoleRestrictionWrapper";
 const subjects = [
   "Biology",
   "Chemistry",
+  "Physics",
   "Mathematics",
   "History",
   "English",
