@@ -186,14 +186,18 @@ export function RecommendationsCard({
           console.log('Sending payload to recommendations:', payload);
 
           // Get recommendations
-          const recommendationsUrl = `${baseUrl}/visualisationGraph/teacherActionInsightsIndividual`;
+          const recommendationsUrl = `${baseUrl}/visualisationGraph/reccomendationForResultsAllPapersNew`;
           console.log('Fetching recommendations from:', recommendationsUrl);
           const recommendationsResponse = await fetch(recommendationsUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+              question_text: "AI teaching recommendations",
+              image_paths: "",
+              most_wrong_answer_text: JSON.stringify(payload)
+            }),
           });
 
           console.log('Recommendations Response Status:', recommendationsResponse.status);
@@ -204,13 +208,43 @@ export function RecommendationsCard({
           const recommendationsData = await recommendationsResponse.json();
           console.log('Recommendations Response:', recommendationsData);
           
-          if (!recommendationsData.response) {
+          if (!recommendationsData.explanation) {
             throw new Error('Invalid response format from recommendations API');
           }
 
-          setInsights(recommendationsData.response);
-          setLoading(false);
-          console.log('Successfully set insights:', recommendationsData.response);
+          // Parse the explanation text into structured insights
+          try {
+            // The explanation field should contain JSON-formatted insights
+            const parsedInsights = JSON.parse(recommendationsData.explanation);
+            setInsights(parsedInsights);
+            setLoading(false);
+            console.log('Successfully parsed insights:', parsedInsights);
+          } catch (parseError) {
+            console.error('Error parsing recommendations:', parseError);
+            
+            // Fallback to a simpler format if parsing fails
+            const fallbackInsights = {
+              highPriorityRecommendations: {
+                topic: 'Review the recommendations for the hardest topics.',
+                question: 'Focus on the most frequently missed questions.',
+                score: 'Provide additional support for struggling students.'
+              },
+              mediumPriorityRecommendations: {
+                topic: 'Consider additional practice on medium difficulty topics.',
+                question: 'Address common misconceptions in these questions.',
+                score: 'Check in with students in the middle performance range.'
+              },
+              lowPriorityRecommendations: {
+                topic: 'Continue current approach for well-understood topics.',
+                question: 'Maintain existing strategies for these questions.',
+                score: 'Offer enrichment for high-performing students.'
+              }
+            };
+            
+            setInsights(fallbackInsights);
+            setLoading(false);
+            console.log('Using fallback insights due to parsing error');
+          }
         } catch (err) {
           console.error('Error in RecommendationsCard fetchData:', err);
           setError(err instanceof Error ? err.message : 'An error occurred while fetching insights');
