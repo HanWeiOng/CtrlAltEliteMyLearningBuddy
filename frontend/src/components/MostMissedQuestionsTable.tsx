@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -64,17 +63,16 @@ export default function MostMissedQuestionsTable({ quizId, teacherId }: MostMiss
         const questionsWithExplanations = await Promise.all(
           questionsData.map(async (question: Question) => {
             try {
-              const explanationResponse = await fetch(`${API_BASE_URL}/visualisationGraph/reccomendationForResults`, {
+              const explanationResponse = await fetch(`${API_BASE_URL}/visualisationGraph/reccomendationForResultsAllPapersNew`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
                   'Accept': 'application/json',
                 },
                 body: JSON.stringify({
-                  question: question.question_text,
-                  userAnswer: "Wrong Answer",
-                  correctAnswer: "Correct Answer",
-                  options: [],
+                  question_text: question.question_text,
+                  image_paths: "",
+                  most_wrong_answer_text: "Most common incorrect answer"
                 }),
               });
 
