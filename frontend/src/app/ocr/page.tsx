@@ -8,6 +8,7 @@ import RoleRestrictionWrapper from "@/components/RoleRestrictionWrapper";
 const subjects = [
   "Biology",
   "Chemistry",
+  "Physics",
   "Mathematics",
   "History",
   "English",
@@ -35,7 +36,7 @@ export default function UploadPage() {
   // Function to determine available bandings
   const getBandings = () => {
     if (selectedSubject === "Mathematics") return mathBandings;
-    if (selectedSubject === "Biology" || selectedSubject === "Chemistry")
+    if (selectedSubject === "Biology" || selectedSubject === "Chemistry" || selectedSubject === "Physics")
       return scienceBandings;
     return [];
   };
