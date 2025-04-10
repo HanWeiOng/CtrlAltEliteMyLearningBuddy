@@ -1,5 +1,4 @@
 console.log('RecommendationsCard module is being loaded');
-window.addEventListener('load', () => console.log('Window loaded - RecommendationsCard module'));
 
 import { useState, useEffect } from 'react';
 import { Lightbulb, Flag, Users, BookOpen } from "lucide-react";
@@ -96,6 +95,11 @@ export function RecommendationsCard({
 
     useEffect(() => {
       console.log('RecommendationsCard mounted');
+      
+      if (typeof window !== 'undefined') {
+        console.log('Window loaded - RecommendationsCard module');
+      }
+      
       return () => console.log('RecommendationsCard unmounted');
     }, []);
 
@@ -212,39 +216,32 @@ export function RecommendationsCard({
             throw new Error('Invalid response format from recommendations API');
           }
 
-          // Parse the explanation text into structured insights
-          try {
-            // The explanation field should contain JSON-formatted insights
-            const parsedInsights = JSON.parse(recommendationsData.explanation);
-            setInsights(parsedInsights);
-            setLoading(false);
-            console.log('Successfully parsed insights:', parsedInsights);
-          } catch (parseError) {
-            console.error('Error parsing recommendations:', parseError);
-            
-            // Fallback to a simpler format if parsing fails
-            const fallbackInsights = {
-              highPriorityRecommendations: {
-                topic: 'Review the recommendations for the hardest topics.',
-                question: 'Focus on the most frequently missed questions.',
-                score: 'Provide additional support for struggling students.'
-              },
-              mediumPriorityRecommendations: {
-                topic: 'Consider additional practice on medium difficulty topics.',
-                question: 'Address common misconceptions in these questions.',
-                score: 'Check in with students in the middle performance range.'
-              },
-              lowPriorityRecommendations: {
-                topic: 'Continue current approach for well-understood topics.',
-                question: 'Maintain existing strategies for these questions.',
-                score: 'Offer enrichment for high-performing students.'
-              }
-            };
-            
-            setInsights(fallbackInsights);
-            setLoading(false);
-            console.log('Using fallback insights due to parsing error');
-          }
+          // The explanation field contains text recommendations, not JSON
+          const explanationText = recommendationsData.explanation;
+          console.log('Explanation text:', explanationText);
+          
+          // Create structured insights from the text response
+          const structuredInsights = {
+            highPriorityRecommendations: {
+              topic: extractRecommendationByType(explanationText, 'high', 'topic'),
+              question: extractRecommendationByType(explanationText, 'high', 'question'),
+              score: extractRecommendationByType(explanationText, 'high', 'score')
+            },
+            mediumPriorityRecommendations: {
+              topic: extractRecommendationByType(explanationText, 'medium', 'topic'),
+              question: extractRecommendationByType(explanationText, 'medium', 'question'),
+              score: extractRecommendationByType(explanationText, 'medium', 'score')
+            },
+            lowPriorityRecommendations: {
+              topic: extractRecommendationByType(explanationText, 'low', 'topic'),
+              question: extractRecommendationByType(explanationText, 'low', 'question'),
+              score: extractRecommendationByType(explanationText, 'low', 'score')
+            }
+          };
+          
+          setInsights(structuredInsights);
+          setLoading(false);
+          console.log('Successfully structured insights:', structuredInsights);
         } catch (err) {
           console.error('Error in RecommendationsCard fetchData:', err);
           setError(err instanceof Error ? err.message : 'An error occurred while fetching insights');
@@ -256,6 +253,86 @@ export function RecommendationsCard({
         console.error('Unhandled error in RecommendationsCard fetchData:', err);
       });
     }, [quizId, teacherId]);
+
+    // Function to extract recommendations from text based on priority and type
+    const extractRecommendationByType = (text: string, priority: string, type: string): string => {
+      // Default messages in case we can't extract anything
+      const defaults = {
+        high: {
+          topic: 'Focus on the most challenging topics that students struggle with',
+          question: 'Address the most frequently missed questions',
+          score: 'Provide extra support for struggling students'
+        },
+        medium: {
+          topic: 'Review medium-difficulty topics during class',
+          question: 'Clarify concepts related to these questions',
+          score: 'Check in with average-performing students'
+        },
+        low: {
+          topic: 'Continue current approach for well-understood topics',
+          question: 'Maintain current teaching for these questions',
+          score: 'Offer enrichment for high-performing students'
+        }
+      };
+
+      try {
+        // Try to find patterns in the text related to priorities and recommendation types
+        // This is a simple approach and can be refined based on the actual format
+        const lines = text.split('\n');
+        
+        // Find priority section
+        let inPrioritySection = false;
+        let inTypeSection = false;
+        
+        for (const line of lines) {
+          const lowerLine = line.toLowerCase();
+          
+          // Check for priority headers
+          if (lowerLine.includes(`${priority} priority`)) {
+            inPrioritySection = true;
+            continue;
+          } else if (
+            (priority !== 'high' && lowerLine.includes('high priority')) ||
+            (priority !== 'medium' && lowerLine.includes('medium priority')) ||
+            (priority !== 'low' && lowerLine.includes('low priority'))
+          ) {
+            inPrioritySection = false;
+            continue;
+          }
+          
+          // If we're in the right priority section, look for the type
+          if (inPrioritySection) {
+            if (
+              (type === 'topic' && lowerLine.includes('topic')) ||
+              (type === 'question' && lowerLine.includes('question')) ||
+              (type === 'score' && (lowerLine.includes('score') || lowerLine.includes('student')))
+            ) {
+              inTypeSection = true;
+              continue;
+            } else if (
+              lowerLine.includes('topic') || 
+              lowerLine.includes('question') || 
+              lowerLine.includes('score') || 
+              lowerLine.includes('student')
+            ) {
+              inTypeSection = false;
+              continue;
+            }
+            
+            // If we're in both the right priority and type sections, this line might contain our recommendation
+            if (inTypeSection && line.trim() && !line.match(/^[#-]+$/) && !line.match(/^\s*$/)) {
+              return line.trim();
+            }
+          }
+        }
+        
+        // If we couldn't find a matching recommendation, return the default
+        return defaults[priority as keyof typeof defaults][type as keyof typeof defaults[keyof typeof defaults]];
+      } catch (e) {
+        console.error('Error extracting recommendation:', e);
+        return defaults[priority as keyof typeof defaults][type as keyof typeof defaults[keyof typeof defaults]];
+      }
+    };
 
     console.log('RecommendationsCard about to render', { loading, error, insights });
 
