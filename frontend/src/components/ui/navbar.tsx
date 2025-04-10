@@ -35,7 +35,7 @@ export default function Navbar() {
       icon: <Edit className="w-5 h-5" />,
     },
     {
-      name: "Practice Quiz",
+      name: "Your Quizzes",
       href: "/practiceQuiz",
       icon: <BookOpen className="w-5 h-5" />,
     },

@@ -494,7 +494,7 @@ export default function DashboardPage() {
                           )}
                         </div>
                         <div className="text-xs text-slate-500">
-                          average score
+                          Class average across completed quizzes
                         </div>
                       </div>
                     </div>
@@ -558,7 +558,7 @@ export default function DashboardPage() {
                           )}
                         </div>
                         <div className="text-xs text-slate-500">
-                          median performance
+                          is what most students scored around
                         </div>
                       </div>
                     </div>
