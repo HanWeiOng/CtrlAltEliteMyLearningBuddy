@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "ctrlaltelite",
+    "database": "exam_papers",
+    "host": "database-1.cv6m2giwwgvo.ap-southeast-2.rds.amazonaws.com",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "postgres",
+    "password": "ctrlaltelite",
+    "database": "exam_papers_test",
+    "host": "database-1.cv6m2giwwgvo.ap-southeast-2.rds.amazonaws.com",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "postgres",
+    "password": "ctrlaltelite",
+    "database": "exam_papers",
+    "host": "database-1.cv6m2giwwgvo.ap-southeast-2.rds.amazonaws.com",
+    "dialect": "postgres"
+  }
+}
