@@ -645,27 +645,6 @@ router.post('/getAllPaperAllScore', async (req, res) => {
 });
 
 
-// router.post('/getIndividualPaperAllScore/:folder_id', async (req, res) => {
-//     try {
-//         const {folder_id} = req.params
-//         const response = await client.query(`
-//             SELECT student_name, student_score
-//             FROM (
-//                 SELECT DISTINCT ON (student_name) student_name, student_score, id
-//                 FROM student_attempt_quiz_table
-//                 WHERE folder_id = $1 AND completed = true
-//                 ORDER BY student_name, id ASC
-//             ) AS first_attempts
-//             ORDER BY student_score DESC
-//         `, [folder_id]);
-//         res.status(200).json(response.rows);
-
-//     } catch (error) {
-//         console.error('Error fetching individual quiz score data:', error);
-//         res.status(500).json({ error: 'Internal server error' });
-//     }
-// });
-
 // get student performance across all papers
 router.post('/getIndividualPaperAllScore/:folder_id', async (req, res) => {
   try {
@@ -788,59 +767,6 @@ router.post('/teacherActionInsights', async (req, res) => {
   try {
 
     const { hardestQuestions, hardestTopics, allPaperScores } = req.body;
-
-    // // Simulated data for all papers
-    // const hardestQuestions = [
-    //   {
-    //     question_text: "What type of cell is it?",
-    //     topic_label: "Cell Types",
-    //     selected_percentage_wrong: "100.00"
-    //   },
-    //   {
-    //     question_text: "Amylase solution is tested with Benedict's solution, biuret solution and iodine solution. Which colours are obtained?",
-    //     topic_label: "Enzymes",
-    //     selected_percentage_wrong: "73.08"
-    //   },
-    //   {
-    //     question_text: "The diagram below shows a cell as seen under an electron microscope. What are the functions in the cell of the numbered parts?",
-    //     topic_label: "Cell Structure",
-    //     selected_percentage_wrong: "30.00"
-    //   }
-    // ];
-
-    // const hardestTopics = [
-    //   {
-    //     topic_label: "Cell Types",
-    //     selected_percentage_wrong: "100.00"
-    //   },
-    //   {
-    //     topic_label: "Enzymes",
-    //     selected_percentage_wrong: "73.08"
-    //   },
-    //   {
-    //     topic_label: "Cell Structure",
-    //     selected_percentage_wrong: "30.00"
-    //   }
-    // ];
-
-    // const allPaperScores = [
-    //   {
-    //     student_name: "raerae3",
-    //     average_score: "69.55"
-    //   },
-    //   {
-    //     student_name: "Sharon001",
-    //     average_score: "57.25"
-    //   },
-    //   {
-    //     student_name: "raerae2",
-    //     average_score: "48.00"
-    //   },
-    //   {
-    //     student_name: "raerae1",
-    //     average_score: "0.00"
-    //   }
-    // ];
 
     // Categorization functions
     function categorizeByPriority(items, key) {
@@ -992,73 +918,6 @@ ${finalInstructions}
 router.post('/teacherActionInsightsIndividual', async (req, res) => {
   try {
     const { hardestQuestionsByPaper, hardestTopicsByPaper, individualPaperScores } = req.body;
-
-      // // Simulated data for individual paper
-      // const hardestQuestionsByPaper = [
-      //   {
-      //     paper_id: 5769,
-      //     question_id: 2,
-      //     total_wrong_attempts: "15",
-      //     total_attempts_per_question: "15",
-      //     selected_percentage_wrong: "100.00",
-      //     question_text: "Amylase solution is tested with Benedict's solution, biuret solution and iodine solution. Which colours are obtained?",
-      //     topic_label: "Enzymes"
-      //   },
-      //   {
-      //     paper_id: 5769,
-      //     question_id: 22,
-      //     total_wrong_attempts: "5",
-      //     total_attempts_per_question: "5",
-      //     selected_percentage_wrong: "100.00",
-      //     question_text: "What type of cell is it?",
-      //     topic_label: "Cell Types"
-      //   },
-      //   {
-      //     paper_id: 5769,
-      //     question_id: 21,
-      //     total_wrong_attempts: "3",
-      //     total_attempts_per_question: "10",
-      //     selected_percentage_wrong: "30.00",
-      //     question_text: "The diagram below shows a cell as seen under an electron microscope. What are the functions in the cell of the numbered parts?",
-      //     topic_label: "Cell Structure"
-      //   }
-      // ];
-
-      // const hardestTopicsByPaper = [
-      //   {
-      //     topic_label: "Enzymes",
-      //     total_wrong_attempts: "15",
-      //     total_attempts_per_topic: "15",
-      //     selected_percentage_wrong: "100.00"
-      //   },
-      //   {
-      //     topic_label: "Cell Types",
-      //     total_wrong_attempts: "5",
-      //     total_attempts_per_topic: "5",
-      //     selected_percentage_wrong: "100.00"
-      //   },
-      //   {
-      //     topic_label: "Cell Structure",
-      //     total_wrong_attempts: "3",
-      //     total_attempts_per_topic: "10",
-      //     selected_percentage_wrong: "30.00"
-      //   }
-      // ];
-
-      // const individualPaperScores = [
-      //   {
-      //     student_name: "raerae3",
-      //     student_score: "69.55"
-      //   },
-      //   {
-      //     student_name: "Sharon001",
-      //     student_score: "54.00"
-      //   },
-      //   {
-      //     student_name: "raerae2",
-      //     student_score: "48.00"
-      //   }
-      // ];
 
     // Categorization functions
     function categorizeByPriority(items, key) {
@@ -1355,87 +1214,5 @@ router.post('/reccomendationForResultsAllPapersNew', async (req, res) => {
     return res.status(500).json({ message: 'Something went wrong', error: error.message });
   }
 });
-
-
-
-
-// /**
-//  * Explain why a user's answer to a question is wrong using Gemini
-//  * @param {string} question - The original question
-//  * @param {string} userAnswer - The user's (wrong) answer
-//  * @returns {Promise<string>} - Gemini's explanation
-//  */
-// router.post('/reccomendationForResults', async (req, res) => {
-//     const { question, userAnswer, correctAnswer, options, imageUrl } = req.body;
-  
-//     if (!question || !userAnswer || !correctAnswer || !options) {
-//       return res.status(400).json({ message: 'Missing fields in request body' });
-//     }
-  
-//     try {
-//       const explanation = await explainWrongAnswer({
-//         question,
-//         userAnswer,
-//         correctAnswer,
-//         options,
-//         imageUrl,
-//         model,
-//       });
-  
-//       return res.status(200).json({ explanation });
-//     } catch (error) {
-//       console.error('Gemini error:', error);
-//       return res.status(500).json({ message: 'Something went wrong', error: error.message });
-//     }
-// });
-  
-
-// async function explainWrongAnswer({ question, userAnswer, correctAnswer, options, imageUrl, model }) {
-//     let formattedOptions = options
-//       .map((opt) => {
-//         const text = typeof opt.text === 'string' ? opt.text : JSON.stringify(opt.text);
-//         return `${opt.option}: ${text}`;
-//       })
-//       .join('\n');
-  
-
-//     const prompt = `
-//     You are a helpful tutor explaining why an answer is incorrect. Please provide a clear and concise explanation following this format:
-
-//     Here is the full context:
-//     - Question: ${question}
-//     - Image (if available): ${imageUrl ? imageUrl : "No diagram provided"}
-//     - Answer: ${userAnswer.option}: ${userAnswer.text}
-//     - Correct answer : ${correctAnswer.option}: ${correctAnswer.text}
-//     - Options: ${formattedOptions}
-
-//     Please provide your explanation following these guidelines:
-//     1. Start with "❌ ${userAnswer.option} is incorrect because:"
-//     2. Then explain "✅ Correct Answer: ${correctAnswer.option}"\
-//     3. If the diagram is important, explain its relevance
-//     4. Keep explanations concise and focused
-//     5. Use bullet points for clarity
-//     6. Do not use markdown formatting
-
-//     Format your response like this:
-//     ${imageUrl ? `
-//         • [Explain diagram's relevance]` : ''}
-
-//     ❌ ${userAnswer.option} is incorrect because:
-//     • [First reason]
-//     • [Second reason]
-
-//     ✅ Correct Answer: ${correctAnswer.option}
-//     • [First reason]
-//     • [Second reason]
-//     • [More reasons if neccesary]
-//     `;
-  
-//     const result = await model.generateContent(prompt);
-//     const response = await result.response;
-//     return response.text();
-// }
-
-
 
 module.exports = router;

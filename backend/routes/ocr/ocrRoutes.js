@@ -171,93 +171,6 @@ router.post('/insertIntoPostgresql', async (req, res) => {
   }
 });
 
-// router.get("/retrieve_all_uploaded_questions", async (req, res) => {
-//   try {
-//     let paperName = req.query.paper_name;
-//     paperName = paperName.replace(/\s+/g, "_");
-
-//     const result = await client.query(
-//       "SELECT * FROM questions WHERE paper_name = $1",
-//       [paperName]
-//     );
-
-//     const validQuestions = result.rows.filter((q) => {
-//       // Top-level checks
-//       const hasQuestionText = q.question_text?.trim() !== "";
-//       const hasQuestionNumber = q.question_number?.toString().trim() !== "";
-//       const hasAnswerKey = q.answer_key?.trim() !== "";
-//       const hasTopicLabel = q.topic_label?.trim() !== "";
-//       const hasSubject = q.subject?.trim() !== "";
-//       const hasBanding = q.banding?.trim() !== "";
-//       const hasLevel = q.level?.trim() !== "";
-
-//       // Answer Options (parse if stringified)
-//       let answerOptions = q.answer_options;
-//       if (typeof answerOptions === "string") {
-//         try {
-//           answerOptions = JSON.parse(answerOptions);
-//         } catch {
-//           return false;
-//         }
-//       }
-
-//       const hasValidOptions =
-//         Array.isArray(answerOptions) &&
-//         answerOptions.length > 0 &&
-//         answerOptions.every(
-//           (opt) =>
-//             opt &&
-//             typeof opt.option === "string" &&
-//             opt.option.trim() !== "" &&
-//             (typeof opt.text === "string"
-//               ? opt.text.trim() !== ""
-//               : opt.text !== null && typeof opt.text === "object")
-//         );
-
-//       // Image Paths (parse if stringified)
-//       let imagePaths = q.image_paths;
-//       if (typeof imagePaths === "string") {
-//         try {
-//           imagePaths = JSON.parse(imagePaths);
-//         } catch {
-//           return false;
-//         }
-//       }
-
-//       const hasValidImages =
-//         Array.isArray(imagePaths) &&
-//         imagePaths.every(
-//           (img) =>
-//             img &&
-//             typeof img.image_url === "string" &&
-//             img.image_url.startsWith("http")
-//         );
-
-//       // You can also allow imagePaths to be optional:
-//       // const imageOk = imagePaths.length === 0 || hasValidImages;
-//       const imageOk = hasValidImages; // force image to be present and valid
-
-//       return (
-//         hasQuestionText &&
-//         hasQuestionNumber &&
-//         hasAnswerKey &&
-//         hasTopicLabel &&
-//         hasSubject &&
-//         hasBanding &&
-//         hasLevel &&
-//         hasValidOptions &&
-//         imageOk
-//       );
-//     });
-
-//     console.log("✅ Valid Questions:", validQuestions);
-//     console.log(`📤 Retrieved ${validQuestions.length} valid questions out of ${result.rows.length}`);
-//     res.status(200).json(validQuestions);
-//   } catch (error) {
-//     console.error("❌ Error retrieving uploaded questions:", error);
-//     res.status(500).json({ message: "Questions not in database: " + error.message });
-//   }
-// });
 
 router.get("/retrieve_all_uploaded_questions", async (req, res) => {
   try {
@@ -285,13 +198,6 @@ router.get("/retrieve_all_uploaded_questions", async (req, res) => {
 
       // Answer options
       let answerOptions = q.answer_options;
-      // if (typeof answerOptions === "string") {
-      //   try {
-      //     answerOptions = JSON.parse(answerOptions);
-      //   } catch {
-      //     invalidFields.push("answer_options (invalid JSON)");
-      //   }
-      // }
 
       const hasValidOptions =
         Array.isArray(answerOptions) &&

@@ -125,30 +125,6 @@ const PracticeQuizPage: React.FC = () => {
     }
   };
 
-  // const fetchFilteredQuestions = async () => {
-  //   if (!selectedSubject || !selectedBanding || !selectedLevel) {
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true)
-  //     const response = await fetch(
-  //       `${process.env.NEXT_PUBLIC_API_URL}/api/practiceQuiz/getQuestions?subject=${selectedSubject}&banding=${selectedBanding}&level=${selectedLevel}`
-  //     )
-  //     if (!response.ok) {
-  //       throw new Error(`Failed to fetch questions: ${response.statusText}`)
-  //     }
-  //     const data = await response.json()
-  //     setQuestions(data)
-  //     setError(null)
-  //   } catch (err) {
-  //     setError(err instanceof Error ? err.message : 'Failed to fetch questions')
-  //     console.error('Error fetching questions:', err)
-  //   } finally {
-  //     setLoading(false)
-  //   }
-  // }
-
   // Get unique subjects from folders for the sidebar
   const uniqueSubjects = [
     "All Documents",
