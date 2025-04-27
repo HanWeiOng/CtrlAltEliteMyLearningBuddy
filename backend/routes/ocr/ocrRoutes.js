@@ -265,4 +265,54 @@ router.get("/retrieve_all_uploaded_questions", async (req, res) => {
   }
 });
 
+const insertJSONData = async (jsonData, subject, banding, level) => {
+  const client = await pool.connect(); // Acquire a client from the pool
+  try {
+    const parsedJSON = JSON.parse(jsonData);
+
+    await client.query("BEGIN"); // Start a transaction
+
+    for (const [topicName, topicData] of Object.entries(parsedJSON)) {
+      if (!topicData.learning_outcomes) continue;
+
+      for (const outcome of topicData.learning_outcomes) {
+        const subTopic = outcome.sub_topic || "Unknown";
+        const description = outcome.description || "No description available";
+
+        await client.query(
+          `INSERT INTO topic_labelling (subject, topic_name, sub_topic, description, banding, level)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT DO NOTHING;`,
+          [subject, topicName, subTopic, description, banding, level]
+        );
+      }
+    }
+
+    await client.query("COMMIT"); // Commit the transaction
+    console.log(`✅ JSON data inserted for subject: ${subject}`);
+  } catch (err) {
+    await client.query("ROLLBACK"); // Rollback the transaction on error
+    console.error("❌ Error inserting JSON data:", err);
+    throw err; // Re-throw the error to be handled by Express.js
+  } finally {
+    client.release(); // Release the client back to the pool
+  }
+};
+
+
+// Define the POST route
+router.post('/uploadSyllabus', async (req, res) => {
+  try {
+      const { jsonData, subject, banding, level } = req.body;
+      if (!jsonData || !subject || !banding || !level) {
+          return res.status(400).json({ error: 'Missing required fields' });
+      }
+      await insertJSONData(jsonData, subject, banding, level);
+      res.status(200).json({ message: 'Syllabus uploaded successfully!' });
+  } catch (error) {
+      console.error('Error processing request:', error);
+      res.status(500).json({ error: 'Failed to upload syllabus' });
+  }
+});
+
 module.exports = router;
